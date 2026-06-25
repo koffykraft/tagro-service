@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAGRO — Scan Form</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #111111;
+    --white: #ffffff;
+    --orange: #E85C0D;
+    --gray-1: #f5f5f5;
+    --gray-2: #e0e0e0;
+    --gray-3: #999999;
+    --green: #2d7a3a;
+    --red: #c0392b;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: var(--gray-1);
+    color: var(--black);
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header img { height: 24px; }
+  header .title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--black);
+    margin-left: 4px;
+  }
+  header .counter {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--gray-3);
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    margin: 16px;
+    background: var(--white);
+    border: 2px dashed var(--gray-2);
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .upload-zone.has-image {
+    border-style: solid;
+    border-color: var(--orange);
+    padding: 0;
+    overflow: hidden;
+  }
+  .upload-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0;
+  }
+  .upload-zone img.preview {
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    display: block;
+  }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; }
+  .upload-label { font-size: 15px; font-weight: 600; color: var(--black); margin-bottom: 6px; }
+  .upload-sub { font-size: 12px; color: var(--gray-3); }
+
+  .btn-camera {
+    display: block;
+    margin: 0 16px 12px;
+    padding: 14px;
+    background: var(--black);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    position: relative;
+  }
+  .btn-camera input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0;
+  }
+
+  /* Processing state */
+  .processing {
+    display: none;
+    margin: 16px;
+    background: var(--white);
+    border-radius: 12px;
+    padding: 32px 20px;
+    text-align: center;
+    border: 1px solid var(--gray-2);
+  }
+  .processing.show { display: block; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--gray-2);
+    border-top-color: var(--orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .processing-label { font-size: 14px; font-weight: 600; color: var(--black); margin-bottom: 4px; }
+  .processing-sub { font-size: 12px; color: var(--gray-3); }
+
+  /* Results */
+  .results {
+    display: none;
+    margin: 0 16px;
+  }
+  .results.show { display: block; }
+
+  .confidence-bar {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--gray-2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .confidence-label { font-size: 12px; font-weight: 600; color: var(--gray-3); }
+  .confidence-value { font-size: 14px; font-weight: 700; }
+  .confidence-high { color: var(--green); }
+  .confidence-mid { color: #d97706; }
+  .confidence-low { color: var(--red); }
+
+  .section {
+    background: var(--white);
+    border-radius: 10px;
+    border: 1px solid var(--gray-2);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-1);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-3);
+  }
+  .field {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gray-1);
+  }
+  .field:last-child { border-bottom: none; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+  }
+  .field input, .field textarea, .field select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--gray-2);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: var(--font);
+    background: var(--white);
+    color: var(--black);
+    -webkit-appearance: none;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus {
+    outline: none;
+    border-color: var(--orange);
+  }
+  .field textarea { min-height: 60px; resize: vertical; }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .field-row .field { border-right: 1px solid var(--gray-1); }
+  .field-row .field:last-child { border-right: none; }
+
+  /* Unread field highlight */
+  .field input.uncertain { border-color: #f59e0b; background: #fffbeb; }
+
+  .notes-box {
+    margin: 0 16px 12px;
+    padding: 12px 14px;
+    background: #fffbeb;
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #92400e;
+    line-height: 1.5;
+    display: none;
+  }
+  .notes-box.show { display: block; }
+
+  /* Action bar */
+  .action-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--gray-2);
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 10px;
+  }
+  .btn-save {
+    flex: 1;
+    padding: 14px;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-retry {
+    padding: 14px 18px;
+    background: none;
+    color: var(--black);
+    border: 1px solid var(--gray-2);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-skip {
+    padding: 14px 18px;
+    background: none;
+    color: var(--red);
+    border: 1px solid var(--gray-2);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed;
+    top: 70px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--black);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--gray-2);
+    margin: 0 16px 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--gray-2);
+  }
+  .stat {
+    background: var(--white);
+    padding: 12px 8px;
+    text-align: center;
+  }
+  .stat .n { font-size: 22px; font-weight: 800; }
+  .stat .l { font-size: 10px; color: var(--gray-3); margin-top: 2px; text-transform: uppercase; }
+  .n.green { color: var(--green); }
+  .n.amber { color: #d97706; }
+  .n.orange { color: var(--orange); }
+
+  .guide-box {
+    margin: 0 16px 16px;
+    padding: 14px;
+    background: var(--white);
+    border-radius: 10px;
+    border: 1px solid var(--gray-2);
+  }
+  .guide-box h3 { font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+  .guide-box ul { list-style: none; }
+  .guide-box ul li {
+    font-size: 12px;
+    color: var(--gray-3);
+    padding: 3px 0;
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.4;
+  }
+  .guide-box ul li::before { content: "✓"; position: absolute; left: 0; color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO">
+  <span class="title">Scan Records</span>
+  <span class="counter" id="scan-counter">0 scanned today</span>
+</header>
+
+<!-- Stats -->
+<div class="stat-row" style="margin-top:16px;">
+  <div class="stat"><div class="n green" id="stat-saved">0</div><div class="l">Saved</div></div>
+  <div class="stat"><div class="n amber" id="stat-skipped">0</div><div class="l">Skipped</div></div>
+  <div class="stat"><div class="n orange" id="stat-session">0</div><div class="l">This session</div></div>
+</div>
+
+<!-- Guide -->
+<div class="guide-box" id="guide-box">
+  <h3>For best results</h3>
+  <ul>
+    <li>Place form flat on a clean surface</li>
+    <li>Good light — no shadows across the form</li>
+    <li>Hold phone directly above, not at an angle</li>
+    <li>Full form in frame — all four edges visible</li>
+    <li>Check the preview is clear before uploading</li>
+  </ul>
+</div>
+
+<!-- Upload zone -->
+<div class="upload-zone" id="upload-zone">
+  <input type="file" accept="image/*" onchange="onFileSelect(this)" id="file-input-zone">
+  <div class="upload-icon">📄</div>
+  <div class="upload-label">Tap to select image</div>
+  <div class="upload-sub">From camera roll or files</div>
+</div>
+
+<!-- Camera button -->
+<button class="btn-camera" id="camera-btn">
+  📷 Take Photo
+  <input type="file" accept="image/*" capture="environment" onchange="onFileSelect(this)">
+</button>
+
+<!-- Processing -->
+<div class="processing" id="processing">
+  <div class="spinner"></div>
+  <div class="processing-label">Reading form...</div>
+  <div class="processing-sub">Claude is extracting the fields</div>
+</div>
+
+<!-- Notes/warnings -->
+<div class="notes-box" id="notes-box"></div>
+
+<!-- Results -->
+<div class="results" id="results">
+
+  <div class="confidence-bar">
+    <span class="confidence-label">Read confidence</span>
+    <span class="confidence-value" id="confidence-display">—</span>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Job Details</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Work Order No.</label>
+        <input type="text" id="r-wo" placeholder="—">
+      </div>
+      <div class="field">
+        <label>Date</label>
+        <input type="text" id="r-date" placeholder="—">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Branch</label>
+        <select id="r-branch">
+          <option value="">—</option>
+          <option>KVR</option><option>NDD</option><option>PKM</option>
+          <option>OYR</option><option>SDM</option><option>MDM</option><option>SKT</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Invoice No.</label>
+        <input type="text" id="r-invoice" placeholder="—">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Customer</div>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="r-name" placeholder="—">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="r-phone" placeholder="—">
+      </div>
+      <div class="field">
+        <label>Place</label>
+        <input type="text" id="r-place" placeholder="—">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Machine</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Model</label>
+        <input type="text" id="r-model" placeholder="—">
+      </div>
+      <div class="field">
+        <label>Serial No.</label>
+        <input type="text" id="r-serial" placeholder="—">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Job</div>
+    <div class="field">
+      <label>Complaint / Work Requested</label>
+      <textarea id="r-complaint" placeholder="—"></textarea>
+    </div>
+    <div class="field">
+      <label>Work Done / Parts</label>
+      <textarea id="r-work" placeholder="—"></textarea>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Billing</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Invoice Amount</label>
+        <input type="text" id="r-amount" placeholder="—">
+      </div>
+      <div class="field">
+        <label>Service Charges</label>
+        <input type="text" id="r-service" placeholder="—">
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Action bar (shown after scan) -->
+<div class="action-bar" id="action-bar" style="display:none">
+  <button class="btn-skip" onclick="skipRecord()">Skip</button>
+  <button class="btn-retry" onclick="retryPhoto()">Retake</button>
+  <button class="btn-save" onclick="saveRecord()">Save Record</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let sessionSaved = 0;
+let sessionSkipped = 0;
+let totalSaved = parseInt(localStorage.getItem('scan_saved') || '0');
+let currentImageB64 = null;
+let currentFile = null;
+
+function getConfig() { try { return JSON.parse(localStorage.getItem('tagro_config')||'{}') } catch { return {} } }
+function getToken() { return localStorage.getItem('dbx_token') || ''; }
+
+function showToast(msg, duration=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function updateStats() {
+  document.getElementById('stat-saved').textContent = totalSaved;
+  document.getElementById('stat-skipped').textContent = sessionSkipped;
+  document.getElementById('stat-session').textContent = sessionSaved + sessionSkipped;
+  document.getElementById('scan-counter').textContent = (sessionSaved + sessionSkipped) + ' scanned today';
+}
+
+function onFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  currentFile = file;
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImageB64 = e.target.result.split(',')[1];
+    const zone = document.getElementById('upload-zone');
+    zone.classList.add('has-image');
+    zone.innerHTML = `<img class="preview" src="${e.target.result}">`;
+    document.getElementById('guide-box').style.display = 'none';
+    document.getElementById('camera-btn').style.display = 'none';
+    processImage(currentImageB64);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function processImage(b64) {
+  document.getElementById('processing').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('notes-box').classList.remove('show');
+  document.getElementById('action-bar').style.display = 'none';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: currentFile.type || 'image/jpeg', data: b64 }
+            },
+            {
+              type: 'text',
+              text: `This is a TAGRO / Thumpassery Agro service job card form. Extract all visible fields and return ONLY a JSON object with these exact keys:
+{
+  "workOrder": "",
+  "date": "",
+  "branch": "",
+  "invoiceNo": "",
+  "customerName": "",
+  "phone": "",
+  "place": "",
+  "model": "",
+  "serialNo": "",
+  "complaint": "",
+  "workDone": "",
+  "invoiceAmount": "",
+  "serviceCharges": "",
+  "confidence": "high|medium|low",
+  "notes": "any issues reading the form, blank fields, unclear handwriting etc"
+}
+Return only the JSON. No explanation. If a field is not visible or readable, leave it empty string.`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+
+    let parsed;
+    try {
+      const clean = text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(clean);
+    } catch {
+      throw new Error('Could not parse response');
+    }
+
+    displayResults(parsed);
+
+  } catch (e) {
+    document.getElementById('processing').classList.remove('show');
+    showToast('Error reading form. Try again.');
+    retryPhoto();
+  }
+}
+
+function displayResults(data) {
+  document.getElementById('processing').classList.remove('show');
+
+  // Fill fields
+  document.getElementById('r-wo').value = data.workOrder || '';
+  document.getElementById('r-date').value = data.date || '';
+  document.getElementById('r-invoice').value = data.invoiceNo || '';
+  document.getElementById('r-name').value = data.customerName || '';
+  document.getElementById('r-phone').value = data.phone || '';
+  document.getElementById('r-place').value = data.place || '';
+  document.getElementById('r-model').value = data.model || '';
+  document.getElementById('r-serial').value = data.serialNo || '';
+  document.getElementById('r-complaint').value = data.complaint || '';
+  document.getElementById('r-work').value = data.workDone || '';
+  document.getElementById('r-amount').value = data.invoiceAmount || '';
+  document.getElementById('r-service').value = data.serviceCharges || '';
+
+  // Branch dropdown
+  const branchSel = document.getElementById('r-branch');
+  if (data.branch) {
+    for (let o of branchSel.options) {
+      if (o.value === data.branch) { branchSel.value = data.branch; break; }
+    }
+  }
+  if (!branchSel.value) {
+    const cfg = getConfig();
+    if (cfg.branch) branchSel.value = cfg.branch;
+  }
+
+  // Confidence display
+  const conf = document.getElementById('confidence-display');
+  conf.textContent = data.confidence || 'medium';
+  conf.className = 'confidence-value confidence-' +
+    (data.confidence === 'high' ? 'high' : data.confidence === 'low' ? 'low' : 'mid');
+
+  // Highlight uncertain fields
+  ['r-wo','r-date','r-name','r-phone','r-model','r-serial'].forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.toggle('uncertain', !el.value);
+  });
+
+  // Notes
+  if (data.notes) {
+    const nb = document.getElementById('notes-box');
+    nb.textContent = '⚠ ' + data.notes;
+    nb.classList.add('show');
+  }
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('action-bar').style.display = 'flex';
+}
+
+async function saveRecord() {
+  const cfg = getConfig();
+  const token = getToken();
+
+  const record = {
+    workOrder: document.getElementById('r-wo').value.trim(),
+    date: document.getElementById('r-date').value.trim(),
+    branch: document.getElementById('r-branch').value,
+    invoiceNo: document.getElementById('r-invoice').value.trim(),
+    customer: {
+      name: document.getElementById('r-name').value.trim(),
+      phone: document.getElementById('r-phone').value.trim(),
+      place: document.getElementById('r-place').value.trim(),
+    },
+    machine: {
+      model: document.getElementById('r-model').value.trim(),
+      serialNo: document.getElementById('r-serial').value.trim(),
+    },
+    job: {
+      complaint: document.getElementById('r-complaint').value.trim(),
+      workDone: document.getElementById('r-work').value.trim(),
+    },
+    billing: {
+      invoiceAmount: document.getElementById('r-amount').value.trim(),
+      serviceCharges: document.getElementById('r-service').value.trim(),
+    },
+    source: 'scanned',
+    scannedAt: new Date().toISOString(),
+    formVersion: '1.0'
+  };
+
+  const branch = record.branch || cfg.branch || 'KVR';
+
+  if (token) {
+    try {
+      // Save record to jobs.json
+      const path = `/TAGRO-Service/${branch}/jobs.json`;
+      let jobs = [];
+      try {
+        const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Dropbox-API-Arg': JSON.stringify({ path })
+          }
+        });
+        if (res.ok) jobs = await res.json();
+      } catch {}
+
+      jobs.push(record);
+
+      await fetch('https://content.dropboxapi.com/2/files/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/octet-stream',
+          'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false })
+        },
+        body: JSON.stringify(jobs, null, 2)
+      });
+
+      // Archive the photo
+      const photoName = `${branch}_${record.workOrder || Date.now()}_scan.jpg`.replace(/\//g,'-');
+      await fetch('https://content.dropboxapi.com/2/files/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/octet-stream',
+          'Dropbox-API-Arg': JSON.stringify({
+            path: `/TAGRO-Service/${branch}/scanned/${photoName}`,
+            mode: 'overwrite'
+          })
+        },
+        body: currentFile
+      });
+
+    } catch (e) {
+      showToast('Saved locally — Dropbox sync failed');
+    }
+  }
+
+  // Local save
+  const local = JSON.parse(localStorage.getItem('tagro_jobs')||'[]');
+  local.push(record);
+  localStorage.setItem('tagro_jobs', JSON.stringify(local));
+
+  sessionSaved++;
+  totalSaved++;
+  localStorage.setItem('scan_saved', totalSaved.toString());
+  updateStats();
+  showToast('Saved — next form');
+  setTimeout(resetForNext, 800);
+}
+
+function skipRecord() {
+  sessionSkipped++;
+  updateStats();
+  showToast('Skipped');
+  setTimeout(resetForNext, 500);
+}
+
+function retryPhoto() {
+  resetForNext();
+}
+
+function resetForNext() {
+  currentImageB64 = null;
+  currentFile = null;
+
+  const zone = document.getElementById('upload-zone');
+  zone.classList.remove('has-image');
+  zone.innerHTML = `
+    <input type="file" accept="image/*" onchange="onFileSelect(this)" id="file-input-zone">
+    <div class="upload-icon">📄</div>
+    <div class="upload-label">Tap to select image</div>
+    <div class="upload-sub">From camera roll or files</div>`;
+
+  document.getElementById('camera-btn').style.display = 'block';
+  document.getElementById('camera-btn').innerHTML = `📷 Take Photo<input type="file" accept="image/*" capture="environment" onchange="onFileSelect(this)">`;
+  document.getElementById('guide-box').style.display = 'block';
+  document.getElementById('processing').classList.remove('show');
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('notes-box').classList.remove('show');
+  document.getElementById('action-bar').style.display = 'none';
+  window.scrollTo(0,0);
+}
+
+updateStats();
+</script>
+</body>
+</html>
