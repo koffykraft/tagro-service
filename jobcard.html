@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAGRO — Job Card</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #111111;
+    --white: #ffffff;
+    --orange: #E85C0D;
+    --gray-1: #f5f5f5;
+    --gray-2: #e0e0e0;
+    --gray-3: #999999;
+    --green: #2d7a3a;
+    --red: #c0392b;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: var(--gray-1);
+    color: var(--black);
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+
+  header {
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header img { height: 24px; }
+  .branch-tag {
+    background: var(--orange);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  .wo-num {
+    margin-left: auto;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--gray-3);
+  }
+  .user-tag {
+    font-size: 11px;
+    color: var(--orange);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  nav {
+    display: flex;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+  }
+  nav a {
+    flex: 1;
+    text-align: center;
+    padding: 11px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+  }
+  nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* Step tabs */
+  .steps {
+    display: flex;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    overflow-x: auto;
+    padding: 0 12px;
+  }
+  .step-tab {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-3);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .step-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .step-tab.done { color: var(--green); }
+
+  .step-screen { display: none; }
+  .step-screen.active { display: block; }
+
+  /* WO banner */
+  .wo-banner {
+    background: var(--black);
+    color: var(--white);
+    margin: 12px 16px;
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .wo-banner .num { font-family: monospace; font-size: 17px; font-weight: 700; letter-spacing: 0.5px; }
+  .wo-banner .dt { font-size: 11px; color: var(--gray-3); margin-top: 2px; }
+
+  /* Sections */
+  .section {
+    background: var(--white);
+    margin: 0 16px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--gray-2);
+    overflow: hidden;
+  }
+  .sec-head {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--gray-1);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-3);
+  }
+  .field {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--gray-1);
+  }
+  .field:last-child { border-bottom: none; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 5px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--gray-2);
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: var(--font);
+    background: var(--white);
+    color: var(--black);
+    -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--orange);
+  }
+  .field textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .field-row .field { border-right: 1px solid var(--gray-1); }
+  .field-row .field:last-child { border-right: none; }
+
+  /* Option pills */
+  .options { display: flex; flex-wrap: wrap; gap: 8px; }
+  .opt {
+    padding: 7px 14px;
+    border: 1.5px solid var(--gray-2);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--white);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .opt.on { border-color: var(--orange); background: var(--orange); color: var(--white); }
+
+  /* Photo grid */
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 14px;
+  }
+  .photo-slot {
+    aspect-ratio: 1;
+    border: 1.5px dashed var(--gray-2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: var(--gray-1);
+  }
+  .photo-slot.done { border-style: solid; border-color: var(--green); }
+  .photo-slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .photo-slot input { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+  .photo-slot .sl { font-size: 9px; font-weight: 600; color: var(--gray-3); text-align: center; z-index: 1; }
+  .photo-slot .si { font-size: 18px; z-index: 1; }
+  .photo-slot.done .sl, .photo-slot.done .si { display: none; }
+
+  /* Advisory */
+  .advisory-detail { padding: 0 14px 12px; }
+  .advisory-detail textarea {
+    width: 100%;
+    padding: 9px 11px;
+    border: 1px solid var(--gray-2);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: var(--font);
+    min-height: 70px;
+    margin-bottom: 10px;
+  }
+  .advisory-detail textarea:focus { outline: none; border-color: var(--orange); }
+
+  .initials-wrap {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .initials-wrap.show { display: flex; }
+  .initials-wrap label { font-size: 12px; color: var(--gray-3); white-space: nowrap; }
+  .initials-wrap input {
+    width: 72px;
+    padding: 8px;
+    border: 1.5px solid var(--orange);
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: var(--font);
+  }
+  .initials-wrap input:focus { outline: none; }
+
+  /* Billing */
+  .rupee-wrap { position: relative; }
+  .rupee-wrap span {
+    position: absolute;
+    left: 11px; top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray-3);
+    font-size: 14px;
+    pointer-events: none;
+  }
+  .rupee-wrap input { padding-left: 22px; }
+
+  .charge-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .chip {
+    padding: 5px 11px;
+    border: 1px solid var(--gray-2);
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--white);
+    cursor: pointer;
+  }
+  .chip:active { background: var(--gray-1); }
+
+  /* Nav bar */
+  .nav-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--gray-2);
+    padding: 11px 16px;
+    padding-bottom: calc(11px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 10px;
+  }
+  .btn-next {
+    flex: 1;
+    padding: 13px;
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .btn-back {
+    padding: 13px 18px;
+    background: none;
+    color: var(--black);
+    border: 1px solid var(--gray-2);
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-save {
+    flex: 1;
+    padding: 13px;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed;
+    top: 68px; left: 50%;
+    transform: translateX(-50%);
+    background: var(--black);
+    color: var(--white);
+    padding: 9px 18px;
+    border-radius: 18px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO">
+  <span class="branch-tag" id="h-branch">—</span>
+  <span class="wo-num" id="h-wo"></span>
+  <span class="user-tag" id="h-user" onclick="logout()"></span>
+</header>
+
+<nav>
+  <a href="jobcard.html" class="active">Job Card</a>
+  <a href="tracker.html">Tracker</a>
+  <a href="scan.html">Scan</a>
+</nav>
+
+<!-- Step tabs -->
+<div class="steps">
+  <div class="step-tab active" id="tab-1">1 · Customer</div>
+  <div class="step-tab" id="tab-2">2 · Machine</div>
+  <div class="step-tab" id="tab-3">3 · Job</div>
+  <div class="step-tab" id="tab-4">4 · Work Done</div>
+  <div class="step-tab" id="tab-5">5 · Delivery</div>
+</div>
+
+<!-- STEP 1 — Customer -->
+<div class="step-screen active" id="s1">
+  <div class="wo-banner">
+    <div>
+      <div class="num" id="wo-display">—</div>
+      <div class="dt" id="date-display"></div>
+    </div>
+    <div style="font-size:10px;color:#666;">Work Order</div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">Accepted by</div>
+    <div class="field">
+      <select id="accepted-by"></select>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">Customer</div>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="cust-name" placeholder="Full name" autocomplete="off">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="cust-phone" placeholder="Mobile">
+      </div>
+      <div class="field">
+        <label>Place</label>
+        <input type="text" id="cust-place" placeholder="Village / Town">
+      </div>
+    </div>
+    <div class="field">
+      <label>Address</label>
+      <input type="text" id="cust-address" placeholder="Optional">
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2 — Machine -->
+<div class="step-screen" id="s2">
+  <div class="section" style="margin-top:16px;">
+    <div class="sec-head">Machine Details</div>
+    <div class="field">
+      <label>Model</label>
+      <select id="machine-model">
+        <option value="">Select model</option>
+        <optgroup label="MS — Chainsaws">
+          <option>MS 180</option><option>MS 182</option><option>MS 250</option>
+          <option>MS 383</option><option>MS 460</option><option>MS 660</option>
+        </optgroup>
+        <optgroup label="FS — Brushcutters">
+          <option>FS 55</option><option>FS 120</option><option>FS 250</option><option>FS 400</option>
+        </optgroup>
+        <optgroup label="SR — Mist Blowers">
+          <option>SR 420</option><option>SR 450</option>
+        </optgroup>
+        <optgroup label="BR — Blower">
+          <option>BR 600</option>
+        </optgroup>
+        <option value="other">Other — type below</option>
+      </select>
+    </div>
+    <div class="field" id="model-other-field" style="display:none">
+      <label>Model (type)</label>
+      <input type="text" id="model-other" placeholder="e.g. MS 261" autocapitalize="characters">
+    </div>
+    <div class="field">
+      <label>Serial Number</label>
+      <input type="text" id="serial-no" placeholder="Serial number" autocorrect="off" autocapitalize="characters">
+    </div>
+    <div class="field">
+      <label>Sale Type</label>
+      <div class="options">
+        <button class="opt on" data-g="sale">TAGRO Sale</button>
+        <button class="opt" data-g="sale">Other Dealer</button>
+        <button class="opt" data-g="sale">Warranty</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrival photos -->
+  <div class="section">
+    <div class="sec-head">Arrival Photos</div>
+    <div class="photo-grid">
+      <div class="photo-slot" data-slot="front">
+        <span class="si">📷</span><span class="sl">Front</span>
+        <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this,'front')">
+      </div>
+      <div class="photo-slot" data-slot="back">
+        <span class="si">📷</span><span class="sl">Back</span>
+        <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this,'back')">
+      </div>
+      <div class="photo-slot" data-slot="left">
+        <span class="si">📷</span><span class="sl">Left</span>
+        <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this,'left')">
+      </div>
+      <div class="photo-slot" data-slot="right">
+        <span class="si">📷</span><span class="sl">Right</span>
+        <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this,'right')">
+      </div>
+      <div class="photo-slot" data-slot="serial">
+        <span class="si">🔢</span><span class="sl">Serial plate</span>
+        <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this,'serial')">
+      </div>
+      <div class="photo-slot" data-slot="damage">
+        <span class="si">⚠️</span><span class="sl">Damage</span>
+        <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this,'damage')">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3 — Job -->
+<div class="step-screen" id="s3">
+  <div class="section" style="margin-top:16px;">
+    <div class="sec-head">Customer Request</div>
+    <div class="field">
+      <label>Complaint as stated</label>
+      <textarea id="complaint" placeholder="What the customer says"></textarea>
+    </div>
+    <div class="field">
+      <label>Damage / part replacement requested</label>
+      <textarea id="damage-req" placeholder="Any specific damage or parts mentioned" style="min-height:60px;"></textarea>
+    </div>
+    <div class="field">
+      <label>Accessories received</label>
+      <input type="text" id="accessories" placeholder="e.g. Guide bar, chain — or leave blank">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">Our Observations</div>
+    <div class="field">
+      <label>What we found</label>
+      <textarea id="observations" placeholder="Technician findings — can differ from complaint"></textarea>
+    </div>
+    <div class="field">
+      <label>Job Type</label>
+      <div class="options">
+        <button class="opt" data-g="jobtype">Full Service</button>
+        <button class="opt" data-g="jobtype">Free Service</button>
+        <button class="opt on" data-g="jobtype">Repair</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 4 — Work Done -->
+<div class="step-screen" id="s4">
+  <div class="section" style="margin-top:16px;">
+    <div class="sec-head">Work Performed</div>
+    <div class="field">
+      <label>What was done</label>
+      <textarea id="work-done" placeholder="Detail the work carried out"></textarea>
+    </div>
+    <div class="field">
+      <label>Repaired by</label>
+      <select id="repaired-by"></select>
+    </div>
+    <div class="field">
+      <label>Repair date</label>
+      <input type="date" id="repair-date">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">Billing</div>
+    <div class="field">
+      <label>Invoice Number</label>
+      <input type="text" id="invoice-no" placeholder="Invoice No.">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Invoice Amount</label>
+        <div class="rupee-wrap">
+          <span>₹</span>
+          <input type="number" id="invoice-amt" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Service Charges</label>
+        <div class="rupee-wrap">
+          <span>₹</span>
+          <input type="number" id="service-charges" placeholder="0">
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Quick select</label>
+      <div class="charge-chips" id="charge-chips"></div>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 5 — Delivery -->
+<div class="step-screen" id="s5">
+  <div class="section" style="margin-top:16px;">
+    <div class="sec-head">Machine Returned by</div>
+    <div class="field">
+      <select id="returned-by"></select>
+    </div>
+    <div class="field">
+      <label>Return date</label>
+      <input type="date" id="return-date">
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">Delivery</div>
+    <div class="field">
+      <label>Collected by (name)</label>
+      <input type="text" id="collected-by" placeholder="Customer or representative">
+    </div>
+    <div class="field">
+      <label>Machine demonstrated</label>
+      <div class="options">
+        <button class="opt on" data-g="demo">Demonstrated</button>
+        <button class="opt" data-g="demo">Rep collecting</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head">Additional Issues Observed</div>
+    <div class="field">
+      <div class="options">
+        <button class="opt" data-g="advisory" onclick="toggleAdvisory(false)">None</button>
+        <button class="opt on" data-g="advisory" onclick="toggleAdvisory(true)">Yes — noted below</button>
+      </div>
+    </div>
+    <div id="advisory-detail" class="advisory-detail">
+      <textarea id="advisory-text" placeholder="Describe additional issues seen"></textarea>
+      <div class="options" style="margin-bottom:10px;">
+        <button class="opt on" data-g="informed">Customer informed</button>
+        <button class="opt" data-g="informed">Could not inform</button>
+      </div>
+      <div class="options">
+        <button class="opt" data-g="decision" onclick="toggleInitials(this)">Do it now</button>
+        <button class="opt on" data-g="decision" onclick="toggleInitials(this)">Not required now</button>
+      </div>
+      <div class="initials-wrap show" id="initials-wrap">
+        <label>Customer initials</label>
+        <input type="text" id="cust-initials" placeholder="TT" maxlength="3">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Nav bar -->
+<div class="nav-bar">
+  <button class="btn-back" id="btn-back" style="display:none" onclick="prevStep()">Back</button>
+  <button class="btn-next" id="btn-next" onclick="nextStep()">Next</button>
+  <button class="btn-save" id="btn-save" style="display:none" onclick="submitJob()">Save Job Card</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let step = 1;
+const STEPS = 5;
+let photos = {};
+
+function getConfig() { try { return JSON.parse(localStorage.getItem('tagro_config')||'{}') } catch { return {} } }
+function getToken() { return localStorage.getItem('dbx_token') || ''; }
+function getSession() { return JSON.parse(sessionStorage.getItem('tagro_session')||'null'); }
+
+function showToast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function logout() {
+  sessionStorage.removeItem('tagro_session');
+  window.location.href = 'login.html';
+}
+
+// Option pills
+document.addEventListener('click', e => {
+  if (!e.target.classList.contains('opt')) return;
+  const g = e.target.dataset.g;
+  if (!g) return;
+  document.querySelectorAll(`[data-g="${g}"]`).forEach(b => b.classList.remove('on'));
+  e.target.classList.add('on');
+});
+
+function sel(g) {
+  const el = document.querySelector(`[data-g="${g}"].on`);
+  return el ? el.textContent.trim() : '';
+}
+
+document.getElementById('machine-model').addEventListener('change', function() {
+  document.getElementById('model-other-field').style.display = this.value === 'other' ? 'block' : 'none';
+});
+
+function capturePhoto(input, slot) {
+  const file = input.files[0];
+  if (!file) return;
+  photos[slot] = file;
+  const slotEl = document.querySelector(`[data-slot="${slot}"]`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    let img = slotEl.querySelector('img');
+    if (!img) { img = document.createElement('img'); slotEl.appendChild(img); }
+    img.src = e.target.result;
+    slotEl.classList.add('done');
+  };
+  reader.readAsDataURL(file);
+}
+
+function toggleAdvisory(show) {
+  document.getElementById('advisory-detail').style.display = show ? 'block' : 'none';
+}
+
+function toggleInitials(btn) {
+  const wrap = document.getElementById('initials-wrap');
+  wrap.classList.toggle('show', btn.textContent.trim() === 'Not required now');
+}
+
+function updateStepUI() {
+  for (let i = 1; i <= STEPS; i++) {
+    document.getElementById(`s${i}`).classList.toggle('active', i === step);
+    const tab = document.getElementById(`tab-${i}`);
+    tab.classList.remove('active','done');
+    if (i === step) tab.classList.add('active');
+    else if (i < step) tab.classList.add('done');
+  }
+  document.getElementById('btn-back').style.display = step > 1 ? 'block' : 'none';
+  document.getElementById('btn-next').style.display = step < STEPS ? 'block' : 'none';
+  document.getElementById('btn-save').style.display = step === STEPS ? 'block' : 'none';
+}
+
+function validate() {
+  if (step === 1) {
+    if (!document.getElementById('cust-name').value.trim()) { showToast('Enter customer name'); return false; }
+    if (!document.getElementById('cust-phone').value.trim()) { showToast('Enter phone number'); return false; }
+  }
+  if (step === 2) {
+    const m = document.getElementById('machine-model').value;
+    if (!m) { showToast('Select machine model'); return false; }
+    if (m === 'other' && !document.getElementById('model-other').value.trim()) { showToast('Enter model name'); return false; }
+  }
+  return true;
+}
+
+function nextStep() {
+  if (!validate()) return;
+  step = Math.min(step + 1, STEPS);
+  updateStepUI();
+  window.scrollTo(0, 0);
+}
+
+function prevStep() {
+  step = Math.max(step - 1, 1);
+  updateStepUI();
+  window.scrollTo(0, 0);
+}
+
+async function submitJob() {
+  const cfg = getConfig();
+  const session = getSession();
+  const token = getToken();
+  const wo = document.getElementById('wo-display').textContent;
+  const modelSel = document.getElementById('machine-model').value;
+  const model = modelSel === 'other' ? document.getElementById('model-other').value.trim() : modelSel;
+
+  const job = {
+    workOrder: wo,
+    branch: cfg.branch,
+    branchName: cfg.branchName,
+    date: new Date().toISOString(),
+    acceptedBy: document.getElementById('accepted-by').value,
+    loggedBy: session?.name || '',
+    status: 'Completed',
+    customer: {
+      name: document.getElementById('cust-name').value.trim(),
+      phone: document.getElementById('cust-phone').value.trim(),
+      place: document.getElementById('cust-place').value.trim(),
+      address: document.getElementById('cust-address').value.trim(),
+    },
+    machine: { model, serialNo: document.getElementById('serial-no').value.trim(), saleType: sel('sale') },
+    job: {
+      complaint: document.getElementById('complaint').value.trim(),
+      damageRequested: document.getElementById('damage-req').value.trim(),
+      accessories: document.getElementById('accessories').value.trim(),
+      observations: document.getElementById('observations').value.trim(),
+      jobType: sel('jobtype'),
+      repairedBy: document.getElementById('repaired-by').value,
+      repairDate: document.getElementById('repair-date').value,
+      workDone: document.getElementById('work-done').value.trim(),
+    },
+    billing: {
+      invoiceNo: document.getElementById('invoice-no').value.trim(),
+      invoiceAmount: document.getElementById('invoice-amt').value,
+      serviceCharges: document.getElementById('service-charges').value,
+    },
+    delivery: {
+      returnedBy: document.getElementById('returned-by').value,
+      returnDate: document.getElementById('return-date').value,
+      collectedBy: document.getElementById('collected-by').value.trim(),
+      demonstrated: sel('demo'),
+    },
+    advisory: {
+      found: document.getElementById('advisory-detail').style.display !== 'none',
+      text: document.getElementById('advisory-text').value.trim(),
+      customerInformed: sel('informed'),
+      decision: sel('decision'),
+      initials: document.getElementById('cust-initials').value.trim(),
+    },
+    photos: Object.keys(photos),
+    source: 'app',
+    formVersion: '1.0'
+  };
+
+  showToast('Saving...');
+
+  try {
+    if (token) {
+      // Upload photos
+      for (const [slot, file] of Object.entries(photos)) {
+        const ext = file.name.split('.').pop() || 'jpg';
+        const path = `/TAGRO-Service/${cfg.branch}/photos/${wo.replace(/\//g,'-')}_${slot}.${ext}`;
+        await fetch('https://content.dropboxapi.com/2/files/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/octet-stream',
+            'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite' })
+          },
+          body: file
+        });
+      }
+
+      // Save to jobs.json
+      const jpath = `/TAGRO-Service/${cfg.branch}/jobs.json`;
+      let jobs = [];
+      try {
+        const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Dropbox-API-Arg': JSON.stringify({ path: jpath }) }
+        });
+        if (res.ok) jobs = await res.json();
+      } catch {}
+      jobs.push(job);
+      await fetch('https://content.dropboxapi.com/2/files/upload', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/octet-stream',
+          'Dropbox-API-Arg': JSON.stringify({ path: jpath, mode: 'overwrite' })
+        },
+        body: JSON.stringify(jobs, null, 2)
+      });
+    }
+
+    // Local save
+    const local = JSON.parse(localStorage.getItem('tagro_jobs')||'[]');
+    local.push(job);
+    localStorage.setItem('tagro_jobs', JSON.stringify(local));
+
+    showToast('Saved');
+    setTimeout(() => location.reload(), 1200);
+  } catch (e) {
+    showToast('Error — try again');
+  }
+}
+
+function genWO(branch) {
+  const n = new Date();
+  const yr = n.getFullYear().toString().slice(-2);
+  const mo = String(n.getMonth()+1).padStart(2,'0');
+  const rnd = String(Math.floor(Math.random()*900)+100);
+  return `${branch}/${yr}${mo}/${rnd}`;
+}
+
+function init() {
+  const session = getSession();
+  const cfg = getConfig();
+
+  if (!session || !cfg.branch) { window.location.href = 'login.html'; return; }
+
+  document.getElementById('h-branch').textContent = cfg.branch;
+  document.getElementById('h-user').textContent = session.name + ' ✕';
+
+  const wo = genWO(cfg.branch);
+  document.getElementById('wo-display').textContent = wo;
+  document.getElementById('h-wo').textContent = wo;
+  document.getElementById('date-display').textContent =
+    new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('repair-date').value = today;
+  document.getElementById('return-date').value = today;
+
+  // Populate staff dropdowns
+  const staff = cfg.staff || [];
+  ['accepted-by','repaired-by','returned-by'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">Select</option>';
+    staff.forEach(n => { const o = document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+    // Pre-select logged in user for accepted-by
+    if (id === 'accepted-by') sel.value = session.name;
+  });
+
+  // Charge chips
+  const chips = document.getElementById('charge-chips');
+  (cfg.charges || []).forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = `${ch.name} ₹${ch.amount}`;
+    btn.onclick = () => { document.getElementById('service-charges').value = ch.amount; showToast(`₹${ch.amount} set`); };
+    chips.appendChild(btn);
+  });
+
+  updateStepUI();
+}
+
+init();
+</script>
+</body>
+</html>
