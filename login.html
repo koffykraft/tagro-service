@@ -3,133 +3,232 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TAGRO Service — Login</title>
+<title>TAGRO Service</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --black: #111111;
     --white: #ffffff;
     --orange: #E85C0D;
-    --gray-1: #f5f5f5;
     --gray-2: #e0e0e0;
     --gray-3: #999999;
-    --red: #c0392b;
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   body {
     font-family: var(--font);
-    background: var(--black);
+    background: var(--white);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: 40px 24px;
   }
-  .logo-wrap { margin-bottom: 32px; text-align: center; }
-  .logo-wrap img { height: 32px; }
-  .branch-tag {
-    display: inline-block;
-    background: var(--orange);
-    color: var(--white);
+
+  .logo { margin-bottom: 6px; }
+  .logo img { height: 28px; }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-3);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  h2 {
     font-size: 11px;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-    margin-top: 10px;
+    font-weight: 500;
+    color: #cccccc;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    text-align: center;
   }
-  .card {
-    background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    border-radius: 14px;
-    padding: 24px;
+
+  .form {
     width: 100%;
-    max-width: 320px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
-  .card h2 { font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 6px; }
-  .card p { font-size: 13px; color: var(--gray-3); margin-bottom: 20px; line-height: 1.5; }
-  .step-label { font-size: 11px; color: var(--orange); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-  .field { margin-bottom: 14px; }
-  .field label { display: block; font-size: 11px; font-weight: 600; color: var(--gray-3); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 6px; }
-  .field select {
-    width: 100%; padding: 12px 14px;
-    border: 1px solid #333; border-radius: 8px;
-    font-size: 15px; font-family: var(--font);
-    background: #222; color: var(--white);
+
+  select, input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid var(--gray-2);
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: var(--font);
+    background: var(--white);
+    color: var(--black);
     -webkit-appearance: none;
   }
-  .field select:focus { outline: none; border-color: var(--orange); }
-  .pin-display {
-    display: flex; justify-content: center; gap: 14px; margin: 20px 0;
+
+  select:focus, input:focus {
+    outline: none;
+    border-color: var(--orange);
   }
-  .pin-dot {
-    width: 14px; height: 14px; border-radius: 50%;
-    border: 2px solid #444; transition: all 0.15s;
+
+  input[type=password] {
+    letter-spacing: 6px;
+    font-size: 18px;
+    text-align: center;
   }
-  .pin-dot.filled { background: var(--orange); border-color: var(--orange); }
-  .keypad {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;
+
+  input[type=password]::placeholder {
+    letter-spacing: 1px;
+    font-size: 13px;
+    color: #ccc;
   }
-  .key {
-    padding: 16px; border: 1px solid #333; border-radius: 10px;
-    font-size: 20px; font-weight: 600; background: #222; color: var(--white);
-    cursor: pointer; text-align: center; user-select: none;
-    -webkit-tap-highlight-color: transparent;
+
+  .btn-enter {
+    width: 100%;
+    padding: 14px;
+    background: var(--black);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 4px;
   }
-  .key:active { background: #333; }
-  .key.del { font-size: 16px; color: var(--gray-3); }
-  .key.empty { border: none; background: none; cursor: default; }
-  .error-msg { color: #ff6b6b; font-size: 13px; text-align: center; margin-bottom: 10px; min-height: 18px; }
-  .btn-link { width: 100%; padding: 10px; background: none; color: var(--gray-3); border: none; font-size: 13px; cursor: pointer; text-align: center; }
+
+  .btn-enter:active { opacity: 0.8; }
+
+  .error-msg {
+    color: #e74c3c;
+    font-size: 12px;
+    text-align: center;
+    min-height: 16px;
+  }
+
+  .forgot {
+    font-size: 11px;
+    color: var(--gray-3);
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  /* First time create PIN */
   .screen { display: none; }
-  .screen.active { display: block; }
-  .no-setup { text-align: center; padding: 20px; color: var(--gray-3); }
-  .no-setup a { color: var(--orange); text-decoration: none; font-weight: 600; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; width: 100%; }
+
+  .create-label {
+    font-size: 11px;
+    color: var(--orange);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .create-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .create-sub {
+    font-size: 13px;
+    color: var(--gray-3);
+    margin-bottom: 32px;
+    text-align: center;
+  }
+
+  .pin-dots {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 32px;
+  }
+
+  .dot {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--gray-2);
+    transition: all 0.15s;
+  }
+
+  .dot.filled { background: var(--orange); border-color: var(--orange); }
+
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+    max-width: 280px;
+    margin-bottom: 14px;
+  }
+
+  .key {
+    padding: 18px;
+    border: 1px solid var(--gray-2);
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: 500;
+    background: var(--white);
+    color: var(--black);
+    cursor: pointer;
+    text-align: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .key:active { background: #f5f5f5; }
+  .key.del { font-size: 15px; color: var(--gray-3); }
+  .key.empty { border: none; background: none; }
 </style>
 </head>
 <body>
 
-<div class="logo-wrap">
-  <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO"><br>
-  <span class="branch-tag" id="branch-display">Service</span>
-</div>
+<!-- LOGIN SCREEN -->
+<div class="screen active" id="screen-login">
+  <div class="logo">
+    <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO">
+  </div>
+  <h1>Thumpassery Agro</h1>
+  <h2>Service Records</h2>
 
-<!-- LOGIN -->
-<div class="card screen active" id="screen-login">
-  <h2>Sign in</h2>
-  <p>Select your name and enter your PIN.</p>
-  <div class="field">
-    <label>Your name</label>
-    <select id="staff-select" onchange="resetLoginPIN()">
+  <div class="form">
+    <select id="staff-select">
       <option value="">Select your name</option>
     </select>
+
+    <input type="password" id="pin-input" placeholder="PIN" maxlength="4"
+           oninput="onPINType()" onkeydown="if(event.key==='Enter') tryLogin()">
+
+    <div class="error-msg" id="login-error"></div>
+
+    <button class="btn-enter" onclick="tryLogin()">Enter</button>
+
+    <div class="forgot">Forgot PIN? Contact T M Thomas.</div>
   </div>
-  <div class="pin-display">
-    <div class="pin-dot" id="d0"></div>
-    <div class="pin-dot" id="d1"></div>
-    <div class="pin-dot" id="d2"></div>
-    <div class="pin-dot" id="d3"></div>
-  </div>
-  <div class="keypad">
-    <div class="key" onclick="lk('1')">1</div><div class="key" onclick="lk('2')">2</div><div class="key" onclick="lk('3')">3</div>
-    <div class="key" onclick="lk('4')">4</div><div class="key" onclick="lk('5')">5</div><div class="key" onclick="lk('6')">6</div>
-    <div class="key" onclick="lk('7')">7</div><div class="key" onclick="lk('8')">8</div><div class="key" onclick="lk('9')">9</div>
-    <div class="key empty"></div><div class="key" onclick="lk('0')">0</div><div class="key del" onclick="ld()">&#9003;</div>
-  </div>
-  <div class="error-msg" id="login-error"></div>
-  <button class="btn-link" onclick="showScreen('screen-forgot')">Forgot PIN? Contact your branch manager.</button>
 </div>
 
-<!-- CREATE PIN (first time) -->
-<div class="card screen" id="screen-create">
-  <div class="step-label">First time</div>
-  <h2>Create your PIN</h2>
-  <p>Choose a 4-digit PIN you will remember.</p>
-  <div class="pin-display">
-    <div class="pin-dot" id="c0"></div><div class="pin-dot" id="c1"></div>
-    <div class="pin-dot" id="c2"></div><div class="pin-dot" id="c3"></div>
+<!-- CREATE PIN SCREEN -->
+<div class="screen" id="screen-create">
+  <div class="logo" style="margin-bottom:32px;">
+    <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO">
   </div>
+  <div class="create-label">First time</div>
+  <div class="create-title">Create your PIN</div>
+  <div class="create-sub">Choose 4 digits you will remember.</div>
+
+  <div class="pin-dots">
+    <div class="dot" id="c0"></div><div class="dot" id="c1"></div>
+    <div class="dot" id="c2"></div><div class="dot" id="c3"></div>
+  </div>
+
   <div class="keypad">
     <div class="key" onclick="ck('1')">1</div><div class="key" onclick="ck('2')">2</div><div class="key" onclick="ck('3')">3</div>
     <div class="key" onclick="ck('4')">4</div><div class="key" onclick="ck('5')">5</div><div class="key" onclick="ck('6')">6</div>
@@ -139,15 +238,20 @@
   <div class="error-msg" id="create-error"></div>
 </div>
 
-<!-- CONFIRM PIN -->
-<div class="card screen" id="screen-confirm">
-  <div class="step-label">Confirm PIN</div>
-  <h2>Enter PIN again</h2>
-  <p>Re-enter to confirm.</p>
-  <div class="pin-display">
-    <div class="pin-dot" id="cf0"></div><div class="pin-dot" id="cf1"></div>
-    <div class="pin-dot" id="cf2"></div><div class="pin-dot" id="cf3"></div>
+<!-- CONFIRM PIN SCREEN -->
+<div class="screen" id="screen-confirm">
+  <div class="logo" style="margin-bottom:32px;">
+    <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO">
   </div>
+  <div class="create-label">Confirm</div>
+  <div class="create-title">Enter PIN again</div>
+  <div class="create-sub">Make sure it matches.</div>
+
+  <div class="pin-dots">
+    <div class="dot" id="cf0"></div><div class="dot" id="cf1"></div>
+    <div class="dot" id="cf2"></div><div class="dot" id="cf3"></div>
+  </div>
+
   <div class="keypad">
     <div class="key" onclick="cfk('1')">1</div><div class="key" onclick="cfk('2')">2</div><div class="key" onclick="cfk('3')">3</div>
     <div class="key" onclick="cfk('4')">4</div><div class="key" onclick="cfk('5')">5</div><div class="key" onclick="cfk('6')">6</div>
@@ -155,19 +259,9 @@
     <div class="key empty"></div><div class="key" onclick="cfk('0')">0</div><div class="key del" onclick="cfd()">&#9003;</div>
   </div>
   <div class="error-msg" id="confirm-error"></div>
-  <button class="btn-link" onclick="showScreen('screen-login')">Back</button>
-</div>
-
-<!-- FORGOT — just info -->
-<div class="card screen" id="screen-forgot">
-  <h2>Forgot PIN</h2>
-  <p>Contact your branch manager to reset your PIN.<br><br>They will open the Setup page and reset it for you. You can then create a new PIN on your next login.</p>
-  <button class="btn-link" onclick="showScreen('screen-login')">Back to login</button>
 </div>
 
 <script>
-let lpin = '', cpin = '', cfpin = '';
-
 const BRANCH_STAFF = {
   KVR: ['Rajeev','Anandu','Thankachan'],
   PKM: ['Anoop P G'],
@@ -176,12 +270,14 @@ const BRANCH_STAFF = {
   NDD: [], OYR: [], SDM: []
 };
 
-function getConfig() { try { return JSON.parse(localStorage.getItem('tagro_config')||'{}')} catch{return{}} }
-function getUsers() { try { return JSON.parse(localStorage.getItem('tagro_users')||'{}')} catch{return{}} }
+let cpin = '', cfpin = '';
+
+function getConfig() { try { return JSON.parse(localStorage.getItem('tagro_config')||'{}') } catch { return {} } }
+function getUsers() { try { return JSON.parse(localStorage.getItem('tagro_users')||'{}') } catch { return {} } }
 function saveUsers(u) { localStorage.setItem('tagro_users', JSON.stringify(u)); }
-function ukey(branch, name) { return branch+'_'+name.replace(/\s+/g,'_'); }
+function ukey(branch, name) { return branch + '_' + name.replace(/\s+/g,'_'); }
 function hash(pin) {
-  let h=0,s=pin+'tagro_salt_2024';
+  let h=0, s=pin+'tagro_salt_2024';
   for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}
   return h.toString();
 }
@@ -192,34 +288,42 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function resetLoginPIN() { lpin=''; dots('d',lpin); document.getElementById('login-error').textContent=''; }
 
-// Login keypad
-function lk(k) {
-  if(lpin.length>=4) return;
-  lpin+=k; dots('d',lpin);
-  if(lpin.length===4) setTimeout(tryLogin,150);
+function onPINType() {
+  document.getElementById('login-error').textContent = '';
 }
-function ld() { lpin=lpin.slice(0,-1); dots('d',lpin); document.getElementById('login-error').textContent=''; }
 
 function tryLogin() {
-  const cfg=getConfig();
-  const name=document.getElementById('staff-select').value;
-  if(!name) { document.getElementById('login-error').textContent='Select your name first'; lpin=''; dots('d',lpin); return; }
-  const key=ukey(cfg.branch,name);
-  const users=getUsers();
-  if(!users[key]) { showScreen('screen-create'); cpin=''; dots('c',cpin); return; }
-  if(users[key].pin===hash(lpin)) {
-    sessionStorage.setItem('tagro_session', JSON.stringify({name, branch:cfg.branch, loggedInAt:Date.now()}));
-    const p=new URLSearchParams(window.location.search);
-    window.location.href=p.get('redirect')||'index.html';
+  const cfg = getConfig();
+  const name = document.getElementById('staff-select').value;
+  const pin = document.getElementById('pin-input').value;
+  const err = document.getElementById('login-error');
+
+  if (!name) { err.textContent = 'Select your name'; return; }
+  if (!pin) { err.textContent = 'Enter your PIN'; return; }
+
+  const key = ukey(cfg.branch, name);
+  const users = getUsers();
+
+  if (!users[key]) {
+    showScreen('screen-create');
+    cpin = ''; dots('c', cpin);
+    return;
+  }
+
+  if (users[key].pin === hash(pin)) {
+    sessionStorage.setItem('tagro_session', JSON.stringify({
+      name, branch: cfg.branch, loggedInAt: Date.now()
+    }));
+    const p = new URLSearchParams(window.location.search);
+    window.location.href = p.get('redirect') || 'jobcard.html';
   } else {
-    document.getElementById('login-error').textContent='Wrong PIN. Try again.';
-    lpin=''; dots('d',lpin);
+    err.textContent = 'Wrong PIN.';
+    document.getElementById('pin-input').value = '';
   }
 }
 
-// Create PIN keypad
+// Create PIN
 function ck(k) {
   if(cpin.length>=4) return;
   cpin+=k; dots('c',cpin);
@@ -227,7 +331,7 @@ function ck(k) {
 }
 function cd() { cpin=cpin.slice(0,-1); dots('c',cpin); }
 
-// Confirm PIN keypad
+// Confirm PIN
 function cfk(k) {
   if(cfpin.length>=4) return;
   cfpin+=k; dots('cf',cfpin);
@@ -237,28 +341,37 @@ function cfd() { cfpin=cfpin.slice(0,-1); dots('cf',cfpin); }
 
 function savePIN() {
   if(cpin!==cfpin) {
-    document.getElementById('confirm-error').textContent='PINs do not match. Try again.';
+    document.getElementById('confirm-error').textContent = 'PINs do not match. Try again.';
     cfpin=''; dots('cf',cfpin);
     setTimeout(()=>{ cpin=''; showScreen('screen-create'); dots('c',cpin); },900);
     return;
   }
-  const cfg=getConfig();
-  const name=document.getElementById('staff-select').value;
-  const users=getUsers();
-  users[ukey(cfg.branch,name)]={pin:hash(cpin), name, branch:cfg.branch};
+  const cfg = getConfig();
+  const name = document.getElementById('staff-select').value;
+  const users = getUsers();
+  users[ukey(cfg.branch,name)] = { pin: hash(cpin), name, branch: cfg.branch };
   saveUsers(users);
-  sessionStorage.setItem('tagro_session', JSON.stringify({name, branch:cfg.branch, loggedInAt:Date.now()}));
-  const p=new URLSearchParams(window.location.search);
-  window.location.href=p.get('redirect')||'index.html';
+  sessionStorage.setItem('tagro_session', JSON.stringify({
+    name, branch: cfg.branch, loggedInAt: Date.now()
+  }));
+  const p = new URLSearchParams(window.location.search);
+  window.location.href = p.get('redirect') || 'jobcard.html';
 }
 
 function init() {
-  const cfg=getConfig();
-  if(!cfg.branch) { window.location.href='config.html'; return; }
-  document.getElementById('branch-display').textContent=cfg.branch;
-  const staff=BRANCH_STAFF[cfg.branch]||[];
-  const sel=document.getElementById('staff-select');
-  staff.forEach(n=>{ const o=document.createElement('option'); o.value=n; o.textContent=n; sel.appendChild(o); });
+  const cfg = getConfig();
+  if (!cfg.branch) { window.location.href = 'config.html'; return; }
+  const staff = BRANCH_STAFF[cfg.branch] || [];
+  const sel = document.getElementById('staff-select');
+  staff.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n; o.textContent = n; sel.appendChild(o);
+  });
+  // If already logged in, skip login
+  const session = JSON.parse(sessionStorage.getItem('tagro_session')||'null');
+  if (session && session.branch === cfg.branch) {
+    window.location.href = 'jobcard.html';
+  }
 }
 init();
 </script>
