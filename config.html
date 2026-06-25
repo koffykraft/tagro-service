@@ -409,6 +409,25 @@
 </div>
 
 <!-- Save -->
+
+<!-- PIN Reset -->
+<div class="section">
+  <div class="section-header">
+    <h2>Reset Staff PIN</h2>
+    <small>Manager only</small>
+  </div>
+  <p class="info-text">If a staff member forgets their PIN, select their name and reset it. They will create a new PIN on next login.</p>
+  <div class="field">
+    <label>Staff Member</label>
+    <select id="reset-staff-select">
+      <option value="">Select staff member</option>
+    </select>
+  </div>
+  <div class="field">
+    <button class="btn-test" onclick="resetStaffPIN()" style="color:#c0392b;border-color:#c0392b;">Reset PIN</button>
+  </div>
+</div>
+
 <div class="save-bar">
   <button class="btn-save" onclick="saveConfig()">Save Configuration</button>
 </div>
@@ -585,6 +604,18 @@ function saveConfig() {
 }
 
 // Load saved values
+
+function resetStaffPIN() {
+  const name = document.getElementById('reset-staff-select').value;
+  if (!name) { showToast('Select a staff member'); return; }
+  const cfg = getConfig();
+  const key = cfg.branch + '_' + name.replace(/\s+/g, '_');
+  const users = JSON.parse(localStorage.getItem('tagro_users') || '{}');
+  delete users[key];
+  localStorage.setItem('tagro_users', JSON.stringify(users));
+  showToast(name + ' PIN reset. They can create a new one on next login.');
+}
+
 function loadSaved() {
   const token = getToken();
   if (token) {
@@ -599,6 +630,23 @@ function loadSaved() {
 }
 
 loadSaved();
+// Populate reset staff dropdown
+(function() {
+  const cfg = getConfig();
+  const BRANCH_STAFF = {
+    KVR: ["Rajeev","Anandu","Thankachan"],
+    PKM: ["Anoop P G"],
+    MDM: ["John Victor"],
+    SKT: ["Mahalakshmi","Jothi"],
+    NDD: [], OYR: [], SDM: []
+  };
+  const sel = document.getElementById("reset-staff-select");
+  const branch = cfg.branch || "";
+  (BRANCH_STAFF[branch] || []).forEach(n => {
+    const o = document.createElement("option");
+    o.value = n; o.textContent = n; sel.appendChild(o);
+  });
+})();
 </script>
 </body>
 </html>
