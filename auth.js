@@ -72,20 +72,6 @@ function saveUsers(users) {
 function getUserKey(branch, name) {
   return `${branch}_${name.replace(/\s+/g, '_')}`;
 }
-
-async function sendOTP(phone, otp, fast2smsKey) {
-  const msg = `TAGRO Service PIN Reset OTP: ${otp}. Valid for 10 minutes. Do not share.`;
-  try {
-    await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=${fast2smsKey}&route=q&message=${encodeURIComponent(msg)}&language=english&flash=0&numbers=${phone}`, {
-      method: 'GET',
-    });
-  } catch (e) {
-    console.error('SMS failed:', e);
-  }
-}
-
-function generateOTP() {
-  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 // Check if user is logged in, redirect to login if not

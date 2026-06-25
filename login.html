@@ -360,7 +360,16 @@ function savePIN() {
 
 function init() {
   const cfg = getConfig();
-  if (!cfg.branch) { window.location.href = 'config.html'; return; }
+  if (!cfg.branch) {
+    document.querySelector('.screen.active').innerHTML = `
+      <div class="logo"><img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO"></div>
+      <h1>Thumpassery Agro</h1>
+      <h2>Service Records</h2>
+      <div style="text-align:center;padding:20px;color:#999;font-size:13px;line-height:1.8;">
+        This device is not set up yet.<br>Contact T M Thomas.
+      </div>`;
+    return;
+  }
   const staff = BRANCH_STAFF[cfg.branch] || [];
   const sel = document.getElementById('staff-select');
   staff.forEach(n => {
