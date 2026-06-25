@@ -28,8 +28,9 @@
   }
 
   header {
-    background: var(--black);
-    padding: 16px 20px;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    padding: 12px 20px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -38,7 +39,7 @@
     z-index: 100;
   }
 
-  header .logo { font-size: 18px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; }
+  header .logo { font-size: 18px; font-weight: 800; color: var(--black); letter-spacing: -0.5px; }
   header .logo span { color: var(--orange); }
   header .branch-tag {
     background: var(--orange);
@@ -502,6 +503,8 @@
   <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO" style="height:28px;">
   <div class="branch-tag" id="header-branch">—</div>
   <div class="wo-display" id="header-wo"></div>
+  <span id="user-tag" onclick="logout()" style="font-size:11px;color:#E85C0D;font-weight:700;cursor:pointer;margin-left:8px;"></span>
+  <div id="user-tag" style="font-size:11px;color:#E85C0D;font-weight:700;cursor:pointer;" onclick="logout()"></div>
 </header>
 
 <nav>
@@ -1102,7 +1105,21 @@ async function submitJob() {
 }
 
 // Init
+function logout() {
+  sessionStorage.removeItem("tagro_session");
+  window.location.href = "login.html";
+}
+
+function logout() {
+  sessionStorage.removeItem('tagro_session');
+  window.location.href = 'login.html';
+}
+
 function init() {
+  const session = JSON.parse(sessionStorage.getItem('tagro_session') || 'null');
+  if (!session) { window.location.href = 'login.html?redirect=index.html'; return; }
+  document.getElementById('user-tag').textContent = session.name + ' ✕';
+
   const cfg = getConfig();
   if (!cfg.branch) {
     document.getElementById('setup-prompt').style.display = 'block';
@@ -1133,5 +1150,7 @@ function init() {
 
 init();
 </script>
+<script src="auth.js"></script>
+<script src="auth.js"></script>
 </body>
 </html>

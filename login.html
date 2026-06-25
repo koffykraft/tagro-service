@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAGRO Service — Login</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #111111;
+    --white: #ffffff;
+    --orange: #E85C0D;
+    --gray-1: #f5f5f5;
+    --gray-2: #e0e0e0;
+    --gray-3: #999999;
+    --green: #2d7a3a;
+    --red: #c0392b;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: var(--black);
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .logo-wrap {
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .logo-wrap img { height: 36px; }
+  .logo-wrap .branch-tag {
+    display: inline-block;
+    background: var(--orange);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    margin-top: 10px;
+  }
+  .card {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 14px;
+    padding: 24px;
+    width: 100%;
+    max-width: 340px;
+  }
+  .card h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .card p {
+    font-size: 13px;
+    color: var(--gray-3);
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+  }
+  .field select, .field input {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: var(--font);
+    background: #222;
+    color: var(--white);
+    -webkit-appearance: none;
+  }
+  .field select:focus, .field input:focus {
+    outline: none;
+    border-color: var(--orange);
+  }
+  /* PIN dots */
+  .pin-display {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    border: 2px solid #444;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled {
+    background: var(--orange);
+    border-color: var(--orange);
+  }
+  /* Keypad */
+  .keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .key {
+    padding: 16px;
+    border: 1px solid #333;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: 600;
+    background: #222;
+    color: var(--white);
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .key:active { background: #333; }
+  .key.del { font-size: 16px; color: var(--gray-3); }
+  .key.empty { border: none; background: none; cursor: default; }
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+  .btn-primary:active { opacity: 0.85; }
+  .btn-link {
+    width: 100%;
+    padding: 10px;
+    background: none;
+    color: var(--gray-3);
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-link:active { color: var(--white); }
+  .error-msg {
+    color: #ff6b6b;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 10px;
+    min-height: 18px;
+  }
+  .success-msg {
+    color: #69db7c;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .otp-sent {
+    background: #1a2e1a;
+    border: 1px solid #2d5a2d;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    color: #69db7c;
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .step-label {
+    font-size: 11px;
+    color: var(--orange);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="logo-wrap">
+  <img src="https://koffykraft.github.io/tagro-site/assets/logos/tagro-logo.png" alt="TAGRO">
+  <br>
+  <span class="branch-tag" id="branch-display">Service</span>
+</div>
+
+<!-- SCREEN 1: Select staff + enter PIN -->
+<div class="card screen active" id="screen-login">
+  <h2>Sign in</h2>
+  <p>Select your name and enter your PIN to continue.</p>
+
+  <div class="field">
+    <label>Your name</label>
+    <select id="staff-select" onchange="onStaffSelect()">
+      <option value="">Select your name</option>
+    </select>
+  </div>
+
+  <div class="pin-display" id="pin-display">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+
+  <div class="keypad" id="login-keypad">
+    <div class="key" onclick="keyPress('1')">1</div>
+    <div class="key" onclick="keyPress('2')">2</div>
+    <div class="key" onclick="keyPress('3')">3</div>
+    <div class="key" onclick="keyPress('4')">4</div>
+    <div class="key" onclick="keyPress('5')">5</div>
+    <div class="key" onclick="keyPress('6')">6</div>
+    <div class="key" onclick="keyPress('7')">7</div>
+    <div class="key" onclick="keyPress('8')">8</div>
+    <div class="key" onclick="keyPress('9')">9</div>
+    <div class="key empty"></div>
+    <div class="key" onclick="keyPress('0')">0</div>
+    <div class="key del" onclick="keyDel()">⌫</div>
+  </div>
+
+  <div class="error-msg" id="login-error"></div>
+  <button class="btn-link" onclick="showScreen('screen-reset-1')">Forgot PIN?</button>
+</div>
+
+<!-- SCREEN 2: First time — create PIN -->
+<div class="card screen" id="screen-create">
+  <div class="step-label">First time setup</div>
+  <h2>Create your PIN</h2>
+  <p>Choose a 4-digit PIN. You will use this every time you log in.</p>
+
+  <div class="pin-display" id="create-pin-display">
+    <div class="pin-dot" id="c0"></div>
+    <div class="pin-dot" id="c1"></div>
+    <div class="pin-dot" id="c2"></div>
+    <div class="pin-dot" id="c3"></div>
+  </div>
+
+  <div class="keypad">
+    <div class="key" onclick="createKeyPress('1')">1</div>
+    <div class="key" onclick="createKeyPress('2')">2</div>
+    <div class="key" onclick="createKeyPress('3')">3</div>
+    <div class="key" onclick="createKeyPress('4')">4</div>
+    <div class="key" onclick="createKeyPress('5')">5</div>
+    <div class="key" onclick="createKeyPress('6')">6</div>
+    <div class="key" onclick="createKeyPress('7')">7</div>
+    <div class="key" onclick="createKeyPress('8')">8</div>
+    <div class="key" onclick="createKeyPress('9')">9</div>
+    <div class="key empty"></div>
+    <div class="key" onclick="createKeyPress('0')">0</div>
+    <div class="key del" onclick="createKeyDel()">⌫</div>
+  </div>
+
+  <div class="error-msg" id="create-error"></div>
+  <button class="btn-link" onclick="showScreen('screen-login')">Back</button>
+</div>
+
+<!-- SCREEN 3: Confirm new PIN -->
+<div class="card screen" id="screen-confirm">
+  <div class="step-label">Confirm PIN</div>
+  <h2>Enter PIN again</h2>
+  <p>Re-enter your PIN to confirm.</p>
+
+  <div class="pin-display" id="confirm-pin-display">
+    <div class="pin-dot" id="cf0"></div>
+    <div class="pin-dot" id="cf1"></div>
+    <div class="pin-dot" id="cf2"></div>
+    <div class="pin-dot" id="cf3"></div>
+  </div>
+
+  <div class="keypad">
+    <div class="key" onclick="confirmKeyPress('1')">1</div>
+    <div class="key" onclick="confirmKeyPress('2')">2</div>
+    <div class="key" onclick="confirmKeyPress('3')">3</div>
+    <div class="key" onclick="confirmKeyPress('4')">4</div>
+    <div class="key" onclick="confirmKeyPress('5')">5</div>
+    <div class="key" onclick="confirmKeyPress('6')">6</div>
+    <div class="key" onclick="confirmKeyPress('7')">7</div>
+    <div class="key" onclick="confirmKeyPress('8')">8</div>
+    <div class="key" onclick="confirmKeyPress('9')">9</div>
+    <div class="key empty"></div>
+    <div class="key" onclick="confirmKeyPress('0')">0</div>
+    <div class="key del" onclick="confirmKeyDel()">⌫</div>
+  </div>
+
+  <div class="error-msg" id="confirm-error"></div>
+</div>
+
+<!-- SCREEN 4: Reset — enter phone -->
+<div class="card screen" id="screen-reset-1">
+  <div class="step-label">PIN Reset</div>
+  <h2>Reset your PIN</h2>
+  <p>An OTP will be sent to your registered phone and the branch manager.</p>
+
+  <div class="field">
+    <label>Your name</label>
+    <select id="reset-staff-select">
+      <option value="">Select your name</option>
+    </select>
+  </div>
+
+  <div class="error-msg" id="reset-error"></div>
+  <button class="btn-primary" onclick="sendResetOTP()">Send OTP</button>
+  <button class="btn-link" onclick="showScreen('screen-login')">Back to login</button>
+</div>
+
+<!-- SCREEN 5: Enter OTP -->
+<div class="card screen" id="screen-reset-2">
+  <div class="step-label">Enter OTP</div>
+  <h2>Check your phone</h2>
+  <div class="otp-sent" id="otp-sent-msg"></div>
+
+  <div class="field">
+    <label>6-digit OTP</label>
+    <input type="number" id="otp-input" placeholder="______" maxlength="6"
+           style="font-size:24px; letter-spacing:6px; text-align:center;">
+  </div>
+
+  <div class="error-msg" id="otp-error"></div>
+  <button class="btn-primary" onclick="verifyOTP()">Verify OTP</button>
+  <button class="btn-link" onclick="showScreen('screen-reset-1')">Resend OTP</button>
+</div>
+
+<!-- SCREEN 6: Set new PIN after reset -->
+<div class="card screen" id="screen-new-pin">
+  <div class="step-label">New PIN</div>
+  <h2>Set new PIN</h2>
+  <p>Choose a new 4-digit PIN.</p>
+
+  <div class="pin-display" id="new-pin-display">
+    <div class="pin-dot" id="n0"></div>
+    <div class="pin-dot" id="n1"></div>
+    <div class="pin-dot" id="n2"></div>
+    <div class="pin-dot" id="n3"></div>
+  </div>
+
+  <div class="keypad">
+    <div class="key" onclick="newPINPress('1')">1</div>
+    <div class="key" onclick="newPINPress('2')">2</div>
+    <div class="key" onclick="newPINPress('3')">3</div>
+    <div class="key" onclick="newPINPress('4')">4</div>
+    <div class="key" onclick="newPINPress('5')">5</div>
+    <div class="key" onclick="newPINPress('6')">6</div>
+    <div class="key" onclick="newPINPress('7')">7</div>
+    <div class="key" onclick="newPINPress('8')">8</div>
+    <div class="key" onclick="newPINPress('9')">9</div>
+    <div class="key empty"></div>
+    <div class="key" onclick="newPINPress('0')">0</div>
+    <div class="key del" onclick="newPINDel()">⌫</div>
+  </div>
+  <div class="error-msg" id="new-pin-error"></div>
+</div>
+
+<script src="auth.js"></script>
+<script>
+let loginPIN = '';
+let createPIN = '';
+let confirmPIN = '';
+let newPIN = '';
+let resetStaffKey = '';
+let currentOTP = '';
+let otpExpiry = 0;
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem('tagro_config') || '{}'); } catch { return {}; }
+}
+
+function hashPIN(pin) {
+  let hash = 0;
+  const str = pin + 'tagro_salt_2024';
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString();
+}
+
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('tagro_users') || '{}'); } catch { return {}; }
+}
+
+function saveUsers(u) { localStorage.setItem('tagro_users', JSON.stringify(u)); }
+
+function getUserKey(branch, name) { return `${branch}_${name.replace(/\s+/g, '_')}`; }
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateDots(prefix, pin, count = 4) {
+  for (let i = 0; i < count; i++) {
+    const d = document.getElementById(`${prefix}${i}`);
+    if (d) d.classList.toggle('filled', i < pin.length);
+  }
+}
+
+// LOGIN
+function keyPress(k) {
+  if (loginPIN.length >= 4) return;
+  loginPIN += k;
+  updateDots('d', loginPIN);
+  if (loginPIN.length === 4) setTimeout(tryLogin, 150);
+}
+
+function keyDel() {
+  loginPIN = loginPIN.slice(0, -1);
+  updateDots('d', loginPIN);
+  document.getElementById('login-error').textContent = '';
+}
+
+function onStaffSelect() {
+  loginPIN = '';
+  updateDots('d', loginPIN);
+  document.getElementById('login-error').textContent = '';
+}
+
+function tryLogin() {
+  const cfg = getConfig();
+  const name = document.getElementById('staff-select').value;
+  if (!name) { document.getElementById('login-error').textContent = 'Select your name first'; loginPIN = ''; updateDots('d', loginPIN); return; }
+
+  const key = getUserKey(cfg.branch, name);
+  const users = getUsers();
+
+  if (!users[key]) {
+    // First time — go to create PIN
+    showScreen('screen-create');
+    createPIN = '';
+    updateDots('c', createPIN);
+    return;
+  }
+
+  if (users[key].pin === hashPIN(loginPIN)) {
+    // Success
+    sessionStorage.setItem('tagro_session', JSON.stringify({
+      name, branch: cfg.branch, loggedInAt: Date.now()
+    }));
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect') || 'index.html';
+    window.location.href = redirect;
+  } else {
+    document.getElementById('login-error').textContent = 'Wrong PIN. Try again.';
+    loginPIN = '';
+    updateDots('d', loginPIN);
+  }
+}
+
+// CREATE PIN
+function createKeyPress(k) {
+  if (createPIN.length >= 4) return;
+  createPIN += k;
+  updateDots('c', createPIN);
+  if (createPIN.length === 4) setTimeout(() => { showScreen('screen-confirm'); confirmPIN = ''; updateDots('cf', confirmPIN); }, 150);
+}
+
+function createKeyDel() {
+  createPIN = createPIN.slice(0, -1);
+  updateDots('c', createPIN);
+}
+
+// CONFIRM PIN
+function confirmKeyPress(k) {
+  if (confirmPIN.length >= 4) return;
+  confirmPIN += k;
+  updateDots('cf', confirmPIN);
+  if (confirmPIN.length === 4) setTimeout(saveNewPIN, 150);
+}
+
+function confirmKeyDel() {
+  confirmPIN = confirmPIN.slice(0, -1);
+  updateDots('cf', confirmPIN);
+}
+
+function saveNewPIN() {
+  if (createPIN !== confirmPIN) {
+    document.getElementById('confirm-error').textContent = 'PINs do not match. Try again.';
+    confirmPIN = '';
+    updateDots('cf', confirmPIN);
+    setTimeout(() => { createPIN = ''; showScreen('screen-create'); updateDots('c', createPIN); }, 1000);
+    return;
+  }
+  const cfg = getConfig();
+  const name = document.getElementById('staff-select').value;
+  const staff = (BRANCH_STAFF[cfg.branch] || []).find(s => s.name === name);
+  const key = getUserKey(cfg.branch, name);
+  const users = getUsers();
+  users[key] = { pin: hashPIN(createPIN), phone: staff?.phone || '', name, branch: cfg.branch };
+  saveUsers(users);
+
+  sessionStorage.setItem('tagro_session', JSON.stringify({
+    name, branch: cfg.branch, loggedInAt: Date.now()
+  }));
+  const params = new URLSearchParams(window.location.search);
+  window.location.href = params.get('redirect') || 'index.html';
+}
+
+// RESET
+async function sendResetOTP() {
+  const cfg = getConfig();
+  const name = document.getElementById('reset-staff-select').value;
+  if (!name) { document.getElementById('reset-error').textContent = 'Select your name'; return; }
+
+  const staff = (BRANCH_STAFF[cfg.branch] || []).find(s => s.name === name);
+  const manager = BRANCH_MANAGERS[cfg.branch];
+  const fast2sms = cfg.fast2smsKey;
+
+  if (!fast2sms) { document.getElementById('reset-error').textContent = 'SMS not configured. Contact manager.'; return; }
+
+  currentOTP = String(Math.floor(100000 + Math.random() * 900000));
+  otpExpiry = Date.now() + 10 * 60 * 1000;
+  resetStaffKey = getUserKey(cfg.branch, name);
+
+  const msg = `TAGRO PIN Reset OTP: ${currentOTP}. Valid 10 mins. Branch: ${cfg.branch}. Staff: ${name}.`;
+
+  // Send to staff, manager, and owner
+  const numbers = [staff?.phone, manager?.phone, OWNER.phone].filter(Boolean).join(',');
+  await fetch(`https://www.fast2sms.com/dev/bulkV2?authorization=${fast2sms}&route=q&message=${encodeURIComponent(msg)}&language=english&flash=0&numbers=${numbers}`);
+
+  document.getElementById('otp-sent-msg').textContent =
+    `OTP sent to your registered phone and ${manager?.name || 'branch manager'}. Valid for 10 minutes.`;
+  showScreen('screen-reset-2');
+}
+
+function verifyOTP() {
+  const entered = document.getElementById('otp-input').value.trim();
+  if (Date.now() > otpExpiry) { document.getElementById('otp-error').textContent = 'OTP expired. Request a new one.'; return; }
+  if (entered !== currentOTP) { document.getElementById('otp-error').textContent = 'Wrong OTP. Try again.'; return; }
+  showScreen('screen-new-pin');
+  newPIN = '';
+  updateDots('n', newPIN);
+}
+
+// NEW PIN after reset
+function newPINPress(k) {
+  if (newPIN.length >= 4) return;
+  newPIN += k;
+  updateDots('n', newPIN);
+  if (newPIN.length === 4) setTimeout(saveResetPIN, 150);
+}
+
+function newPINDel() {
+  newPIN = newPIN.slice(0, -1);
+  updateDots('n', newPIN);
+}
+
+function saveResetPIN() {
+  const users = getUsers();
+  if (users[resetStaffKey]) {
+    users[resetStaffKey].pin = hashPIN(newPIN);
+    saveUsers(users);
+  }
+  const cfg = getConfig();
+  const name = document.getElementById('reset-staff-select').value;
+  sessionStorage.setItem('tagro_session', JSON.stringify({
+    name, branch: cfg.branch, loggedInAt: Date.now()
+  }));
+  const params = new URLSearchParams(window.location.search);
+  window.location.href = params.get('redirect') || 'index.html';
+}
+
+// Init
+function init() {
+  const cfg = getConfig();
+  if (!cfg.branch) { window.location.href = 'config.html'; return; }
+
+  document.getElementById('branch-display').textContent = cfg.branch;
+
+  const staff = BRANCH_STAFF[cfg.branch] || [];
+  ['staff-select', 'reset-staff-select'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">Select your name</option>';
+    staff.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.name;
+      opt.textContent = s.name;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+init();
+</script>
+</body>
+</html>

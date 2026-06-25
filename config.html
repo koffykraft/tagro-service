@@ -28,8 +28,9 @@
   }
 
   header {
-    background: var(--black);
-    padding: 16px 20px;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    padding: 12px 20px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -343,8 +344,13 @@
     <h2>Dropbox Connection</h2>
     <small id="connection-badge">Not connected</small>
   </div>
+  <div class="field">
+    <label>Fast2SMS API Key</label>
+    <input type="password" id="fast2sms-key" placeholder="Your Fast2SMS API key">
+    <div style="font-size:11px;color:#999;margin-top:5px;">Used for PIN reset OTPs. Get from fast2sms.com → Dev API.</div>
+  </div>
   <div class="field token-field">
-    <label>Access Token</label>
+    <label>Dropbox Access Token</label>
     <input type="password" id="dbx-token" placeholder="Paste your Dropbox token here">
     <div class="token-status" id="token-status"></div>
   </div>
@@ -525,6 +531,8 @@ async function testConnection() {
 }
 
 async function saveToDropbox(branch, config) {
+  const savedF2s = localStorage.getItem('fast2sms_key');
+  if (savedF2s) document.getElementById('fast2sms-key').value = savedF2s;
   const token = getToken();
   if (!token) return;
   const path = `/TAGRO-Service/${branch}/config.json`;
@@ -556,6 +564,9 @@ function saveConfig() {
   const chargeAmts = [...document.querySelectorAll('[data-charge-amt]')].map(i => parseInt(i.value) || 0);
   const charges = chargeNames.map((n, i) => ({ name: n, amount: chargeAmts[i] })).filter(c => c.name);
 
+  const fast2smsKey = document.getElementById('fast2sms-key').value.trim();
+  if (fast2smsKey) localStorage.setItem('fast2sms_key', fast2smsKey);
+
   const config = {
     branch,
     branchName: BRANCHES[branch],
@@ -563,6 +574,7 @@ function saveConfig() {
     staff: staffNames,
     charges,
     savedAt: new Date().toISOString(),
+    fast2smsKey: fast2smsKey || localStorage.getItem('fast2sms_key') || '',
     formVersion: '1.0'
   };
 
