@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TAGRO Service — Job Card</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #111111;
+    --white: #ffffff;
+    --orange: #E85C0D;
+    --gray-1: #f5f5f5;
+    --gray-2: #e0e0e0;
+    --gray-3: #999999;
+    --green: #2d7a3a;
+    --red: #c0392b;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--gray-1);
+    color: var(--black);
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+
+  header {
+    background: var(--black);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  header .logo { font-size: 18px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; }
+  header .logo span { color: var(--orange); }
+  header .branch-tag {
+    background: var(--orange);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+  }
+  header .wo-display {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--gray-3);
+    font-family: monospace;
+  }
+
+  nav {
+    display: flex;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    overflow-x: auto;
+  }
+
+  nav a {
+    flex: 1;
+    text-align: center;
+    padding: 12px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+  }
+
+  nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* Progress steps */
+  .steps {
+    display: flex;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-2);
+    overflow-x: auto;
+    padding: 0 16px;
+  }
+
+  .step {
+    flex-shrink: 0;
+    padding: 10px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-3);
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .step.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .step.done { color: var(--green); }
+  .step .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* Sections */
+  .form-section { display: none; }
+  .form-section.active { display: block; }
+
+  .section {
+    background: var(--white);
+    margin: 12px 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--gray-2);
+  }
+
+  .section-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray-2);
+  }
+
+  .section-header h2 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--black);
+  }
+
+  .field {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--gray-1);
+  }
+
+  .field:last-child { border-bottom: none; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+  }
+
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-2);
+    border-radius: 6px;
+    font-size: 15px;
+    font-family: var(--font);
+    background: var(--white);
+    color: var(--black);
+    -webkit-appearance: none;
+  }
+
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--orange);
+  }
+
+  .field textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Radio / check options */
+  .options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .option-btn {
+    padding: 8px 14px;
+    border: 1.5px solid var(--gray-2);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: var(--white);
+    color: var(--black);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .option-btn.selected {
+    border-color: var(--orange);
+    background: var(--orange);
+    color: var(--white);
+  }
+
+  /* Photo grid */
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .photo-slot {
+    aspect-ratio: 1;
+    border: 1.5px dashed var(--gray-2);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    background: var(--gray-1);
+  }
+
+  .photo-slot.captured {
+    border-style: solid;
+    border-color: var(--green);
+  }
+
+  .photo-slot img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .photo-slot .slot-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gray-3);
+    text-align: center;
+    line-height: 1.3;
+    z-index: 1;
+  }
+
+  .photo-slot .slot-icon { font-size: 20px; z-index: 1; }
+
+  .photo-slot.captured .slot-label { display: none; }
+  .photo-slot.captured .slot-icon { display: none; }
+
+  .photo-slot input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0;
+  }
+
+  /* Advisory section */
+  .advisory-box {
+    border: 1.5px solid var(--gray-2);
+    border-radius: 8px;
+    margin: 12px 16px;
+    overflow: hidden;
+  }
+
+  .advisory-trigger {
+    padding: 13px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .advisory-trigger span {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .advisory-content {
+    display: none;
+    padding: 12px 14px;
+    border-top: 1px solid var(--gray-1);
+    background: var(--gray-1);
+  }
+
+  .advisory-content.open { display: block; }
+
+  .advisory-content textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-2);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: var(--font);
+    background: var(--white);
+    min-height: 70px;
+    margin-bottom: 10px;
+  }
+
+  .advisory-content textarea:focus {
+    outline: none;
+    border-color: var(--orange);
+  }
+
+  .advisory-options {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .initials-row {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .initials-row.show { display: flex; }
+
+  .initials-row label {
+    font-size: 12px;
+    color: var(--gray-3);
+    white-space: nowrap;
+  }
+
+  .initials-row input {
+    width: 80px;
+    padding: 8px 10px;
+    border: 1.5px solid var(--orange);
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: var(--font);
+  }
+
+  .initials-row input:focus { outline: none; }
+
+  /* Billing row */
+  .billing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .billing-grid .field { border-right: 1px solid var(--gray-1); }
+  .billing-grid .field:last-child { border-right: none; }
+
+  .rupee-input {
+    position: relative;
+  }
+
+  .rupee-input span {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 15px;
+    color: var(--gray-3);
+    pointer-events: none;
+  }
+
+  .rupee-input input { padding-left: 24px; }
+
+  /* Charge picker */
+  .charge-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .charge-chip {
+    padding: 6px 12px;
+    border: 1px solid var(--gray-2);
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--white);
+    cursor: pointer;
+  }
+
+  .charge-chip:active { background: var(--gray-1); }
+
+  /* Nav buttons */
+  .nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-top: 1px solid var(--gray-2);
+    padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 10px;
+  }
+
+  .btn-next {
+    flex: 1;
+    padding: 14px;
+    background: var(--orange);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .btn-back {
+    padding: 14px 20px;
+    background: none;
+    color: var(--black);
+    border: 1px solid var(--gray-2);
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-submit {
+    flex: 1;
+    padding: 14px;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--black);
+    color: var(--white);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; }
+
+  .wo-box {
+    background: var(--black);
+    color: var(--white);
+    padding: 16px;
+    margin: 12px 16px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .wo-box .wo-number {
+    font-family: monospace;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .wo-box .wo-date {
+    font-size: 12px;
+    color: var(--gray-3);
+  }
+
+  .setup-prompt {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--gray-3);
+  }
+
+  .setup-prompt h2 { font-size: 18px; margin-bottom: 10px; color: var(--black); }
+  .setup-prompt p { font-size: 14px; margin-bottom: 20px; }
+  .setup-prompt a {
+    display: inline-block;
+    background: var(--orange);
+    color: var(--white);
+    padding: 12px 24px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="../assets/logos/tagro-logo.png" alt="TAGRO" style="height:28px;">
+  <div class="branch-tag" id="header-branch">—</div>
+  <div class="wo-display" id="header-wo"></div>
+</header>
+
+<nav>
+  <a href="index.html" class="active">Job Card</a>
+  <a href="tracker.html">Tracker</a>
+  <a href="config.html">Setup</a>
+</nav>
+
+<div id="setup-prompt" class="setup-prompt" style="display:none">
+  <h2>Setup Required</h2>
+  <p>Configure your branch and Dropbox connection before creating job cards.</p>
+  <a href="config.html">Go to Setup</a>
+</div>
+
+<div id="app" style="display:none">
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step active" id="step-tab-1" onclick="goToStep(1)"><div class="dot"></div> Customer</div>
+    <div class="step" id="step-tab-2" onclick="goToStep(2)"><div class="dot"></div> Machine</div>
+    <div class="step" id="step-tab-3" onclick="goToStep(3)"><div class="dot"></div> Job</div>
+    <div class="step" id="step-tab-4" onclick="goToStep(4)"><div class="dot"></div> Completion</div>
+  </div>
+
+  <!-- STEP 1: Customer + Machine intake -->
+  <div class="form-section active" id="step-1">
+
+    <div class="wo-box">
+      <div>
+        <div class="wo-number" id="wo-display">—</div>
+        <div class="wo-date" id="date-display"></div>
+      </div>
+      <div style="text-align:right; font-size:11px; color:#888;">Work Order</div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Machine Accepted by</h2></div>
+      <div class="field">
+        <label>Staff Member</label>
+        <select id="accepted-by"></select>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Customer Details</h2></div>
+      <div class="field">
+        <label>Name</label>
+        <input type="text" id="cust-name" placeholder="Customer name" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="tel" id="cust-phone" placeholder="Mobile number" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Place</label>
+        <input type="text" id="cust-place" placeholder="Village / Town">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Machine Details</h2></div>
+      <div class="field">
+        <label>Brand / Model</label>
+        <select id="machine-model">
+          <option value="">Select model</option>
+          <optgroup label="MS — Chainsaws">
+            <option>MS 180</option>
+            <option>MS 182</option>
+            <option>MS 250</option>
+            <option>MS 383</option>
+            <option>MS 460</option>
+            <option>MS 660</option>
+          </optgroup>
+          <optgroup label="FS — Brushcutters">
+            <option>FS 55</option>
+            <option>FS 120</option>
+            <option>FS 250</option>
+            <option>FS 400</option>
+          </optgroup>
+          <optgroup label="SR — Mist Blowers">
+            <option>SR 420</option>
+            <option>SR 450</option>
+          </optgroup>
+          <optgroup label="BR — Backpack Blower">
+            <option>BR 600</option>
+          </optgroup>
+          <option value="__other__">Other — enter below</option>
+        </select>
+      </div>
+      <div class="field" id="model-other-field" style="display:none">
+        <label>Model (enter)</label>
+        <input type="text" id="model-other" placeholder="e.g. MS 261">
+      </div>
+      <div class="field">
+        <label>Serial Number</label>
+        <input type="text" id="serial-no" placeholder="Serial number" autocomplete="off" autocorrect="off" autocapitalize="characters">
+      </div>
+      <div class="field">
+        <label>Sale Type</label>
+        <div class="options">
+          <button class="option-btn selected" data-group="sale">TAGRO Sale</button>
+          <button class="option-btn" data-group="sale">Other Dealer</button>
+          <button class="option-btn" data-group="sale">Warranty</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Arrival photos -->
+    <div class="section">
+      <div class="section-header"><h2>Arrival Photos</h2></div>
+      <div class="photo-grid">
+        <div class="photo-slot" data-slot="front">
+          <span class="slot-icon">📷</span>
+          <span class="slot-label">Front</span>
+          <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this, 'front')">
+        </div>
+        <div class="photo-slot" data-slot="back">
+          <span class="slot-icon">📷</span>
+          <span class="slot-label">Back</span>
+          <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this, 'back')">
+        </div>
+        <div class="photo-slot" data-slot="left">
+          <span class="slot-icon">📷</span>
+          <span class="slot-label">Left side</span>
+          <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this, 'left')">
+        </div>
+        <div class="photo-slot" data-slot="right">
+          <span class="slot-icon">📷</span>
+          <span class="slot-label">Right side</span>
+          <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this, 'right')">
+        </div>
+        <div class="photo-slot" data-slot="serial">
+          <span class="slot-icon">🔢</span>
+          <span class="slot-label">Serial plate</span>
+          <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this, 'serial')">
+        </div>
+        <div class="photo-slot" data-slot="damage">
+          <span class="slot-icon">⚠️</span>
+          <span class="slot-label">Damage / issue</span>
+          <input type="file" accept="image/*" capture="environment" onchange="capturePhoto(this, 'damage')">
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STEP 2: Job details -->
+  <div class="form-section" id="step-2">
+
+    <div class="section">
+      <div class="section-header"><h2>Customer Request</h2></div>
+      <div class="field">
+        <label>Complaint as stated by customer</label>
+        <textarea id="complaint" placeholder="What the customer says is wrong or what work they are requesting"></textarea>
+      </div>
+      <div class="field">
+        <label>Damage or part replacement requested</label>
+        <textarea id="damage-requested" placeholder="Any specific damage mentioned or parts the customer wants replaced" style="min-height:70px;"></textarea>
+      </div>
+      <div class="field">
+        <label>Accessories received</label>
+        <input type="text" id="accessories" placeholder="e.g. Guide bar, chain — or leave blank">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Our Observations</h2></div>
+      <div class="field">
+        <label>What we found</label>
+        <textarea id="observations" placeholder="Technician observations — can differ from customer complaint"></textarea>
+      </div>
+      <div class="field">
+        <label>Job Type</label>
+        <div class="options">
+          <button class="option-btn" data-group="jobtype">Full Service</button>
+          <button class="option-btn" data-group="jobtype">Free Service</button>
+          <button class="option-btn" data-group="jobtype">Repair</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Machine Repaired by</h2></div>
+      <div class="field">
+        <label>Technician</label>
+        <select id="repaired-by"></select>
+      </div>
+      <div class="field">
+        <label>Repair Date</label>
+        <input type="date" id="repair-date">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STEP 3: Work done + billing -->
+  <div class="form-section" id="step-3">
+
+    <div class="section">
+      <div class="section-header"><h2>Work Performed</h2></div>
+      <div class="field">
+        <label>What was done</label>
+        <textarea id="work-done" placeholder="Detail the work carried out"></textarea>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Billing</h2></div>
+      <div class="field">
+        <label>Invoice Number</label>
+        <input type="text" id="invoice-no" placeholder="Invoice No.">
+      </div>
+      <div class="billing-grid">
+        <div class="field">
+          <label>Invoice Amount</label>
+          <div class="rupee-input">
+            <span>₹</span>
+            <input type="number" id="invoice-amt" placeholder="0">
+          </div>
+        </div>
+        <div class="field">
+          <label>Service Charges</label>
+          <div class="rupee-input">
+            <span>₹</span>
+            <input type="number" id="service-charges" placeholder="0">
+          </div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Quick select labour charge</label>
+        <div class="charge-picker" id="charge-picker"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STEP 4: Delivery + advisory -->
+  <div class="form-section" id="step-4">
+
+    <div class="section">
+      <div class="section-header"><h2>Machine Returned by</h2></div>
+      <div class="field">
+        <label>Staff Member</label>
+        <select id="returned-by"></select>
+      </div>
+      <div class="field">
+        <label>Return Date</label>
+        <input type="date" id="return-date">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-header"><h2>Delivery Confirmation</h2></div>
+      <div class="field">
+        <label>Customer / representative name</label>
+        <input type="text" id="collected-by" placeholder="Name of person collecting">
+      </div>
+      <div class="field">
+        <label>Machine demonstrated</label>
+        <div class="options">
+          <button class="option-btn selected" data-group="demo">Demonstrated to customer</button>
+          <button class="option-btn" data-group="demo">Rep collecting, not required</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advisory -->
+    <div class="section">
+      <div class="section-header"><h2>Additional Issues Observed</h2></div>
+      <div class="field">
+        <label>Were additional issues found?</label>
+        <div class="options">
+          <button class="option-btn" data-group="advisory" id="advisory-no" onclick="toggleAdvisory(false)">No</button>
+          <button class="option-btn selected" data-group="advisory" id="advisory-yes" onclick="toggleAdvisory(true)">Yes</button>
+        </div>
+      </div>
+      <div id="advisory-details">
+        <div class="field">
+          <label>What was observed</label>
+          <textarea id="advisory-text" placeholder="Describe additional issues seen"></textarea>
+        </div>
+        <div class="field">
+          <label>Customer informed</label>
+          <div class="options">
+            <button class="option-btn selected" data-group="informed">Yes, informed</button>
+            <button class="option-btn" data-group="informed">Could not inform</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Customer decision</label>
+          <div class="options">
+            <button class="option-btn" data-group="custdecision" onclick="toggleInitials(this)">Do it now</button>
+            <button class="option-btn selected" data-group="custdecision" onclick="toggleInitials(this)">Not required now</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="initials-row show" id="initials-row">
+            <label>Customer initials</label>
+            <input type="text" id="cust-initials" placeholder="TT" maxlength="3">
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Navigation bar -->
+<div class="nav-bar" id="nav-bar" style="display:none">
+  <button class="btn-back" id="btn-back" onclick="prevStep()" style="display:none">Back</button>
+  <button class="btn-next" id="btn-next" onclick="nextStep()">Next</button>
+  <button class="btn-submit" id="btn-submit" onclick="submitJob()" style="display:none">Save Job Card</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentStep = 1;
+let photos = {};
+const STEPS = 4;
+
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem('tagro_config') || '{}'); } catch { return {}; }
+}
+
+function getToken() { return localStorage.getItem('dbx_token') || ''; }
+
+function showToast(msg, duration = 2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function generateWO(branch) {
+  const now = new Date();
+  const yr = now.getFullYear().toString().slice(-2);
+  const mo = String(now.getMonth() + 1).padStart(2, '0');
+  const rand = String(Math.floor(Math.random() * 900) + 100);
+  return `${branch}/${yr}${mo}/${rand}`;
+}
+
+function formatDate(d) {
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function populateStaffDropdowns(staff) {
+  ['accepted-by', 'repaired-by', 'returned-by'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '<option value="">Select staff</option>';
+    staff.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function populateCharges(charges) {
+  const picker = document.getElementById('charge-picker');
+  picker.innerHTML = '';
+  charges.forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'charge-chip';
+    btn.textContent = `${ch.name} — ₹${ch.amount.toLocaleString('en-IN')}`;
+    btn.onclick = () => {
+      document.getElementById('service-charges').value = ch.amount;
+      showToast(`₹${ch.amount.toLocaleString('en-IN')} set`);
+    };
+    picker.appendChild(btn);
+  });
+}
+
+// Option button toggle
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('option-btn')) {
+    const group = e.target.dataset.group;
+    if (!group) return;
+    document.querySelectorAll(`[data-group="${group}"]`).forEach(b => b.classList.remove('selected'));
+    e.target.classList.add('selected');
+  }
+});
+
+document.getElementById('machine-model').addEventListener('change', function() {
+  document.getElementById('model-other-field').style.display =
+    this.value === '__other__' ? 'block' : 'none';
+});
+
+function capturePhoto(input, slot) {
+  const file = input.files[0];
+  if (!file) return;
+  const slotEl = document.querySelector(`[data-slot="${slot}"]`);
+  const reader = new FileReader();
+  reader.onload = e => {
+    photos[slot] = { dataUrl: e.target.result, file };
+    let img = slotEl.querySelector('img');
+    if (!img) { img = document.createElement('img'); slotEl.appendChild(img); }
+    img.src = e.target.result;
+    slotEl.classList.add('captured');
+  };
+  reader.readAsDataURL(file);
+}
+
+function toggleAdvisory(show) {
+  document.getElementById('advisory-details').style.display = show ? 'block' : 'none';
+}
+
+function toggleInitials(btn) {
+  const row = document.getElementById('initials-row');
+  const isNotRequired = btn.textContent.trim() === 'Not required now';
+  row.classList.toggle('show', isNotRequired);
+}
+
+function goToStep(n) {
+  if (n > currentStep) return; // can only go back
+  currentStep = n;
+  updateStepUI();
+}
+
+function nextStep() {
+  if (!validateStep(currentStep)) return;
+  currentStep = Math.min(currentStep + 1, STEPS);
+  updateStepUI();
+  window.scrollTo(0, 0);
+}
+
+function prevStep() {
+  currentStep = Math.max(currentStep - 1, 1);
+  updateStepUI();
+  window.scrollTo(0, 0);
+}
+
+function validateStep(step) {
+  if (step === 1) {
+    if (!document.getElementById('cust-name').value.trim()) {
+      showToast('Enter customer name'); return false;
+    }
+    if (!document.getElementById('cust-phone').value.trim()) {
+      showToast('Enter phone number'); return false;
+    }
+    const model = document.getElementById('machine-model').value;
+    if (!model) { showToast('Select machine model'); return false; }
+    if (model === '__other__' && !document.getElementById('model-other').value.trim()) {
+      showToast('Enter model name'); return false;
+    }
+  }
+  return true;
+}
+
+function updateStepUI() {
+  for (let i = 1; i <= STEPS; i++) {
+    document.getElementById(`step-${i}`).classList.toggle('active', i === currentStep);
+    const tab = document.getElementById(`step-tab-${i}`);
+    tab.classList.remove('active', 'done');
+    if (i === currentStep) tab.classList.add('active');
+    else if (i < currentStep) tab.classList.add('done');
+  }
+  document.getElementById('btn-back').style.display = currentStep > 1 ? 'block' : 'none';
+  document.getElementById('btn-next').style.display = currentStep < STEPS ? 'block' : 'none';
+  document.getElementById('btn-submit').style.display = currentStep === STEPS ? 'block' : 'none';
+}
+
+function getSelectedOption(group) {
+  const el = document.querySelector(`[data-group="${group}"].selected`);
+  return el ? el.textContent.trim() : '';
+}
+
+async function uploadPhoto(token, branch, wo, slot, file) {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `/TAGRO-Service/${branch}/photos/${wo.replace(/\//g, '-')}_${slot}.${ext}`;
+  await fetch('https://content.dropboxapi.com/2/files/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false })
+    },
+    body: file
+  });
+  return path;
+}
+
+async function saveJob(job) {
+  const token = getToken();
+  const branch = job.branch;
+  if (!token) return;
+  const path = `/TAGRO-Service/${branch}/jobs.json`;
+
+  let jobs = [];
+  try {
+    const res = await fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Dropbox-API-Arg': JSON.stringify({ path })
+      }
+    });
+    if (res.ok) jobs = await res.json();
+  } catch {}
+
+  jobs.push(job);
+
+  await fetch('https://content.dropboxapi.com/2/files/upload', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/octet-stream',
+      'Dropbox-API-Arg': JSON.stringify({ path, mode: 'overwrite', autorename: false })
+    },
+    body: JSON.stringify(jobs, null, 2)
+  });
+}
+
+async function submitJob() {
+  const cfg = getConfig();
+  const token = getToken();
+  const wo = document.getElementById('wo-display').textContent;
+  const modelSel = document.getElementById('machine-model').value;
+  const model = modelSel === '__other__'
+    ? document.getElementById('model-other').value.trim()
+    : modelSel;
+
+  const job = {
+    workOrder: wo,
+    branch: cfg.branch,
+    branchName: cfg.branchName,
+    date: new Date().toISOString(),
+    acceptedBy: document.getElementById('accepted-by').value,
+    customer: {
+      name: document.getElementById('cust-name').value.trim(),
+      phone: document.getElementById('cust-phone').value.trim(),
+      place: document.getElementById('cust-place').value.trim(),
+    },
+    machine: {
+      model,
+      serialNo: document.getElementById('serial-no').value.trim(),
+      saleType: getSelectedOption('sale'),
+    },
+    job: {
+      complaint: document.getElementById('complaint').value.trim(),
+      damageRequested: document.getElementById('damage-requested').value.trim(),
+      accessories: document.getElementById('accessories').value.trim(),
+      observations: document.getElementById('observations').value.trim(),
+      jobType: getSelectedOption('jobtype'),
+      repairedBy: document.getElementById('repaired-by').value,
+      repairDate: document.getElementById('repair-date').value,
+      workDone: document.getElementById('work-done').value.trim(),
+    },
+    billing: {
+      invoiceNo: document.getElementById('invoice-no').value.trim(),
+      invoiceAmount: document.getElementById('invoice-amt').value,
+      serviceCharges: document.getElementById('service-charges').value,
+    },
+    delivery: {
+      returnedBy: document.getElementById('returned-by').value,
+      returnDate: document.getElementById('return-date').value,
+      collectedBy: document.getElementById('collected-by').value.trim(),
+      demonstrated: getSelectedOption('demo'),
+    },
+    advisory: {
+      found: document.getElementById('advisory-details').style.display !== 'none',
+      text: document.getElementById('advisory-text').value.trim(),
+      customerInformed: getSelectedOption('informed'),
+      customerDecision: getSelectedOption('custdecision'),
+      initials: document.getElementById('cust-initials').value.trim(),
+    },
+    photos: Object.keys(photos),
+    status: 'Completed',
+    formVersion: '1.0'
+  };
+
+  showToast('Saving...');
+
+  try {
+    // Upload photos first
+    if (token) {
+      for (const [slot, data] of Object.entries(photos)) {
+        await uploadPhoto(token, cfg.branch, wo, slot, data.file);
+      }
+      await saveJob(job);
+      showToast('Saved to Dropbox');
+    } else {
+      showToast('Saved locally — connect Dropbox in Setup');
+    }
+
+    // Save locally too
+    const local = JSON.parse(localStorage.getItem('tagro_jobs') || '[]');
+    local.push(job);
+    localStorage.setItem('tagro_jobs', JSON.stringify(local));
+
+    setTimeout(() => { location.reload(); }, 1500);
+  } catch (e) {
+    showToast('Error saving — try again');
+    console.error(e);
+  }
+}
+
+// Init
+function init() {
+  const cfg = getConfig();
+  if (!cfg.branch) {
+    document.getElementById('setup-prompt').style.display = 'block';
+    document.getElementById('nav-bar').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nav-bar').style.display = 'flex';
+
+  document.getElementById('header-branch').textContent = cfg.branch;
+
+  const wo = generateWO(cfg.branch);
+  document.getElementById('wo-display').textContent = wo;
+  document.getElementById('header-wo').textContent = wo;
+  document.getElementById('date-display').textContent = formatDate(new Date());
+
+  // Set today as default dates
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('repair-date').value = today;
+  document.getElementById('return-date').value = today;
+
+  populateStaffDropdowns(cfg.staff || []);
+  populateCharges(cfg.charges || []);
+
+  updateStepUI();
+}
+
+init();
+</script>
+</body>
+</html>
