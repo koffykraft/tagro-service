@@ -22,3 +22,82 @@ label{display:block;font-size:11px;color:#777;text-transform:uppercase;letter-sp
 .search-results{display:none;margin-top:10px}
 .search-results.show{display:block}
 .empty-help{font-size:13px;color:#777;margin-top:8px;line-height:1.45}
+/* ── V3 NAV OVERRIDE — append to end of app.css ── */
+
+/* Larger, more touch-friendly nav */
+.nav {
+  display: flex;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 50px;
+  z-index: 49;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav a {
+  flex: 1;
+  min-width: 56px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+  padding: 14px 6px 12px;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.nav a.on {
+  color: var(--orange);
+  border-bottom-color: var(--orange);
+}
+
+/* Parts suggest dropdown — more visible */
+.suggest,
+.parts-suggest {
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0,0,0,.10);
+}
+
+.suggest button,
+.parts-suggest button {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: #fff;
+  text-align: left;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  font: inherit;
+  cursor: pointer;
+}
+
+.suggest button:last-child,
+.parts-suggest button:last-child {
+  border-bottom: 0;
+}
+
+.suggest button:active,
+.parts-suggest button:active {
+  background: #fff8f4;
+}
+
+/* Prevent iOS zoom on inputs */
+.field input,
+.field select,
+.field textarea {
+  font-size: 16px !important;
+}
+
+/* Bigger pills */
+.pill {
+  padding: 11px 16px;
+  font-size: 14px;
+}
