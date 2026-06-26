@@ -141,7 +141,9 @@ function initHeader() {
   const dateStr  = now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
 
   document.getElementById('live-date').textContent = dateStr;
-  document.getElementById('live-greeting').textContent = greeting + ', ' + s.name.split(' ')[0];
+  const nameParts = s.name.split(' ');
+  const displayName = nameParts[0].length <= 2 ? s.name : nameParts[0];
+  document.getElementById('live-greeting').textContent = greeting + ', ' + displayName;
   document.getElementById('live-branch').textContent =
     s.role === 'Owner' ? 'All Branches' : (s.branchName || s.branch);
 }

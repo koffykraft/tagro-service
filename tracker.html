@@ -1,1 +1,104 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Jobs</title><link rel="stylesheet" href="app.css"></head><body><div class="wrap"><div class="card"><div class="head">Search Jobs</div><div class="body"><div class="field"><input id="q" placeholder="Name, phone, model, serial, work order" oninput="render()"></div><div class="pillrow"><button class="pill on" onclick="filter='all';sel(this);render()">All</button><button class="pill" onclick="filter='Received';sel(this);render()">Received</button><button class="pill" onclick="filter='Repairing';sel(this);render()">Repairing</button><button class="pill" onclick="filter='Waiting Parts';sel(this);render()">Waiting Parts</button><button class="pill" onclick="filter='Ready';sel(this);render()">Ready</button><button class="pill" onclick="filter='Delivered';sel(this);render()">Delivered</button></div></div></div><div id="list" class="list"></div></div><script src="app.js"></script><script>let s=requireLogin();initShell('jobs');let filter='all';function sel(b){document.querySelectorAll('.pill').forEach(x=>x.classList.remove('on'));b.classList.add('on')}function render(){let query=q.value.toLowerCase();let arr=jobs().filter(j=>(s.role==='Owner'||s.demo||j.branch===s.branch));if(filter!=='all')arr=arr.filter(j=>j.status===filter);if(query)arr=arr.filter(j=>JSON.stringify(j).toLowerCase().includes(query));list.innerHTML=arr.slice().reverse().map(j=>`<div class="item"><div class="title">${j.customer?.name} — ${j.machine?.model} <span class="badge orange">${j.status}</span></div><div class="sub">${j.workOrder} · ${j.customer?.phone||''} · ${j.machine?.serialNo||''}<br>${(j.complaints||[]).map(c=>c.text).join(' / ')}</div><div class="actions" style="margin-top:10px"><a class="btn" href="work.html?id=${j.id}">Open</a><a class="btn" href="tel:${j.customer?.phone||''}">Call</a></div></div>`).join('')||'<div class="card"><div class="body small">No jobs found.</div></div>'}render();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>All Jobs — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+.job-item { background:#fff; border-radius:14px; padding:14px; margin-bottom:10px; }
+.job-model { font-weight:900; font-size:16px; }
+.job-sub   { font-size:13px; color:#777; margin-top:3px; line-height:1.5; }
+.job-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.pill-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.filter-pill { padding:7px 14px; border-radius:99px; border:1px solid #e8e8e8;
+  background:#fff; font-size:12px; font-weight:800; color:#777; cursor:pointer; }
+.filter-pill.on { background:#df6427; border-color:#df6427; color:#fff; }
+</style>
+</head>
+<body>
+<div class="wrap" style="max-width:640px">
+
+  <div class="card">
+    <div class="head">Search Jobs</div>
+    <div class="body">
+      <div class="field" style="margin-bottom:10px">
+        <input id="q" placeholder="Name, phone, model, serial, work order..."
+          oninput="render()" autocorrect="off" spellcheck="false" style="font-size:16px">
+      </div>
+      <div class="pill-row">
+        <div class="filter-pill on" onclick="setFilter('all',this)">All</div>
+        <div class="filter-pill" onclick="setFilter('Received',this)">Received</div>
+        <div class="filter-pill" onclick="setFilter('Repairing',this)">Repairing</div>
+        <div class="filter-pill" onclick="setFilter('Waiting Parts',this)">Waiting Parts</div>
+        <div class="filter-pill" onclick="setFilter('Waiting Approval',this)">Awaiting Approval</div>
+        <div class="filter-pill" onclick="setFilter('Ready',this)">Ready</div>
+        <div class="filter-pill" onclick="setFilter('Delivered',this)">Delivered</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="list"></div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('jobs');
+
+let filter = 'all';
+
+function setFilter(f, el) {
+  filter = f;
+  document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+
+function render() {
+  const q = document.getElementById('q').value.toLowerCase().trim();
+  let arr = jobs().filter(j => s.role === 'Owner' || s.demo || j.branch === s.branch);
+  if (filter !== 'all') arr = arr.filter(j => j.status === filter);
+  if (q) arr = arr.filter(j => JSON.stringify(j).toLowerCase().includes(q));
+  arr = arr.slice().reverse();
+
+  const el = document.getElementById('list');
+  if (!arr.length) {
+    el.innerHTML = '<div class="card"><div class="body small">No jobs found.</div></div>';
+    return;
+  }
+
+  el.innerHTML = arr.map(j => {
+    const statusCls = {
+      'Ready':'green', 'Delivered':'green', 'Repairing':'orange',
+      'Waiting Parts':'amber', 'Waiting Approval':'amber'
+    }[j.status] || '';
+    const age = Math.floor((Date.now() - new Date(j.date).getTime()) / 86400000);
+
+    return `
+    <div class="job-item">
+      <div class="job-model">
+        ${j.machine?.model || '—'} — ${j.customer?.name || '—'}
+        <span class="badge ${statusCls}" style="margin-left:6px">${j.status}</span>
+        ${!j.machine?.serialNo ? '<span class="badge amber" style="margin-left:4px">No Serial</span>' : ''}
+      </div>
+      <div class="job-sub">
+        ${j.workOrder} · ${j.branch || ''} · ${age}d old<br>
+        ${j.customer?.phone || ''} ${j.customer?.place ? '· ' + j.customer.place : ''}
+        ${j.machine?.serialNo ? '<br>' + j.machine.serialNo : ''}
+        ${(j.complaints || []).map(c => c.text).join(' / ') ? '<br>' + (j.complaints||[]).map(c=>c.text).join(' / ') : ''}
+        ${j.assignedTo ? '<br>🔧 ' + j.assignedTo : ''}
+      </div>
+      <div class="job-actions">
+        <a class="btn primary" href="work.html?id=${j.id}" style="font-size:13px;padding:8px 14px">Open Job</a>
+        ${j.customer?.phone ? `<a class="btn" href="tel:${j.customer.phone}" style="font-size:13px;padding:8px 14px">📞 Call</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+render();
+</script>
+</body>
+</html>
