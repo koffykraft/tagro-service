@@ -266,6 +266,7 @@
 </div>
 
 <script src="app.js"></script>
+<script src="parts-search.js"></script>
 <script>
 const s   = requireLogin();
 initShell('jobs');
@@ -428,22 +429,46 @@ function searchPartsLive() {
   const q   = document.getElementById('parts-search').value.trim();
   const sug = document.getElementById('parts-suggest');
 
-  if (q.length < 2) { sug.classList.add('hide'); return; }
+  if (q.length < 2) {
+    sug.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#aaa">Type at least 2 characters to search...</div>';
+    sug.classList.remove('hide');
+    return;
+  }
 
-  // Use parts-search.js if available, else fall back to basic search
-  const results = typeof searchParts === 'function'
-    ? searchParts(q, 8)
-    : parts().filter(p => (p.name + ' ' + p.no).toLowerCase().replace(/\s/g,'').includes(q.toLowerCase().replace(/\s/g,''))).slice(0, 8);
+  // Normalise — strip spaces, dashes, dots for matching
+  function norm(s) { return String(s||'').toLowerCase().replace(/[\s\-\.]/g,''); }
+  const nq = norm(q);
 
-  if (!results.length) { sug.classList.add('hide'); return; }
+  const all = jget('tagro_parts_data', []);
+  const results = all.filter(p => {
+    if (p.active === 'N') return false;
+    return norm(p.name).includes(nq) ||
+           norm(p.no).includes(nq) ||
+           norm(p.stihlName).includes(nq) ||
+           norm(p.alias).includes(nq);
+  }).sort((a,b) => {
+    // Exact part number match first
+    if (norm(a.no).startsWith(nq)) return -1;
+    if (norm(b.no).startsWith(nq)) return 1;
+    if (norm(a.name).startsWith(nq)) return -1;
+    if (norm(b.name).startsWith(nq)) return 1;
+    return 0;
+  }).slice(0, 8);
+
+  if (!results.length) {
+    sug.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#aaa">No parts found for "' + q + '"</div>';
+    sug.classList.remove('hide');
+    return;
+  }
 
   sug.innerHTML = results.map((p, i) => `
     <button onclick="addPartLine(${i})">
       <div class="ps-name">${p.name}</div>
       <div class="ps-detail">
-        <span style="font-family:monospace;font-size:11px">${p.no || '—'}</span>
-        <span>₹${(p.mrp || p.price || 0).toLocaleString('en-IN')}</span>
+        <span style="font-family:monospace;font-size:11px;color:#888">${p.no || '—'}</span>
+        <span style="font-weight:800">₹${Number(p.mrp || p.price || 0).toLocaleString('en-IN')}</span>
         <span style="color:#aaa">${p.modelGroup || ''}</span>
+        <span style="color:#aaa">${p.group || ''}</span>
       </div>
     </button>`
   ).join('');
