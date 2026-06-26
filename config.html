@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Settings — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+.config-section { margin-bottom:6px; }
+.config-section .head { cursor:pointer; display:flex; align-items:center; justify-content:space-between; }
+.config-section .head .arrow { font-size:12px; color:#aaa; transition:.2s; }
+.config-section.open .head .arrow { transform:rotate(90deg); }
+.config-section .body { display:none; }
+.config-section.open .body { display:block; }
+
+.staff-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+.staff-item:last-child { border-bottom:0; }
+.staff-name { flex:1; font-weight:800; font-size:14px; }
+.staff-role { font-size:12px; color:#aaa; }
+.staff-phone { font-size:12px; color:#888; }
+.staff-actions { display:flex; gap:6px; }
+
+.charge-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f0; }
+.charge-item:last-child { border-bottom:0; }
+.charge-name { flex:1; font-weight:700; font-size:14px; }
+.charge-rate { font-size:14px; font-weight:900; color:#df6427; }
+
+.branch-selector { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.branch-opt { border:1.5px solid #e8e8e8; border-radius:12px; padding:12px; text-align:center; cursor:pointer; }
+.branch-opt:hover { border-color:#df6427; }
+.branch-opt.selected { border-color:#df6427; background:#fff8f4; }
+.branch-opt .b-code { font-size:18px; font-weight:900; color:#121212; }
+.branch-opt .b-name { font-size:12px; color:#aaa; margin-top:2px; }
+
+.danger-btn { background:none; border:1.5px solid #ba3327; color:#ba3327; border-radius:10px; padding:10px 16px; font-weight:800; font-size:14px; cursor:pointer; width:100%; margin-bottom:8px; }
+.danger-btn:hover { background:#fdecea; }
+
+.pill-tag { display:inline-flex; align-items:center; gap:4px; background:#f0f0f0; border-radius:99px; padding:5px 12px; margin:3px; font-size:13px; font-weight:700; }
+.pill-tag button { background:none; border:none; cursor:pointer; color:#aaa; font-size:14px; padding:0 0 0 4px; }
+</style>
+</head>
+<body>
+<div class="wrap" style="max-width:600px">
+
+  <!-- ── DEVICE BRANCH ── -->
+  <div class="card config-section open" id="sec-branch">
+    <div class="head" onclick="toggle('sec-branch')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Device Branch</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <p class="small" style="margin-bottom:12px">This device is locked to one branch. Staff from any branch can still log in.</p>
+      <div class="branch-selector" id="branch-selector"></div>
+      <button class="btn primary block" style="margin-top:12px" onclick="saveBranch()">Set Branch</button>
+    </div>
+  </div>
+
+  <!-- ── STAFF MANAGEMENT ── -->
+  <div class="card config-section" id="sec-staff">
+    <div class="head" onclick="toggle('sec-staff')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Staff & Phones</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <p class="small" style="margin-bottom:12px">Phone numbers are needed for SMS PIN delivery. Staff without a phone number cannot receive login codes.</p>
+
+      <div id="staff-list"></div>
+
+      <div style="border-top:1px solid #f0f0f0;padding-top:14px;margin-top:8px">
+        <div style="font-size:12px;font-weight:900;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Add Staff</div>
+        <div class="grid">
+          <div class="field"><label>Name</label><input id="new-staff-name" placeholder="Full name"></div>
+          <div class="field"><label>Phone</label><input id="new-staff-phone" type="tel" placeholder="Mobile"></div>
+        </div>
+        <div class="grid">
+          <div class="field">
+            <label>Branch</label>
+            <select id="new-staff-branch">
+              <option value="">Select branch</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Role</label>
+            <select id="new-staff-role">
+              <option value="Staff">Staff</option>
+              <option value="Manager">Manager</option>
+              <option value="Reception">Reception</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary block" onclick="addStaff()">Add Staff Member</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PIN RESET ── -->
+  <div class="card config-section" id="sec-pin">
+    <div class="head" onclick="toggle('sec-pin')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Reset PIN</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <p class="small" style="margin-bottom:12px">Reset a staff PIN. The staff member will need to re-register via SMS on next login.</p>
+      <div class="field">
+        <label>Staff Member</label>
+        <select id="reset-pin-select">
+          <option value="">Select staff</option>
+        </select>
+      </div>
+      <button class="btn red block" onclick="resetPIN()">Reset PIN</button>
+    </div>
+  </div>
+
+  <!-- ── SERVICE CHARGES ── -->
+  <div class="card config-section" id="sec-charges">
+    <div class="head" onclick="toggle('sec-charges')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Service Charges</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <p class="small" style="margin-bottom:12px">Quick-select charges used when building estimates. For full labour rates, upload the Labour Rates Excel.</p>
+      <div id="charges-list"></div>
+      <div style="border-top:1px solid #f0f0f0;padding-top:14px;margin-top:8px">
+        <div class="grid">
+          <div class="field"><label>Name</label><input id="new-charge-name" placeholder="e.g. Oil seal replacement"></div>
+          <div class="field"><label>Standard Rate (₹)</label><input id="new-charge-std" type="number" placeholder="500"></div>
+        </div>
+        <div class="field"><label>Quote Rate (₹)</label><input id="new-charge-quote" type="number" placeholder="650"></div>
+        <button class="btn primary block" onclick="addCharge()">Add Charge</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CUSTOM MODELS ── -->
+  <div class="card config-section" id="sec-models">
+    <div class="head" onclick="toggle('sec-models')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Custom Models</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <p class="small" style="margin-bottom:12px">Add models not in the standard list. Appear in Receive dropdown on this device.</p>
+      <div id="custom-models-list" style="margin-bottom:10px"></div>
+      <div style="display:flex;gap:8px">
+        <input id="new-model-input" placeholder="e.g. BT 230" autocapitalize="characters"
+          style="flex:1;padding:12px;border:1.5px solid #e8e8e8;border-radius:10px;font:inherit;font-size:15px">
+        <button class="btn primary" onclick="addCustomModel()">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTS & LABOUR UPLOAD ── -->
+  <div class="card config-section" id="sec-data">
+    <div class="head" onclick="toggle('sec-data')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Parts & Labour Data</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <div id="data-status" style="margin-bottom:12px"></div>
+      <a class="btn block" style="text-align:center;margin-bottom:8px" href="parts.html">Manage Parts Master →</a>
+      <p class="small">Parts and labour data is managed from the Parts page. Upload the Excel template there.</p>
+    </div>
+  </div>
+
+  <!-- ── DANGER ZONE ── -->
+  <div class="card config-section" id="sec-danger">
+    <div class="head" onclick="toggle('sec-danger')">
+      <span class="head" style="font-size:12px;font-weight:900;letter-spacing:1.5px;color:#aaa;text-transform:uppercase;padding:0;border:0">Reset Device</span>
+      <span class="arrow">›</span>
+    </div>
+    <div class="body">
+      <p class="small" style="margin-bottom:14px;color:#ba3327">These actions cannot be undone. Jobs saved to Dropbox will not be affected.</p>
+      <button class="danger-btn" onclick="clearJobs()">Clear All Jobs (This Device)</button>
+      <button class="danger-btn" onclick="clearCustomers()">Clear Customer Cache</button>
+      <button class="danger-btn" onclick="clearAll()">Full Device Reset</button>
+    </div>
+  </div>
+
+  <!-- ── APP INFO ── -->
+  <div style="text-align:center;padding:20px;color:#ccc;font-size:12px">
+    TAGRO Service V3 · service.tagro.in<br>
+    Backend: tagro-api.icy-fire-d2ac.workers.dev
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('links');
+
+// Only owner and managers can access config
+// (soft check — not a security boundary)
+
+// ── Branch selector ───────────────────────────────────────
+function initBranch() {
+  const current = jget('tagro_device_branch', '');
+  const sel     = document.getElementById('branch-selector');
+  sel.innerHTML = Object.entries(TAGRO.branches).map(([code, name]) => `
+    <div class="branch-opt ${current === code ? 'selected' : ''}"
+      onclick="selectBranch('${code}',this)">
+      <div class="b-code">${code}</div>
+      <div class="b-name">${name}</div>
+    </div>`
+  ).join('');
+
+  // Populate branch select in add staff
+  const bSel = document.getElementById('new-staff-branch');
+  bSel.innerHTML = '<option value="">Select branch</option>' +
+    Object.entries(TAGRO.branches).map(([c, n]) =>
+      `<option value="${c}" ${c === current ? 'selected' : ''}>${c} — ${n}</option>`
+    ).join('');
+}
+
+let selectedBranch = jget('tagro_device_branch', '');
+
+function selectBranch(code, el) {
+  selectedBranch = code;
+  document.querySelectorAll('.branch-opt').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function saveBranch() {
+  if (!selectedBranch) { toast('Select a branch'); return; }
+  jset('tagro_device_branch', selectedBranch);
+  toast('Branch set to ' + selectedBranch + ' — ' + TAGRO.branches[selectedBranch]);
+}
+
+// ── Staff management ──────────────────────────────────────
+function renderStaffList() {
+  // Merge TAGRO defaults with config additions
+  const configStaff = jget('tagro_staff_list', []);
+  const phones      = jget('tagro_staff_phones', {});
+  const all         = [];
+
+  Object.entries(TAGRO.people).forEach(([branch, data]) => {
+    [{ name: data.manager, role: 'Manager' }, ...data.staff.map(n => ({ name: n, role: 'Staff' }))].forEach(p => {
+      if (p.name && p.name !== 'Manager') {
+        all.push({
+          name:   p.name,
+          role:   p.role,
+          branch: branch,
+          phone:  phones[p.name] || '',
+          source: 'default'
+        });
+      }
+    });
+  });
+
+  configStaff.forEach(cs => {
+    if (!all.find(a => a.name === cs.name)) all.push({ ...cs, source: 'config' });
+    else {
+      const ex = all.find(a => a.name === cs.name);
+      if (cs.phone) ex.phone = cs.phone;
+    }
+  });
+
+  all.sort((a, b) => a.branch.localeCompare(b.branch) || a.name.localeCompare(b.name));
+
+  // Group by branch
+  const byBranch = {};
+  all.forEach(p => { (byBranch[p.branch] = byBranch[p.branch] || []).push(p); });
+
+  document.getElementById('staff-list').innerHTML = Object.entries(byBranch).map(([br, list]) => `
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:900;color:#df6427;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${br} — ${TAGRO.branches[br]||br}</div>
+      ${list.map(p => `
+        <div class="staff-item">
+          <div>
+            <div class="staff-name">${p.name}</div>
+            <div class="staff-role">${p.role}</div>
+          </div>
+          <div style="flex:1">
+            ${p.phone
+              ? `<div class="staff-phone">📱 ${p.phone}</div>`
+              : `<input placeholder="Add phone" onblur="savePhone('${p.name}',this.value)"
+                  style="border:1px solid #e8e8e8;border-radius:8px;padding:6px 10px;font:inherit;font-size:13px;width:130px">`
+            }
+          </div>
+          <div class="staff-actions">
+            ${p.source === 'config' ? `<button class="btn red" style="font-size:12px;padding:6px 10px" onclick="removeStaff('${p.name}')">×</button>` : ''}
+          </div>
+        </div>`
+      ).join('')}
+    </div>`
+  ).join('');
+
+  // Populate PIN reset dropdown
+  const pinSel = document.getElementById('reset-pin-select');
+  pinSel.innerHTML = '<option value="">Select staff</option>' +
+    all.map(p => `<option value="${p.name}">${p.name} (${p.branch})</option>`).join('');
+}
+
+function savePhone(name, phone) {
+  phone = phone.trim();
+  if (!phone) return;
+  const phones = jget('tagro_staff_phones', {});
+  phones[name] = phone;
+  jset('tagro_staff_phones', phones);
+  renderStaffList();
+  toast('Phone saved for ' + name);
+}
+
+function addStaff() {
+  const name   = document.getElementById('new-staff-name').value.trim();
+  const phone  = document.getElementById('new-staff-phone').value.trim();
+  const branch = document.getElementById('new-staff-branch').value;
+  const role   = document.getElementById('new-staff-role').value;
+
+  if (!name) { toast('Name required'); return; }
+  if (!branch) { toast('Select a branch'); return; }
+
+  const list = jget('tagro_staff_list', []);
+  if (list.find(s => s.name === name)) { toast('Already exists'); return; }
+
+  list.push({ name, phone, branch, branchName: TAGRO.branches[branch] || branch, role });
+  jset('tagro_staff_list', list);
+
+  if (phone) {
+    const phones = jget('tagro_staff_phones', {});
+    phones[name] = phone;
+    jset('tagro_staff_phones', phones);
+  }
+
+  document.getElementById('new-staff-name').value  = '';
+  document.getElementById('new-staff-phone').value = '';
+
+  renderStaffList();
+  toast(name + ' added');
+}
+
+function removeStaff(name) {
+  if (!confirm('Remove ' + name + ' from config?')) return;
+  const list = jget('tagro_staff_list', []).filter(s => s.name !== name);
+  jset('tagro_staff_list', list);
+  renderStaffList();
+  toast(name + ' removed');
+}
+
+function resetPIN() {
+  const name = document.getElementById('reset-pin-select').value;
+  if (!name) { toast('Select a staff member'); return; }
+  if (!confirm('Reset PIN for ' + name + '? They will need to re-verify via SMS.')) return;
+  const key = 'pin_' + name.replace(/\s+/g, '_');
+  localStorage.removeItem(key);
+  toast('PIN reset for ' + name);
+}
+
+// ── Charges ───────────────────────────────────────────────
+function renderCharges() {
+  const charges = jget('tagro_custom_charges', TAGRO.charges);
+  document.getElementById('charges-list').innerHTML = charges.map((c, i) => `
+    <div class="charge-item">
+      <div class="charge-name">${c.name}</div>
+      <div>
+        <div class="charge-rate">₹${c.amount || c.standardRate}</div>
+        ${c.quoteRate && c.quoteRate !== c.standardRate
+          ? `<div style="font-size:11px;color:#aaa">Quote ₹${c.quoteRate}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" style="font-size:12px;padding:6px 10px" onclick="editCharge(${i})">Edit</button>
+        <button class="btn red" style="font-size:12px;padding:6px 10px" onclick="removeCharge(${i})">×</button>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function addCharge() {
+  const name  = document.getElementById('new-charge-name').value.trim();
+  const std   = parseFloat(document.getElementById('new-charge-std').value) || 0;
+  const quote = parseFloat(document.getElementById('new-charge-quote').value) || std;
+  if (!name || !std) { toast('Name and standard rate required'); return; }
+
+  const charges = jget('tagro_custom_charges', TAGRO.charges);
+  charges.push({ name, standardRate: std, quoteRate: quote, amount: quote, gst: 18, sac: '998714', active: 'Y', modelGroup: 'ALL' });
+  jset('tagro_custom_charges', charges);
+
+  // Also update TAGRO.charges for this session
+  TAGRO.charges.push({ name, amount: quote });
+
+  document.getElementById('new-charge-name').value  = '';
+  document.getElementById('new-charge-std').value   = '';
+  document.getElementById('new-charge-quote').value = '';
+  renderCharges();
+  toast(name + ' added');
+}
+
+function removeCharge(i) {
+  const charges = jget('tagro_custom_charges', TAGRO.charges);
+  charges.splice(i, 1);
+  jset('tagro_custom_charges', charges);
+  renderCharges();
+}
+
+function editCharge(i) {
+  const charges = jget('tagro_custom_charges', TAGRO.charges);
+  const c = charges[i];
+  const newAmt = prompt('New quote rate for ' + c.name + ':', c.quoteRate || c.amount || c.standardRate);
+  if (newAmt === null) return;
+  c.quoteRate = parseFloat(newAmt) || c.quoteRate;
+  c.amount    = c.quoteRate;
+  jset('tagro_custom_charges', charges);
+  renderCharges();
+  toast('Updated');
+}
+
+// ── Custom models ─────────────────────────────────────────
+function renderCustomModels() {
+  const models = jget('tagro_custom_models', []);
+  document.getElementById('custom-models-list').innerHTML = models.length
+    ? models.map((m, i) => `
+        <span class="pill-tag">${m}
+          <button onclick="removeCustomModel(${i})">×</button>
+        </span>`
+      ).join('')
+    : '<div class="small">No custom models added.</div>';
+}
+
+function addCustomModel() {
+  const val = document.getElementById('new-model-input').value.trim().toUpperCase();
+  if (!val) return;
+  const models = jget('tagro_custom_models', []);
+  if (!models.includes(val)) { models.push(val); jset('tagro_custom_models', models); }
+  document.getElementById('new-model-input').value = '';
+  renderCustomModels();
+  toast(val + ' added');
+}
+
+function removeCustomModel(i) {
+  const models = jget('tagro_custom_models', []);
+  models.splice(i, 1);
+  jset('tagro_custom_models', models);
+  renderCustomModels();
+}
+
+// ── Data status ───────────────────────────────────────────
+function renderDataStatus() {
+  const partsCount  = jget('tagro_parts_data', []).length;
+  const labourCount = jget('tagro_labour_data', []).length;
+  const partsDate   = localStorage.getItem('tagro_parts_updated');
+
+  document.getElementById('data-status').innerHTML = `
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="stat" style="background:#f5f5f5;border-radius:10px;padding:10px 14px;text-align:center">
+        <b style="font-size:20px">${partsCount}</b>
+        <div class="small">Parts loaded</div>
+      </div>
+      <div class="stat" style="background:#f5f5f5;border-radius:10px;padding:10px 14px;text-align:center">
+        <b style="font-size:20px">${labourCount}</b>
+        <div class="small">Labour items</div>
+      </div>
+    </div>
+    ${partsDate ? `<div class="small" style="margin-top:8px">Last updated ${new Date(partsDate).toLocaleDateString('en-IN')}</div>` : ''}`;
+}
+
+// ── Danger zone ───────────────────────────────────────────
+function clearJobs() {
+  if (!confirm('Clear all jobs from this device? Jobs saved to Dropbox will not be affected.')) return;
+  localStorage.removeItem('tagro_jobs');
+  localStorage.removeItem('tagro_po');
+  toast('Jobs cleared');
+}
+
+function clearCustomers() {
+  if (!confirm('Clear customer cache? Will be reloaded from Dropbox on next sync.')) return;
+  localStorage.removeItem('tagro_customers');
+  toast('Customer cache cleared');
+}
+
+function clearAll() {
+  if (!confirm('Full device reset? All local data will be cleared.')) return;
+  if (!confirm('Are you sure? This cannot be undone.')) return;
+  const keep = ['tagro_device_branch'];
+  const toKeep = {};
+  keep.forEach(k => { const v = localStorage.getItem(k); if (v) toKeep[k] = v; });
+  localStorage.clear();
+  Object.entries(toKeep).forEach(([k, v]) => localStorage.setItem(k, v));
+  toast('Device reset. Reloading...');
+  setTimeout(() => location.href = 'login.html', 1500);
+}
+
+// ── Accordion ─────────────────────────────────────────────
+function toggle(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+}
+
+// ── Init ──────────────────────────────────────────────────
+initBranch();
+renderStaffList();
+renderCharges();
+renderCustomModels();
+renderDataStatus();
+</script>
+</body>
+</html>

@@ -226,10 +226,10 @@ function initShell(active) {
   nav.className = 'nav';
   let tabs = [
     ['home.html','Home','home'],
-    ['quick.html','Receive','quick'],
+    ['receive.html','Receive','quick'],
+    ['bench.html','Bench','bench'],
     ['tracker.html','Jobs','jobs'],
     ['purchase.html','PO','po'],
-    ['reports.html','Reports','reports'],
     ['links.html','Links','links']
   ];
   nav.innerHTML = tabs.map(t =>
