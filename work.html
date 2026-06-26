@@ -1,88 +1,835 @@
 <!doctype html>
-<html lang="ml">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Work</title>
-<link rel="stylesheet" href="assets/css/app.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Job — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+/* Job header */
+.job-header { background:#fff; border-bottom:1px solid #eee; padding:14px 16px; }
+.job-wo { font-family:monospace; font-size:12px; color:#aaa; }
+.job-title { font-size:20px; font-weight:900; margin:2px 0; }
+.job-customer { font-size:14px; color:#888; }
+.job-status-row { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+
+/* Section tabs */
+.tab-row { display:flex; background:#f5f5f5; padding:4px; border-radius:12px; margin:14px; gap:4px; }
+.tab-btn { flex:1; padding:8px 4px; border:none; background:transparent; border-radius:9px; font-size:12px; font-weight:800; color:#888; cursor:pointer; }
+.tab-btn.active { background:#fff; color:#df6427; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+
+.tab-panel { display:none; padding:0 14px 14px; }
+.tab-panel.active { display:block; }
+
+/* Timeline */
+.timeline { position:relative; padding-left:20px; }
+.tl-item { position:relative; padding:0 0 16px 16px; border-left:2px solid #e8e8e8; }
+.tl-item:last-child { border-left-color:transparent; }
+.tl-dot { position:absolute; left:-7px; top:2px; width:12px; height:12px; border-radius:50%; background:#df6427; border:2px solid #fff; box-shadow:0 0 0 2px #df6427; }
+.tl-dot.grey { background:#ccc; box-shadow:0 0 0 2px #ccc; }
+.tl-dot.green { background:#287a3e; box-shadow:0 0 0 2px #287a3e; }
+.tl-text { font-size:14px; font-weight:700; color:#121212; }
+.tl-meta { font-size:12px; color:#aaa; margin-top:2px; }
+
+/* Estimate builder */
+.estimate-line { background:#fff; border:1px solid #eee; border-radius:12px; padding:12px 14px; margin-bottom:8px; }
+.el-name { font-weight:800; font-size:14px; }
+.el-detail { font-size:12px; color:#888; margin-top:2px; }
+.el-amount { font-size:15px; font-weight:900; color:#121212; }
+.el-actions { display:flex; gap:8px; margin-top:8px; }
+.el-edited { font-size:11px; color:#d97706; margin-top:2px; }
+
+.estimate-total { background:#121212; color:#fff; border-radius:14px; padding:16px; margin-top:12px; }
+.et-label { font-size:12px; color:#aaa; }
+.et-amount { font-size:28px; font-weight:900; }
+.et-gst { font-size:12px; color:#aaa; margin-top:4px; }
+
+/* Parts search */
+.parts-search-wrap { position:relative; }
+.parts-suggest { border:1px solid #e8e8e8; border-radius:12px; overflow:hidden; margin-top:-4px; background:#fff; box-shadow:0 4px 16px rgba(0,0,0,.08); }
+.parts-suggest button { display:block; width:100%; border:0; background:#fff; text-align:left; padding:12px 14px; border-bottom:1px solid #f0f0f0; font:inherit; cursor:pointer; }
+.parts-suggest button:hover { background:#fff8f4; }
+.parts-suggest button:last-child { border-bottom:0; }
+.ps-name { font-weight:800; font-size:14px; }
+.ps-detail { font-size:12px; color:#888; margin-top:2px; display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Edit amount modal */
+.edit-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; padding:20px; }
+.edit-overlay.show { display:flex; }
+.edit-sheet { background:#fff; border-radius:20px; padding:24px; width:100%; max-width:400px; }
+.edit-title { font-size:16px; font-weight:900; margin-bottom:16px; }
+.variance-preview { padding:12px; background:#f5f5f5; border-radius:10px; margin-top:10px; font-size:13px; }
+.var-positive { color:#287a3e; font-weight:800; }
+.var-negative { color:#ba3327; font-weight:800; }
+
+/* Status buttons */
+.status-flow { display:flex; gap:8px; flex-wrap:wrap; }
+.status-btn { padding:10px 16px; border:1.5px solid #e8e8e8; border-radius:99px; font-weight:800; font-size:13px; cursor:pointer; background:#fff; }
+.status-btn.current { background:#121212; color:#fff; border-color:#121212; }
+.status-btn.next { background:#df6427; color:#fff; border-color:#df6427; }
+
+/* SMS buttons */
+.sms-btn { display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #e8e8e8; border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; width:100%; font:inherit; text-align:left; }
+.sms-btn:hover { border-color:#df6427; background:#fff8f4; }
+.sms-icon { font-size:20px; }
+.sms-label { font-weight:800; font-size:14px; }
+.sms-sub { font-size:12px; color:#aaa; }
+</style>
 </head>
-<body data-page="work">
-<header class="shell-header">
-  <a class="logo" href="home.html"><img src="assets/images/tagro-logo.png" alt="TAGRO"></a>
-  <span class="branch-pill" id="branchBadge">KVR</span>
-  <span class="user-pill" id="userBadge">Staff</span>
-</header>
+<body>
+<div class="wrap" style="padding:0;max-width:640px">
 
-<main>
-  <div class="card">
-    <div class="body">
-      <div class="hero">MS382 — Babu Contractor</div>
-      <div class="sub">KVR/2606/016 · Crew waiting · Current bench work</div>
-      <div class="stage-strip">
-        <span class="stage done">Received</span>
-        <span class="stage done">Inspected</span>
-        <span class="stage active">Repair</span>
-        <span class="stage">Test</span>
-        <span class="stage">Ready</span>
+  <!-- Job header -->
+  <div class="job-header">
+    <a href="tracker.html" style="font-size:13px;font-weight:800;color:#aaa;text-decoration:none">← Jobs</a>
+    <div class="job-wo" id="j-wo"></div>
+    <div class="job-title" id="j-title"></div>
+    <div class="job-customer" id="j-customer"></div>
+    <div class="job-status-row" id="j-status-row"></div>
+  </div>
+
+  <!-- Tab navigation -->
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="showTab('timeline',this)">Timeline</button>
+    <button class="tab-btn" onclick="showTab('estimate',this)">Estimate</button>
+    <button class="tab-btn" onclick="showTab('status',this)">Status</button>
+    <button class="tab-btn" onclick="showTab('sms',this)">Messages</button>
+  </div>
+
+  <!-- TIMELINE tab -->
+  <div class="tab-panel active" id="tab-timeline">
+    <div class="timeline" id="timeline-content"></div>
+
+    <!-- Add observation -->
+    <div class="card" style="margin-top:8px">
+      <div class="head">Add Note</div>
+      <div class="body">
+        <div class="field">
+          <textarea id="note-text" placeholder="Observation, finding, customer conversation..." style="min-height:72px"></textarea>
+        </div>
+        <button class="btn primary block" onclick="addNote()">Save Note</button>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head"><h2>Resume reminder</h2><span class="pill amber">Future self</span></div>
-    <div class="body">
-      <div class="notice">“Clutch removed. Next check oil pump drive. Chain brake band still open.”</div>
-      <div class="grid2" style="margin-top:12px">
-        <button class="btn primary">▶ Continue</button>
-        <button class="btn" onclick="document.getElementById('pausePanel').classList.toggle('hidden')">Pause</button>
+  <!-- ESTIMATE tab -->
+  <div class="tab-panel" id="tab-estimate">
+
+    <!-- Parts search -->
+    <div class="card">
+      <div class="head">Add Part</div>
+      <div class="body">
+        <div class="parts-search-wrap">
+          <div class="field" style="margin-bottom:0">
+            <input id="parts-search" placeholder="Part name or number — e.g. 36RSC or MS250 clutch"
+              oninput="searchPartsLive()" autocorrect="off" autocapitalize="off" spellcheck="false"
+              style="font-size:16px">
+          </div>
+          <div id="parts-suggest" class="parts-suggest hide"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Labour search -->
+    <div class="card">
+      <div class="head">Add Labour</div>
+      <div class="body">
+        <div id="labour-pills" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <div class="field" style="margin-top:10px">
+          <label>Or search</label>
+          <input id="labour-search" placeholder="Labour type..." oninput="searchLabourLive()"
+            style="font-size:16px">
+        </div>
+        <div id="labour-suggest" class="parts-suggest hide"></div>
+      </div>
+    </div>
+
+    <!-- Estimate lines -->
+    <div id="estimate-lines"></div>
+
+    <!-- Total -->
+    <div id="estimate-total"></div>
+
+    <button class="btn primary block" style="margin-top:12px" onclick="saveEstimate()">Save Estimate</button>
+  </div>
+
+  <!-- STATUS tab -->
+  <div class="tab-panel" id="tab-status">
+    <div class="card">
+      <div class="head">Current Status</div>
+      <div class="body">
+        <div class="status-flow" id="status-flow"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head">Assign Technician</div>
+      <div class="body">
+        <div class="field">
+          <select id="assign-select">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+        <button class="btn primary block" onclick="saveAssignment()">Assign</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head">Machine Details</div>
+      <div class="body">
+        <div class="grid">
+          <div class="field">
+            <label>Serial Number</label>
+            <input id="serial-field" placeholder="Add serial number">
+          </div>
+          <div class="field">
+            <label>Source</label>
+            <select id="source-field">
+              <option value="">Unknown</option>
+              <option value="TAGRO">TAGRO Sale</option>
+              <option value="other_dealer">Other Dealer</option>
+              <option value="old">Old / Unknown</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn primary block" onclick="saveMachineDetails()">Save</button>
       </div>
     </div>
   </div>
 
-  <div id="pausePanel" class="card hidden">
-    <div class="card-head"><h2>Why stopping?</h2></div>
-    <div class="body">
-      <div class="grid2">
-        <button class="pause-type" onclick="choosePause(this)">Waiting Customer</button>
-        <button class="pause-type" onclick="choosePause(this)">Waiting Parts</button>
-        <button class="pause-type" onclick="choosePause(this)">Outside Work</button>
-        <button class="pause-type" onclick="choosePause(this)">Priority Changed</button>
-        <button class="pause-type" onclick="choosePause(this)">End of Day</button>
-        <button class="pause-type" onclick="choosePause(this)">Other</button>
+  <!-- SMS tab -->
+  <div class="tab-panel" id="tab-sms">
+    <div id="sms-preview" class="card" style="display:none">
+      <div class="head">Estimate ready to send</div>
+      <div class="body">
+        <div id="sms-estimate-preview" style="font-size:13px;color:#555;line-height:1.6;background:#f9f9f9;padding:12px;border-radius:10px;font-family:monospace"></div>
       </div>
-      <label>Resume reminder</label>
-      <div class="voice">
-        <div class="mic">🎤</div>
-        <b>Tell yourself what to remember</b>
-        <div class="small">Voice recording can be connected later. For now type a short note.</div>
+    </div>
+
+    <button class="sms-btn" onclick="sendEstimateSMS()">
+      <div class="sms-icon">📝</div>
+      <div>
+        <div class="sms-label">Send Estimate</div>
+        <div class="sms-sub">Customer receives amount and approval link</div>
       </div>
-      <textarea id="pauseNote" placeholder="Example: cylinder off, piston removed, next inspect crank..."></textarea>
-      <button class="btn primary block" style="margin-top:12px" onclick="pauseWork()">Save Pause</button>
+    </button>
+
+    <button class="sms-btn" onclick="sendStatusSMS()">
+      <div class="sms-icon">🔧</div>
+      <div>
+        <div class="sms-label">Send Status Update</div>
+        <div class="sms-sub">Repair in progress notification</div>
+      </div>
+    </button>
+
+    <button class="sms-btn" onclick="sendReadySMS()">
+      <div class="sms-icon">✅</div>
+      <div>
+        <div class="sms-label">Machine Ready</div>
+        <div class="sms-sub">Customer notified to collect</div>
+      </div>
+    </button>
+
+    <div class="card">
+      <div class="head">SMS History</div>
+      <div class="body" id="sms-history">
+        <div class="small">No messages sent yet.</div>
+      </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head"><h2>What happened?</h2></div>
-    <div class="body">
-      <div class="grid2">
-        <button class="btn" onclick="addPO('Clutch Spring')">Need part</button>
-        <button class="btn">Photo</button>
-        <button class="btn">Voice note</button>
-        <button class="btn">Observation</button>
-        <button class="btn green">Work complete</button>
-        <button class="btn soft">Test machine</button>
-      </div>
+  <div style="height:30px"></div>
+</div>
+
+<!-- Edit amount modal -->
+<div class="edit-overlay" id="edit-modal">
+  <div class="edit-sheet">
+    <div class="edit-title" id="edit-title">Edit Amount</div>
+    <div class="field">
+      <label>Standard Rate (₹)</label>
+      <input id="edit-standard" readonly style="background:#f5f5f5;color:#aaa">
+    </div>
+    <div class="field">
+      <label>Amount to Charge (₹)</label>
+      <input id="edit-amount" type="number" style="font-size:20px;font-weight:900" oninput="previewVariance()">
+    </div>
+    <div class="field">
+      <label>Reason for edit</label>
+      <input id="edit-reason" placeholder="e.g. Repeat customer, warranty, negotiated">
+    </div>
+    <div class="variance-preview" id="variance-preview"></div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="btn block" onclick="closeEditModal()">Cancel</button>
+      <button class="btn primary block" onclick="saveEdit()">Save</button>
     </div>
   </div>
-</main>
+</div>
 
-<nav class="bottom-nav">
-  <a class="navbtn" data-nav="home" href="home.html"><b>🏠</b>Home</a>
-  <a class="navbtn" data-nav="receive" href="receive.html"><b>➕</b>Receive</a>
-  <a class="navbtn" data-nav="bench" href="bench.html"><b>🔧</b>Bench</a>
-  <a class="navbtn" data-nav="work" href="work.html"><b>▶</b>Work</a>
-  <a class="navbtn" data-nav="more" href="#" onclick="logout()"><b>☰</b>Logout</a>
-</nav>
-<script src="assets/js/app.js"></script>
+<script src="app.js"></script>
+<script src="parts-search.js"></script>
+<script>
+const s   = requireLogin();
+initShell('jobs');
+
+const id  = new URLSearchParams(location.search).get('id');
+let job   = null;
+let editIdx = null;
+let editType = null;
+
+// ── Load job ──────────────────────────────────────────────
+function loadJob() {
+  const all = jobs();
+  job = all.find(j => j.id === id);
+  if (!job) { document.body.innerHTML = '<div class="wrap"><div class="card"><div class="body">Job not found.</div></div></div>'; return; }
+  renderHeader();
+  renderTimeline();
+  renderEstimate();
+  renderStatus();
+  renderSMSHistory();
+  renderLabourPills();
+  populateAssign();
+  document.getElementById('serial-field').value = job.machine?.serialNo || '';
+  document.getElementById('source-field').value  = job.machine?.source || '';
+}
+
+// ── Header ────────────────────────────────────────────────
+function renderHeader() {
+  document.getElementById('j-wo').textContent = job.workOrder;
+  document.getElementById('j-title').textContent = (job.machine?.model || '—') + ' — ' + (job.customer?.name || '—');
+  document.getElementById('j-customer').textContent = job.customer?.phone + (job.customer?.place ? ' · ' + job.customer.place : '');
+  document.title = job.machine?.model + ' — TAGRO';
+
+  const urgencyColor = { urgent:'#ba3327', normal:'#df6427', no_rush:'#287a3e' }[job.urgency] || '#df6427';
+
+  document.getElementById('j-status-row').innerHTML = `
+    <span class="badge orange">${job.status}</span>
+    ${job.urgency && job.urgency !== 'normal' ? `<span class="badge" style="background:#fff3d5;color:${urgencyColor}">${job.urgency}</span>` : ''}
+    ${job.assignedTo ? `<span class="badge">🔧 ${job.assignedTo}</span>` : '<span class="badge" style="background:#fdecea;color:#ba3327">Unassigned</span>'}
+    ${job.machine?.serialNo ? '' : '<span class="badge" style="background:#fff3d5;color:#d97706">No Serial</span>'}
+    <span class="badge">${ageDays()} day${ageDays() !== 1 ? 's' : ''} old</span>`;
+}
+
+function ageDays() {
+  return Math.floor((Date.now() - new Date(job.date).getTime()) / 86400000);
+}
+
+// ── Timeline ──────────────────────────────────────────────
+function renderTimeline() {
+  const tl = job.timeline || [];
+  if (!tl.length) {
+    document.getElementById('timeline-content').innerHTML =
+      '<div class="small" style="padding:8px 0">No timeline events yet.</div>';
+    return;
+  }
+
+  const icons = {
+    received:'📥', inspection:'🔍', estimate:'📝', approved:'✅',
+    repair_start:'🔧', paused:'⏸', resumed:'▶️', testing:'🧪',
+    ready:'🔔', delivered:'📤', sms:'💬', note:'📌', default:'•'
+  };
+
+  document.getElementById('timeline-content').innerHTML = [...tl].reverse().map(ev => `
+    <div class="tl-item">
+      <div class="tl-dot ${['delivered','ready','approved'].includes(ev.type) ? 'green' : ['paused'].includes(ev.type) ? 'grey' : ''}"></div>
+      <div class="tl-text">${icons[ev.type] || icons.default} ${ev.description}</div>
+      <div class="tl-meta">${ev.by || ''} · ${formatTime(ev.at)}</div>
+    </div>`
+  ).join('');
+}
+
+function addNote() {
+  const txt = document.getElementById('note-text').value.trim();
+  if (!txt) return;
+  addTimeline('note', txt);
+  saveJob();
+  document.getElementById('note-text').value = '';
+  toast('Note saved');
+  renderTimeline();
+}
+
+// ── Estimate ──────────────────────────────────────────────
+function renderEstimate() {
+  const lines = job.estimate?.lines || [];
+  if (!lines.length) {
+    document.getElementById('estimate-lines').innerHTML =
+      '<div class="card"><div class="body small">No estimate yet. Search for parts and labour above.</div></div>';
+    document.getElementById('estimate-total').innerHTML = '';
+    return;
+  }
+
+  document.getElementById('estimate-lines').innerHTML = lines.map((ln, i) => {
+    const variance = ln.amount - ln.standardRate;
+    const varStr   = variance === 0 ? '' :
+      variance > 0 ? `<span style="color:#287a3e">+₹${variance} above standard</span>` :
+                     `<span style="color:#ba3327">₹${Math.abs(variance)} below standard</span>`;
+    return `
+      <div class="estimate-line">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div style="flex:1">
+            <div class="el-name">${ln.name}</div>
+            <div class="el-detail">
+              ${ln.type === 'part' ? `Part No: ${ln.no || '—'} · ` : ''}
+              Qty: ${ln.qty} · GST ${ln.gst}%
+            </div>
+            ${ln.editReason ? `<div class="el-edited">Edited: ${ln.editReason}</div>` : ''}
+            ${varStr ? `<div class="el-edited">${varStr}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0;margin-left:12px">
+            <div class="el-amount">₹${(ln.amount * ln.qty).toLocaleString('en-IN')}</div>
+            ${ln.qty > 1 ? `<div style="font-size:11px;color:#aaa">₹${ln.amount} each</div>` : ''}
+          </div>
+        </div>
+        <div class="el-actions">
+          <button class="btn" style="font-size:12px;padding:6px 10px" onclick="openEditModal(${i})">Edit ₹</button>
+          <button class="btn" style="font-size:12px;padding:6px 10px" onclick="changePOStatus(${i})">${ln.poStatus || 'Need Purchase'}</button>
+          <button class="btn red" style="font-size:12px;padding:6px 10px" onclick="removeLine(${i})">Remove</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  const subtotal = lines.reduce((a, ln) => a + ln.amount * ln.qty, 0);
+  const taxTotal = lines.reduce((a, ln) => a + (ln.amount * ln.qty * ln.gst / 100), 0);
+  const total    = subtotal + taxTotal;
+
+  document.getElementById('estimate-total').innerHTML = `
+    <div class="estimate-total">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span class="et-label">Subtotal</span>
+        <span style="color:#aaa">₹${subtotal.toLocaleString('en-IN')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <span class="et-label">GST</span>
+        <span style="color:#aaa">₹${taxTotal.toLocaleString('en-IN')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="et-label" style="font-size:14px">Total</span>
+        <div class="et-amount">₹${total.toLocaleString('en-IN')}</div>
+      </div>
+    </div>`;
+
+  // Update SMS preview
+  updateSMSPreview(total);
+}
+
+function updateSMSPreview(total) {
+  const el = document.getElementById('sms-estimate-preview');
+  const branchPhone = getBranchPhone();
+  const approvalUrl = `https://service.tagro.in/approve?id=${(job.workOrder||'').replace(/\//g,'')}`;
+  el.textContent =
+    `TAGRO Service: Estimate ready for your ${job.machine?.model}.\n` +
+    `Work Order: ${job.workOrder}\n` +
+    `Amount: Rs.${total.toLocaleString('en-IN')}\n` +
+    `Approve: ${approvalUrl}\n` +
+    `Query: ${branchPhone}`;
+  document.getElementById('sms-preview').style.display = 'block';
+}
+
+// ── Parts search ──────────────────────────────────────────
+function searchPartsLive() {
+  const q   = document.getElementById('parts-search').value.trim();
+  const sug = document.getElementById('parts-suggest');
+
+  if (q.length < 2) {
+    sug.classList.add('hide');
+    return;
+  }
+
+  // Use parts-search.js searchParts() — Busy-style word matching
+  const results = typeof searchParts === 'function'
+    ? searchParts(q, 8)
+    : [];
+
+  if (!results.length) {
+    sug.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#aaa">No parts found for "' + q + '" — try different words</div>';
+    sug.classList.remove('hide');
+    return;
+  }
+
+  sug.innerHTML = results.map((p, i) => `
+    <button onclick="addPartLine(${i})">
+      <div class="ps-name">${p.name}</div>
+      <div class="ps-detail">
+        <span style="font-family:monospace;font-size:11px;color:#888">${p.no || '—'}</span>
+        <span style="font-weight:800">₹${Number(p.mrp || p.price || 0).toLocaleString('en-IN')}</span>
+        <span style="color:#aaa">${p.modelGroup || ''}</span>
+        <span style="color:#aaa">${p.group || ''}</span>
+      </div>
+    </button>`
+  ).join('');
+
+  sug._results = results;
+  sug.classList.remove('hide');
+}
+
+function addPartLine(idx) {
+  const sug = document.getElementById('parts-suggest');
+  const p   = sug._results[idx];
+  if (!p) return;
+
+  const line = {
+    type:         'part',
+    id:           p.id || p.no || ('p' + Date.now()),
+    name:         p.name,
+    no:           p.no,
+    stihlNo:      p.stihlNo || p.no,
+    stihlName:    p.stihlName || p.name,
+    qty:          1,
+    standardRate: p.mrp || p.price || 0,
+    amount:       p.mrp || p.price || 0,
+    gst:          p.gst || 18,
+    hsn:          p.hsn || '',
+    poStatus:     'Need Purchase',
+    addedBy:      s.name,
+    addedAt:      new Date().toISOString()
+  };
+
+  if (!job.estimate) job.estimate = { lines: [] };
+  job.estimate.lines.push(line);
+
+  sug.classList.add('hide');
+  document.getElementById('parts-search').value = '';
+
+  addTimeline('estimate', 'Added part: ' + p.name);
+  saveJob();
+  renderEstimate();
+  toast(p.name + ' added');
+}
+
+// ── Labour ────────────────────────────────────────────────
+function renderLabourPills() {
+  const model  = job.machine?.model || '';
+  const labour = labourData();
+
+  // Get relevant labour for this model
+  const relevant = labour.filter(l =>
+    l.active !== 'N' && (l.modelGroup === 'ALL' || l.modelGroup === model)
+  ).slice(0, 8);
+
+  document.getElementById('labour-pills').innerHTML = relevant.map((l, i) => `
+    <button class="complaint-pill" onclick="addLabourLine(${i},'pill')"
+      style="border:1.5px solid #e8e8e8;border-radius:99px;padding:8px 14px;cursor:pointer;background:#fff;font-weight:700;font-size:13px">
+      ${l.name} <span style="color:#aaa;font-size:11px">₹${l.quoteRate || l.standardRate}</span>
+    </button>`
+  ).join('');
+
+  // Store for lookup
+  window._labourPillData = relevant;
+}
+
+function addLabourLine(idx, src) {
+  const l = src === 'pill' ? window._labourPillData[idx] : window._labourSugData[idx];
+  if (!l) return;
+
+  const line = {
+    type:         'labour',
+    id:           'labour_' + Date.now(),
+    name:         l.name,
+    description:  l.description || '',
+    qty:          1,
+    standardRate: l.standardRate || 0,
+    amount:       l.quoteRate || l.standardRate || 0,
+    gst:          l.gst || 18,
+    sac:          l.sac || '998714',
+    addedBy:      s.name,
+    addedAt:      new Date().toISOString()
+  };
+
+  if (!job.estimate) job.estimate = { lines: [] };
+  job.estimate.lines.push(line);
+
+  document.getElementById('labour-suggest').classList.add('hide');
+  document.getElementById('labour-search').value = '';
+
+  addTimeline('estimate', 'Added labour: ' + l.name);
+  saveJob();
+  renderEstimate();
+  renderLabourPills();
+  toast(l.name + ' added');
+}
+
+function searchLabourLive() {
+  const q   = document.getElementById('labour-search').value.trim();
+  const sug = document.getElementById('labour-suggest');
+  if (q.length < 2) { sug.classList.add('hide'); return; }
+
+  const all     = labourData();
+  const results = all.filter(l =>
+    l.active !== 'N' &&
+    (l.name + ' ' + (l.description||'')).toLowerCase().includes(q.toLowerCase())
+  ).slice(0, 6);
+
+  if (!results.length) { sug.classList.add('hide'); return; }
+
+  sug.innerHTML = results.map((l, i) => `
+    <button onclick="addLabourLine(${i},'search')">
+      <div class="ps-name">${l.name}</div>
+      <div class="ps-detail">
+        <span>${l.modelGroup}</span>
+        <span>₹${l.quoteRate || l.standardRate}</span>
+        <span style="color:#aaa">Std ₹${l.standardRate}</span>
+      </div>
+    </button>`
+  ).join('');
+
+  sug._results = results;
+  window._labourSugData = results;
+  sug.classList.remove('hide');
+}
+
+function labourData() {
+  return jget('tagro_labour_data', TAGRO.charges.map(c => ({
+    name: c.name, standardRate: c.amount, quoteRate: c.amount, gst: 18, sac: '998714',
+    modelGroup: 'ALL', active: 'Y'
+  })));
+}
+
+// ── Edit amount modal ─────────────────────────────────────
+function openEditModal(idx) {
+  const ln = job.estimate.lines[idx];
+  editIdx  = idx;
+
+  document.getElementById('edit-title').textContent = 'Edit: ' + ln.name;
+  document.getElementById('edit-standard').value    = ln.standardRate;
+  document.getElementById('edit-amount').value      = ln.amount;
+  document.getElementById('edit-reason').value      = ln.editReason || '';
+
+  previewVariance();
+  document.getElementById('edit-modal').classList.add('show');
+  setTimeout(() => document.getElementById('edit-amount').focus(), 100);
+}
+
+function previewVariance() {
+  const ln       = job.estimate.lines[editIdx];
+  const newAmt   = parseFloat(document.getElementById('edit-amount').value) || 0;
+  const variance = newAmt - (ln.standardRate || 0);
+  const el       = document.getElementById('variance-preview');
+
+  if (variance === 0) {
+    el.innerHTML = 'At standard rate.';
+  } else if (variance > 0) {
+    el.innerHTML = `<span class="var-positive">+₹${variance} above standard rate</span> — will show blue in report.`;
+  } else {
+    el.innerHTML = `<span class="var-negative">₹${Math.abs(variance)} below standard rate</span> — will show red in report.`;
+  }
+}
+
+function saveEdit() {
+  const ln     = job.estimate.lines[editIdx];
+  const newAmt = parseFloat(document.getElementById('edit-amount').value) || 0;
+  const reason = document.getElementById('edit-reason').value.trim();
+
+  ln.originalAmount = ln.originalAmount || ln.amount;
+  ln.amount         = newAmt;
+  ln.editReason     = reason;
+  ln.editedBy       = s.name;
+  ln.editedAt       = new Date().toISOString();
+  ln.variance       = newAmt - ln.standardRate;
+
+  addTimeline('estimate', `Edited ${ln.name}: ₹${ln.originalAmount} → ₹${newAmt}${reason ? ' (' + reason + ')' : ''}`);
+  saveJob();
+  renderEstimate();
+  closeEditModal();
+  toast('Amount updated');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('show');
+  editIdx = null;
+}
+
+function removeLine(idx) {
+  const ln = job.estimate.lines[idx];
+  job.estimate.lines.splice(idx, 1);
+  addTimeline('estimate', 'Removed: ' + ln.name);
+  saveJob();
+  renderEstimate();
+}
+
+function changePOStatus(idx) {
+  const statuses = ['Need Purchase', 'Need Branch Transfer', 'Already Ordered', 'In Stock'];
+  const ln = job.estimate.lines[idx];
+  const cur = statuses.indexOf(ln.poStatus || 'Need Purchase');
+  ln.poStatus = statuses[(cur + 1) % statuses.length];
+  saveJob();
+  renderEstimate();
+}
+
+function saveEstimate() {
+  if (!job.estimate?.lines?.length) { toast('Add parts or labour first'); return; }
+  job.status = job.status === 'Received' ? 'Waiting Approval' : job.status;
+  addTimeline('estimate', 'Estimate saved — ₹' + getTotalAmount().toLocaleString('en-IN'));
+  saveJob();
+  toast('Estimate saved');
+}
+
+function getTotalAmount() {
+  return (job.estimate?.lines || []).reduce((a, ln) => a + (ln.amount * ln.qty) * (1 + ln.gst/100), 0);
+}
+
+// ── Status ────────────────────────────────────────────────
+const STATUS_FLOW = [
+  'Received', 'Inspection', 'Waiting Approval', 'Repairing',
+  'Waiting Parts', 'Testing', 'Ready', 'Delivered'
+];
+
+function renderStatus() {
+  document.getElementById('status-flow').innerHTML = STATUS_FLOW.map(st => {
+    const isCurrent = job.status === st;
+    const isNext    = STATUS_FLOW.indexOf(st) === STATUS_FLOW.indexOf(job.status) + 1;
+    return `<button class="status-btn ${isCurrent ? 'current' : isNext ? 'next' : ''}"
+      onclick="setStatus('${st}')">${st}</button>`;
+  }).join('');
+}
+
+function setStatus(newStatus) {
+  const old = job.status;
+  if (old === newStatus) return;
+  job.status = newStatus;
+  if (newStatus === 'Repairing') { job.assignedTo = job.assignedTo || s.name; job.repairStartedAt = job.repairStartedAt || new Date().toISOString(); }
+  if (newStatus === 'Ready')     { job.completedAt = new Date().toISOString(); }
+  if (newStatus === 'Delivered') { job.deliveredAt = new Date().toISOString(); job.deliveredBy = s.name; }
+  addTimeline('status', `Status changed: ${old} → ${newStatus}`);
+  saveJob();
+  renderHeader();
+  renderStatus();
+  toast('Status: ' + newStatus);
+}
+
+function populateAssign() {
+  const sel = document.getElementById('assign-select');
+  sel.innerHTML = '<option value="">Unassigned</option>';
+  const branch = jget('tagro_device_branch', s.branch);
+  const data   = TAGRO.people[branch] || { manager:'', staff:[] };
+  [data.manager, ...data.staff].filter(Boolean).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    if (name === job.assignedTo) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function saveAssignment() {
+  const name = document.getElementById('assign-select').value;
+  job.assignedTo = name || null;
+  addTimeline('note', name ? 'Assigned to ' + name : 'Unassigned');
+  saveJob();
+  renderHeader();
+  toast(name ? 'Assigned to ' + name : 'Unassigned');
+}
+
+function saveMachineDetails() {
+  job.machine.serialNo = document.getElementById('serial-field').value.trim();
+  job.machine.source   = document.getElementById('source-field').value;
+  addTimeline('note', 'Machine details updated');
+  saveJob();
+  renderHeader();
+  toast('Machine details saved');
+}
+
+// ── SMS ───────────────────────────────────────────────────
+async function sendEstimateSMS() {
+  if (!job.estimate?.lines?.length) { toast('Create estimate first'); return; }
+  const total  = getTotalAmount();
+  const phone  = job.customer?.phone;
+  if (!phone) { toast('No customer phone'); return; }
+
+  toast('Sending...');
+  try {
+    const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/estimate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone, workOrder: job.workOrder,
+        model: job.machine?.model,
+        amount: Math.round(total).toLocaleString('en-IN'),
+        branch: job.branch
+      })
+    });
+    const r = await resp.json();
+    if (r.ok) {
+      addTimeline('sms', 'Estimate SMS sent to ' + phone + ' — ₹' + Math.round(total).toLocaleString('en-IN'));
+      job.status = 'Waiting Approval';
+      saveJob();
+      renderSMSHistory();
+      renderTimeline();
+      toast('Estimate sent');
+    } else { toast('SMS failed — check connection'); }
+  } catch { toast('SMS failed — check connection'); }
+}
+
+async function sendStatusSMS() {
+  const phone = job.customer?.phone;
+  if (!phone) { toast('No customer phone'); return; }
+  toast('Sending...');
+  try {
+    await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, workOrder: job.workOrder, model: job.machine?.model, status: job.status, branchPhone: getBranchPhone() })
+    });
+    addTimeline('sms', 'Status SMS sent to ' + phone);
+    saveJob(); renderTimeline(); renderSMSHistory();
+    toast('Status sent');
+  } catch { toast('SMS failed'); }
+}
+
+async function sendReadySMS() {
+  const phone = job.customer?.phone;
+  if (!phone) { toast('No customer phone'); return; }
+  toast('Sending...');
+  try {
+    await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/ready', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, workOrder: job.workOrder, model: job.machine?.model, invoiceAmount: Math.round(getTotalAmount()), branchPhone: getBranchPhone() })
+    });
+    addTimeline('sms', 'Ready SMS sent to ' + phone);
+    saveJob(); renderTimeline(); renderSMSHistory();
+    toast('Ready notification sent');
+  } catch { toast('SMS failed'); }
+}
+
+function renderSMSHistory() {
+  const smsTl = (job.timeline || []).filter(t => t.type === 'sms');
+  document.getElementById('sms-history').innerHTML = smsTl.length
+    ? smsTl.reverse().map(t => `<div class="item"><div class="title">${t.description}</div><div class="sub">${formatTime(t.at)}</div></div>`).join('')
+    : '<div class="small">No messages sent yet.</div>';
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function addTimeline(type, description) {
+  if (!job.timeline) job.timeline = [];
+  job.timeline.push({ type, description, by: s.name, at: new Date().toISOString() });
+}
+
+function saveJob() {
+  job.updatedAt = new Date().toISOString();
+  const all = jobs();
+  const idx = all.findIndex(j => j.id === job.id);
+  if (idx >= 0) all[idx] = job; else all.push(job);
+  saveJobs(all);
+}
+
+function getBranchPhone() {
+  const phones = { KVR:'9656324446', PKM:'9349401991', NDD:'9387689763', MDM:'9487878508', SKT:'8190015130', OYR:'8921773286', SDM:'8921773285' };
+  return phones[job.branch] || '9656361846';
+}
+
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short' }) + ' ' +
+         d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+
+loadJob();
+</script>
 </body>
 </html>

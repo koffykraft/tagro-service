@@ -1,89 +1,591 @@
 <!doctype html>
-<html lang="ml">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Receive</title>
-<link rel="stylesheet" href="assets/css/app.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Receive Machine — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+.step-indicator { display:flex; align-items:center; padding:12px 16px; gap:0; }
+.step-dot { width:28px; height:28px; border-radius:50%; border:2px solid #e8e8e8; background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; color:#aaa; flex-shrink:0; }
+.step-dot.active { background:#df6427; border-color:#df6427; color:#fff; }
+.step-dot.done { background:#287a3e; border-color:#287a3e; color:#fff; }
+.step-line { flex:1; height:2px; background:#e8e8e8; }
+.step-line.done { background:#287a3e; }
+
+.step-card { display:none; }
+.step-card.active { display:block; }
+
+/* Customer search */
+.search-big { width:100%; padding:16px; font-size:18px; border:2px solid #e8e8e8; border-radius:14px; font-family:inherit; outline:none; transition:border-color .2s; }
+.search-big:focus { border-color:#df6427; }
+.search-big::placeholder { color:#ccc; }
+
+.customer-result { background:#fff; border:1.5px solid #e8e8e8; border-radius:14px; padding:14px; margin-bottom:8px; cursor:pointer; transition:all .15s; }
+.customer-result:hover { border-color:#df6427; background:#fff8f4; }
+.customer-result.selected { border-color:#df6427; background:#fff8f4; box-shadow:0 0 0 3px rgba(223,100,39,.1); }
+.customer-name { font-weight:900; font-size:16px; }
+.customer-meta { font-size:13px; color:#888; margin-top:3px; }
+.customer-history { font-size:12px; color:#df6427; margin-top:4px; font-weight:700; }
+
+.btn-new-customer { width:100%; padding:16px; border:2px dashed #df6427; background:transparent; border-radius:14px; font-size:16px; font-weight:900; color:#df6427; cursor:pointer; margin-top:8px; }
+.btn-new-customer:hover { background:#fff8f4; }
+
+/* Machine pills */
+.machine-pill { display:inline-flex; flex-direction:column; align-items:center; padding:12px 16px; border:1.5px solid #e8e8e8; border-radius:12px; cursor:pointer; margin:4px; background:#fff; min-width:80px; }
+.machine-pill:hover { border-color:#df6427; }
+.machine-pill.selected { border-color:#df6427; background:#fff8f4; }
+.machine-pill .m-model { font-weight:900; font-size:14px; }
+.machine-pill .m-serial { font-size:11px; color:#aaa; }
+
+/* Complaint pills */
+.complaint-pill { display:inline-block; padding:10px 16px; border:1.5px solid #e8e8e8; border-radius:99px; cursor:pointer; margin:4px; background:#fff; font-weight:700; font-size:14px; }
+.complaint-pill:hover { border-color:#df6427; }
+.complaint-pill.selected { background:#df6427; border-color:#df6427; color:#fff; }
+
+.urgency-row { display:flex; gap:8px; margin-bottom:12px; }
+.urgency-btn { flex:1; padding:12px; border:1.5px solid #e8e8e8; border-radius:10px; text-align:center; cursor:pointer; background:#fff; font-weight:800; font-size:13px; }
+.urgency-btn:hover { border-color:#df6427; }
+.urgency-btn.selected { border-color:#df6427; background:#fff8f4; color:#df6427; }
+
+.timeline-preview { background:#f5f5f5; border-radius:12px; padding:14px; margin-top:8px; }
+.timeline-item { display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; }
+.timeline-dot { width:8px; height:8px; border-radius:50%; background:#df6427; margin-top:5px; flex-shrink:0; }
+.timeline-text { font-size:13px; color:#555; }
+.timeline-time { font-size:11px; color:#aaa; }
+
+.confirm-row { display:flex; gap:8px; }
+.confirm-col { flex:1; }
+.confirm-label { font-size:11px; color:#aaa; font-weight:900; text-transform:uppercase; letter-spacing:.5px; }
+.confirm-value { font-size:14px; font-weight:800; color:#121212; margin-top:2px; }
+</style>
 </head>
-<body data-page="receive">
-<header class="shell-header">
-  <a class="logo" href="home.html"><img src="assets/images/tagro-logo.png" alt="TAGRO"></a>
-  <span class="branch-pill" id="branchBadge">KVR</span>
-  <span class="user-pill" id="userBadge">Staff</span>
-</header>
+<body>
+<div class="wrap" style="padding:0;max-width:600px">
 
-<main>
-  <div class="card">
-    <div class="card-head"><h2>Reception</h2><span class="pill green">Under 1 minute</span></div>
-    <div class="body">
-      <div class="notice">
-        First job: make contact. Record the customer’s words. Mechanic diagnosis comes later.
-      </div>
-
-      <label>Phone / Alias / Name / Serial</label>
-      <input id="custSearch" inputmode="search" autocomplete="off" placeholder="Rubber Jose, 9447..., MS250..." oninput="searchCustomer()">
-      <div id="customerResults" class="search-results"></div>
-
-      <div class="grid2" style="margin-top:10px">
-        <button class="btn" onclick="showPanel('newCustomerPanel')">+ New Customer</button>
-        <button class="btn" onclick="showPanel('newMachinePanel')">+ New Machine</button>
-      </div>
-
-      <div id="newCustomerPanel" class="form-panel">
-        <div class="title">New Customer</div>
-        <label>Name</label><input id="newName" placeholder="Customer name">
-        <label>Phone</label><input id="newPhone" inputmode="tel" placeholder="Phone">
-        <label>Alias / Local memory</label><input id="newAlias" placeholder="Sawmill Jose, Forest Babu">
-        <button class="btn primary block" style="margin-top:12px" onclick="saveNewCustomer()">Save Customer</button>
-      </div>
-
-      <label>Machine</label>
-      <select id="machineSelect">
-        <option>Select after customer search</option>
-        <option>New machine / serial unknown</option>
-      </select>
-
-      <div id="newMachinePanel" class="form-panel">
-        <div class="title">New Machine</div>
-        <label>Model</label><input id="newModel" placeholder="MS250, MS382, FS120">
-        <label>Serial</label><input id="newSerial" placeholder="If available">
-        <button class="btn primary block" style="margin-top:12px" onclick="saveNewMachine()">Save Machine</button>
-      </div>
-
-      <label>What is stopping your work today?</label>
-      <div class="grid2">
-        <button class="btn" onclick="selectOne(this,'.urgency') ; this.classList.add('urgency')">Machine stopped work</button>
-        <button class="btn" onclick="selectOne(this,'.urgency') ; this.classList.add('urgency')">Needed tomorrow</button>
-        <button class="btn" onclick="selectOne(this,'.urgency') ; this.classList.add('urgency')">Can wait</button>
-        <button class="btn" onclick="selectOne(this,'.urgency') ; this.classList.add('urgency')">Periodic service</button>
-      </div>
-
-      <label>Customer says</label>
-      <textarea placeholder="Record exactly what customer says. Do not diagnose here."></textarea>
-
-      <label>Common words</label>
-      <div class="grid2">
-        <button class="btn" onclick="toggle(this)">Won't start</button>
-        <button class="btn" onclick="toggle(this)">No power</button>
-        <button class="btn" onclick="toggle(this)">Stops after heating</button>
-        <button class="btn" onclick="toggle(this)">Fuel leak</button>
-        <button class="btn" onclick="toggle(this)">Starter rope</button>
-        <button class="btn" onclick="toggle(this)">Chain problem</button>
-      </div>
-
-      <button class="btn primary block" style="margin-top:16px" onclick="receiveMachine()">Reception Complete</button>
+  <!-- Step indicator -->
+  <div style="padding:14px 16px 0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <a href="home.html" style="font-size:13px;font-weight:800;color:#aaa;text-decoration:none">← Back</a>
+      <span style="font-size:13px;font-weight:900;color:#df6427" id="step-label">Customer</span>
+      <span style="font-size:12px;color:#aaa" id="step-counter">Step 1 of 3</span>
+    </div>
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-dot" id="dot-2">2</div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step-dot" id="dot-3">3</div>
     </div>
   </div>
-</main>
 
-<nav class="bottom-nav">
-  <a class="navbtn" data-nav="home" href="home.html"><b>🏠</b>Home</a>
-  <a class="navbtn" data-nav="receive" href="receive.html"><b>➕</b>Receive</a>
-  <a class="navbtn" data-nav="bench" href="bench.html"><b>🔧</b>Bench</a>
-  <a class="navbtn" data-nav="work" href="work.html"><b>▶</b>Work</a>
-  <a class="navbtn" data-nav="more" href="#" onclick="logout()"><b>☰</b>Logout</a>
-</nav>
-<script src="assets/js/app.js"></script>
+  <!-- STEP 1: Customer -->
+  <div class="step-card active" id="step-customer">
+    <div class="card" style="margin:12px 14px">
+      <div class="head">Who is the customer?</div>
+      <div class="body">
+        <input class="search-big" id="customer-search"
+          placeholder="Phone, name, or alias..."
+          oninput="searchCustomers()"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+        <div id="customer-results" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- New customer form (hidden by default) -->
+    <div class="card" id="new-customer-form" style="margin:0 14px;display:none">
+      <div class="head">New Customer</div>
+      <div class="body">
+        <div class="grid">
+          <div class="field"><label>Name</label><input id="nc-name" placeholder="Customer name" autocomplete="off"></div>
+          <div class="field"><label>Phone</label><input id="nc-phone" type="tel" placeholder="Mobile number" autocomplete="off"></div>
+        </div>
+        <div class="grid">
+          <div class="field"><label>Place</label><input id="nc-place" placeholder="Village / Town" autocomplete="off"></div>
+          <div class="field"><label>Alias (optional)</label><input id="nc-alias" placeholder="How they are known" autocomplete="off"></div>
+        </div>
+        <button class="btn primary block" onclick="confirmNewCustomer()">Use This Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Machine + Complaint -->
+  <div class="step-card" id="step-machine">
+    <div class="card" style="margin:12px 14px">
+      <div class="head" id="machine-card-head">Which machine?</div>
+      <div class="body">
+
+        <!-- Previous machines -->
+        <div id="prev-machines" style="margin-bottom:14px"></div>
+
+        <!-- Model select -->
+        <div class="field" id="model-field">
+          <label>Model</label>
+          <select id="machine-model" onchange="onModelChange()">
+            <option value="">Select model</option>
+            <optgroup label="MS — Chainsaws">
+              <option>MS 180</option><option>MS 182</option><option>MS 211</option>
+              <option>MS 230</option><option>MS 250</option><option>MS 260</option>
+              <option>MS 361</option><option>MS 382</option><option>MS 460</option>
+              <option>MS 461</option><option>MS 462</option><option>MS 660</option>
+            </optgroup>
+            <optgroup label="FS — Brushcutters">
+              <option>FS 55</option><option>FS 85</option><option>FS 120</option>
+              <option>FS 130</option><option>FS 250</option><option>FS 400</option>
+            </optgroup>
+            <optgroup label="SR — Mist Blowers">
+              <option>SR 420</option><option>SR 450</option>
+            </optgroup>
+            <optgroup label="BR — Blower">
+              <option>BR 600</option>
+            </optgroup>
+            <optgroup label="Other Models" id="custom-models-group"></optgroup>
+            <option value="__other__">Other — type below</option>
+          </select>
+        </div>
+        <div class="field" id="model-other-wrap" style="display:none">
+          <label>Model (type)</label>
+          <div style="display:flex;gap:8px">
+            <input id="model-other" placeholder="e.g. BT 230" autocapitalize="characters" style="flex:1;padding:12px;border:1.5px solid #e8e8e8;border-radius:10px;font:inherit;font-size:16px">
+            <button class="btn" onclick="saveCustomModelLocal()">Save</button>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Serial Number</label>
+            <input id="machine-serial" placeholder="If available" autocorrect="off" autocapitalize="characters">
+          </div>
+          <div class="field">
+            <label>Purchase Source</label>
+            <select id="machine-source">
+              <option value="">Unknown</option>
+              <option value="TAGRO">TAGRO Sale</option>
+              <option value="other_dealer">Other Dealer</option>
+              <option value="old">Old / Unknown</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Complaint -->
+    <div class="card" style="margin:0 14px">
+      <div class="head">What does the customer say is wrong?</div>
+      <div class="body">
+        <p class="small" style="margin-bottom:12px">Record their words exactly. No diagnosis here.</p>
+
+        <div id="complaint-pills" style="margin-bottom:12px">
+          <!-- Common complaints as pills -->
+        </div>
+
+        <div class="field">
+          <textarea id="complaint-text" placeholder="Customer's exact words..." style="min-height:72px"></textarea>
+        </div>
+
+        <div id="complaint-list" style="margin-bottom:12px"></div>
+
+        <div class="field">
+          <label>How urgently is the machine needed?</label>
+          <div class="urgency-row">
+            <div class="urgency-btn" onclick="setUrgency('normal',this)">Normal</div>
+            <div class="urgency-btn" onclick="setUrgency('urgent',this)">Urgent</div>
+            <div class="urgency-btn" onclick="setUrgency('no_rush',this)">No Rush</div>
+          </div>
+        </div>
+
+        <button class="btn primary block" onclick="goToConfirm()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Confirm + Receive -->
+  <div class="step-card" id="step-confirm">
+    <div class="card" style="margin:12px 14px">
+      <div class="head">Confirm and Receive</div>
+      <div class="body">
+        <div id="confirm-summary"></div>
+
+        <!-- Accessories -->
+        <div class="field" style="margin-top:16px">
+          <label>Accessories brought in</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="acc-pills">
+            <div class="complaint-pill" data-acc="Guide bar" onclick="this.classList.toggle('selected')">Guide bar</div>
+            <div class="complaint-pill" data-acc="Chain" onclick="this.classList.toggle('selected')">Chain</div>
+            <div class="complaint-pill" data-acc="Fuel present" onclick="this.classList.toggle('selected')">Fuel present</div>
+            <div class="complaint-pill" data-acc="Loose parts" onclick="this.classList.toggle('selected')">Loose parts</div>
+            <div class="complaint-pill" data-acc="Bag" onclick="this.classList.toggle('selected')">Bag</div>
+            <div class="complaint-pill" data-acc="Photo taken" onclick="this.classList.toggle('selected')">Photo taken</div>
+          </div>
+        </div>
+
+        <div class="timeline-preview">
+          <div style="font-size:11px;font-weight:900;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Timeline will start</div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div>
+              <div class="timeline-text">Machine received by <b id="confirm-by"></b></div>
+              <div class="timeline-time" id="confirm-time"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn primary block" style="margin-top:14px;padding:18px;font-size:17px" onclick="receiveMachine()">
+          ✓ Receive Machine
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:20px"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('quick');
+
+let selectedCustomer = null;
+let selectedMachineId = null;
+let complaintArr = [];
+let urgency = 'normal';
+
+// ── Step navigation ───────────────────────────────────────
+const STEPS = ['customer', 'machine', 'confirm'];
+let currentStep = 0;
+
+const STEP_LABELS = ['Customer', 'Machine', 'Confirm'];
+const STEP_COUNTS = ['Step 1 of 3', 'Step 2 of 3', 'Step 3 of 3'];
+
+function goToStep(n) {
+  STEPS.forEach((id, i) => {
+    document.getElementById('step-' + id).classList.toggle('active', i === n);
+    const dot = document.getElementById('dot-' + (i+1));
+    if (i < n) { dot.classList.add('done'); dot.classList.remove('active'); dot.textContent = '✓'; }
+    else if (i === n) { dot.classList.add('active'); dot.classList.remove('done'); dot.textContent = i+1; }
+    else { dot.classList.remove('active','done'); dot.textContent = i+1; }
+    if (i < n && i < 2) document.getElementById('line-'+(i+1)).classList.add('done');
+    else if (i < 2) document.getElementById('line-'+(i+1)).classList.remove('done');
+  });
+  document.getElementById('step-label').textContent = STEP_LABELS[n];
+  document.getElementById('step-counter').textContent = STEP_COUNTS[n];
+  currentStep = n;
+  window.scrollTo(0, 0);
+}
+
+// ── STEP 1: Customer search ───────────────────────────────
+function searchCustomers() {
+  const q = document.getElementById('customer-search').value.trim();
+  const res = document.getElementById('customer-results');
+
+  if (q.length < 2) { res.innerHTML = ''; return; }
+
+  const found = findCustomers(q, s.branch);
+  if (!found.length) {
+    res.innerHTML = `<button class="btn-new-customer" onclick="showNewCustomerForm()">+ New Customer — "${q}"</button>`;
+    return;
+  }
+
+  res.innerHTML = found.map(c => `
+    <div class="customer-result" onclick="selectCustomer('${c.id}')">
+      <div class="customer-name">${c.name}</div>
+      <div class="customer-meta">${c.phone} · ${c.place}</div>
+      ${(c.alias||[]).length ? `<div class="customer-meta">Also known as: ${c.alias.join(', ')}</div>` : ''}
+      ${(c.machines||[]).length ? `<div class="customer-history">🔧 ${(c.machines||[]).length} machine(s) on record</div>` : ''}
+    </div>`
+  ).join('') + `<button class="btn-new-customer" onclick="showNewCustomerForm()">+ New Customer</button>`;
+}
+
+function selectCustomer(id) {
+  selectedCustomer = customers().find(c => c.id === id);
+  showMachineStep();
+}
+
+function showNewCustomerForm() {
+  document.getElementById('new-customer-form').style.display = 'block';
+  document.getElementById('nc-name').value = document.getElementById('customer-search').value;
+  document.getElementById('nc-name').focus();
+  document.getElementById('customer-results').innerHTML = '';
+}
+
+function confirmNewCustomer() {
+  const name  = document.getElementById('nc-name').value.trim();
+  const phone = document.getElementById('nc-phone').value.trim();
+  const place = document.getElementById('nc-place').value.trim();
+  const alias = document.getElementById('nc-alias').value.trim();
+
+  if (!name) { toast('Name is required'); return; }
+  if (!phone) { toast('Phone is required'); return; }
+
+  selectedCustomer = {
+    id:       'c' + Date.now(),
+    branch:   s.branch,
+    name, phone, place,
+    alias:    alias ? [alias] : [],
+    machines: [],
+    _new:     true
+  };
+  showMachineStep();
+}
+
+// ── STEP 2: Machine ───────────────────────────────────────
+function showMachineStep() {
+  loadCustomModels();
+
+  // Populate common complaints
+  const common = ["Won't Start","No Power","Chain Problem","Carburetor Issue","Fuel Leak","Engine Noise","Full Service","Sprayer Issue","Brushcutter Problem","Other"];
+  document.getElementById('complaint-pills').innerHTML = common.map(c =>
+    `<div class="complaint-pill" onclick="quickComplaint('${c}')">${c}</div>`
+  ).join('');
+
+  // Show previous machines if existing customer
+  const prev = document.getElementById('prev-machines');
+  if (selectedCustomer && (selectedCustomer.machines||[]).length) {
+    document.getElementById('machine-card-head').textContent = 'Which machine? (or select previous)';
+    prev.innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+        ${selectedCustomer.machines.map(m =>
+          `<div class="machine-pill" onclick="selectPrevMachine('${m.id}')">
+            <span class="m-model">${m.model}</span>
+            <span class="m-serial">${m.serial||'No serial'}</span>
+          </div>`
+        ).join('')}
+        <div class="machine-pill" onclick="newMachine()" style="border-style:dashed">
+          <span class="m-model">+</span>
+          <span class="m-serial">New</span>
+        </div>
+      </div>`;
+  } else {
+    prev.innerHTML = '';
+  }
+
+  goToStep(1);
+}
+
+function selectPrevMachine(id) {
+  const m = selectedCustomer.machines.find(x => x.id === id);
+  selectedMachineId = id;
+
+  // Highlight selected pill
+  document.querySelectorAll('.machine-pill').forEach(p => p.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  // Fill model dropdown
+  const sel = document.getElementById('machine-model');
+  let found = false;
+  for (let opt of sel.options) {
+    if (opt.value === m.model || opt.text === m.model) { sel.value = opt.value; found = true; break; }
+  }
+  if (!found) {
+    sel.value = '__other__';
+    document.getElementById('model-other-wrap').style.display = 'block';
+    document.getElementById('model-other').value = m.model;
+  } else {
+    document.getElementById('model-other-wrap').style.display = 'none';
+  }
+
+  document.getElementById('machine-serial').value = m.serial || '';
+}
+
+function newMachine() {
+  selectedMachineId = null;
+  document.querySelectorAll('.machine-pill').forEach(p => p.classList.remove('selected'));
+  document.getElementById('machine-model').value = '';
+  document.getElementById('machine-serial').value = '';
+}
+
+function onModelChange() {
+  const v = document.getElementById('machine-model').value;
+  document.getElementById('model-other-wrap').style.display = v === '__other__' ? 'block' : 'none';
+}
+
+function loadCustomModels() {
+  const custom = jget('tagro_custom_models', []);
+  const grp = document.getElementById('custom-models-group');
+  grp.innerHTML = '';
+  custom.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m;
+    grp.appendChild(opt);
+  });
+}
+
+function saveCustomModelLocal() {
+  const v = document.getElementById('model-other').value.trim().toUpperCase();
+  if (!v) return;
+  const list = jget('tagro_custom_models', []);
+  if (!list.includes(v)) { list.push(v); jset('tagro_custom_models', list); }
+  loadCustomModels();
+  document.getElementById('machine-model').value = v;
+  document.getElementById('model-other-wrap').style.display = 'none';
+  toast(v + ' saved to model list');
+}
+
+function quickComplaint(text) {
+  if (text === 'Other') { document.getElementById('complaint-text').focus(); return; }
+  document.getElementById('complaint-text').value = text;
+}
+
+function setUrgency(val, el) {
+  urgency = val;
+  document.querySelectorAll('.urgency-btn').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function goToConfirm() {
+  const model = getModelValue();
+  if (!model) { toast('Select the machine model'); return; }
+
+  const complaintText = document.getElementById('complaint-text').value.trim();
+  if (complaintText && !complaintArr.find(c => c.text === complaintText)) {
+    complaintArr.push({ text: complaintText, at: new Date().toISOString() });
+  }
+  if (!complaintArr.length) { toast('Record at least one complaint'); return; }
+
+  buildConfirmSummary();
+  goToStep(2);
+}
+
+function getModelValue() {
+  const sel = document.getElementById('machine-model').value;
+  if (sel === '__other__') return document.getElementById('model-other').value.trim();
+  return sel;
+}
+
+// ── STEP 3: Confirm ───────────────────────────────────────
+function buildConfirmSummary() {
+  const model  = getModelValue();
+  const serial = document.getElementById('machine-serial').value.trim();
+
+  document.getElementById('confirm-by').textContent = s.name;
+  document.getElementById('confirm-time').textContent = new Date().toLocaleString('en-IN');
+
+  document.getElementById('confirm-summary').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div class="confirm-col">
+        <div class="confirm-label">Customer</div>
+        <div class="confirm-value">${selectedCustomer.name}</div>
+      </div>
+      <div class="confirm-col">
+        <div class="confirm-label">Phone</div>
+        <div class="confirm-value">${selectedCustomer.phone}</div>
+      </div>
+      <div class="confirm-col">
+        <div class="confirm-label">Model</div>
+        <div class="confirm-value">${model}</div>
+      </div>
+      <div class="confirm-col">
+        <div class="confirm-label">Serial</div>
+        <div class="confirm-value">${serial || 'Not recorded'}</div>
+      </div>
+    </div>
+    <div style="background:#f5f5f5;border-radius:10px;padding:12px">
+      <div class="confirm-label" style="margin-bottom:6px">Complaint</div>
+      ${complaintArr.map(c => `<div style="font-size:14px;font-weight:700;color:#121212;margin-bottom:4px">"${c.text}"</div>`).join('')}
+      <div style="font-size:12px;color:#aaa;margin-top:4px">Urgency: ${urgency}</div>
+    </div>`;
+}
+
+// ── Save and receive ──────────────────────────────────────
+function receiveMachine() {
+  const model  = getModelValue();
+  const serial = document.getElementById('machine-serial').value.trim();
+  const source = document.getElementById('machine-source').value;
+  const accs   = [...document.querySelectorAll('[data-acc].selected')].map(b => b.dataset.acc);
+  const branch = s.branch;
+  const woNum  = wo(branch);
+  const now    = new Date().toISOString();
+
+  // Build job
+  const job = {
+    id:          'j' + Date.now(),
+    workOrder:   woNum,
+    branch,
+    branchName:  s.branchName,
+    date:        now,
+    status:      'Received',
+    acceptedBy:  s.name,
+    urgency,
+    customer: {
+      id:    selectedCustomer.id,
+      name:  selectedCustomer.name,
+      phone: selectedCustomer.phone,
+      place: selectedCustomer.place,
+      alias: selectedCustomer.alias || []
+    },
+    machine: {
+      id:        selectedMachineId || ('m' + Date.now()),
+      model,
+      serialNo:  serial,
+      source:    source || 'unknown'
+    },
+    complaints:  complaintArr,
+    accessories: accs,
+    timeline: [{
+      type:        'received',
+      description: model + ' received from ' + selectedCustomer.name,
+      by:          s.name,
+      at:          now
+    }],
+    parts:   [],
+    labour:  [],
+    notes:   [],
+    photos:  []
+  };
+
+  // Save job
+  const all = jobs();
+  all.push(job);
+  saveJobs(all);
+
+  // Save or update customer
+  const cList = customers();
+  let existing = cList.find(c => c.id === selectedCustomer.id);
+
+  if (!existing) {
+    // New customer
+    selectedCustomer.machines = selectedCustomer.machines || [];
+    if (!selectedCustomer.machines.find(m => m.id === job.machine.id)) {
+      selectedCustomer.machines.push({ id: job.machine.id, model, serial, source });
+    }
+    delete selectedCustomer._new;
+    cList.push(selectedCustomer);
+  } else {
+    // Existing — add machine if new
+    existing.machines = existing.machines || [];
+    const machineExists = existing.machines.find(m =>
+      m.model === model && m.serial === serial
+    );
+    if (!machineExists) {
+      existing.machines.push({ id: job.machine.id, model, serial, source });
+    }
+  }
+  jset('tagro_customers', cList);
+
+  // Record event
+  recordEvent(branch, {
+    type:        'received',
+    description: model + ' received from ' + selectedCustomer.name,
+    jobId:       job.id,
+    workOrder:   woNum,
+    by:          s.name,
+    at:          now
+  });
+
+  toast('Machine received — ' + woNum);
+  setTimeout(() => location.href = 'work.html?id=' + job.id, 800);
+}
+
+function recordEvent(branch, event) {
+  const key    = 'tagro_events_' + branch;
+  const events = jget(key, []);
+  events.unshift(event);
+  if (events.length > 200) events.splice(200);
+  jset(key, events);
+}
+
+// Preselect Normal urgency
+document.querySelector('.urgency-btn').classList.add('selected');
+</script>
 </body>
 </html>

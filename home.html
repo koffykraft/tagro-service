@@ -1,66 +1,332 @@
 <!doctype html>
-<html lang="ml">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>TAGRO Home</title>
-<link rel="stylesheet" href="assets/css/app.css">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Workshop — TAGRO Service</title>
+<link rel="stylesheet" href="app.css">
+<style>
+.live-header { padding:14px 16px 8px; }
+.live-date { font-size:12px; color:#aaa; font-weight:700; }
+.live-title { font-size:22px; font-weight:900; color:#121212; margin-top:2px; }
+.live-branch { font-size:13px; color:#df6427; font-weight:800; }
+
+/* Action buttons — the main interface */
+.action-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; }
+.action-btn { background:#fff; border:1.5px solid #e8e8e8; border-radius:16px; padding:18px 14px; text-align:center; cursor:pointer; text-decoration:none; display:block; transition:all .15s; }
+.action-btn:active { transform:scale(.97); }
+.action-btn.primary { background:#df6427; border-color:#df6427; }
+.action-btn.primary .action-icon { font-size:28px; }
+.action-btn.primary .action-label { color:#fff; }
+.action-btn.primary .action-sub { color:rgba(255,255,255,.7); }
+.action-icon { font-size:26px; margin-bottom:6px; }
+.action-label { font-size:14px; font-weight:900; color:#121212; }
+.action-sub { font-size:11px; color:#aaa; margin-top:2px; }
+
+/* Live activity feed */
+.activity-section { padding:0 14px 14px; }
+.section-title { font-size:11px; font-weight:900; color:#aaa; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:10px; }
+
+.activity-item { background:#fff; border-radius:14px; padding:12px 14px; margin-bottom:8px; border-left:3px solid #e8e8e8; display:flex; align-items:flex-start; gap:12px; }
+.activity-item.urgent { border-left-color:#ba3327; }
+.activity-item.attention { border-left-color:#d97706; }
+.activity-item.good { border-left-color:#287a3e; }
+.activity-item.info { border-left-color:#2f7deb; }
+.activity-icon { font-size:20px; flex-shrink:0; margin-top:1px; }
+.activity-body { flex:1; min-width:0; }
+.activity-main { font-weight:900; font-size:14px; color:#121212; }
+.activity-sub { font-size:12px; color:#888; margin-top:2px; line-height:1.4; }
+.activity-time { font-size:11px; color:#bbb; margin-top:4px; }
+.activity-action { display:inline-block; margin-top:8px; padding:6px 12px; background:#f5f5f5; border-radius:8px; font-size:12px; font-weight:800; color:#555; text-decoration:none; cursor:pointer; border:none; }
+.activity-action.orange { background:#fff1e9; color:#df6427; }
+.activity-action.green { background:#e8f5e9; color:#287a3e; }
+
+/* Stat pills */
+.stat-pills { display:flex; gap:8px; padding:0 14px 14px; overflow-x:auto; }
+.stat-pill { background:#fff; border:1.5px solid #e8e8e8; border-radius:99px; padding:8px 16px; white-space:nowrap; flex-shrink:0; }
+.stat-pill b { font-size:18px; display:block; color:#121212; }
+.stat-pill span { font-size:10px; text-transform:uppercase; color:#aaa; font-weight:900; letter-spacing:.5px; }
+.stat-pill.alert b { color:#ba3327; }
+.stat-pill.warn b { color:#d97706; }
+.stat-pill.good b { color:#287a3e; }
+
+.empty-state { text-align:center; padding:32px 20px; color:#bbb; }
+.empty-state .empty-icon { font-size:40px; margin-bottom:8px; }
+.empty-state p { font-size:13px; }
+</style>
 </head>
-<body data-page="home">
-<header class="shell-header">
-  <a class="logo" href="home.html"><img src="assets/images/tagro-logo.png" alt="TAGRO"></a>
-  <span class="branch-pill" id="branchBadge">KVR</span>
-  <span class="user-pill" id="userBadge">Staff</span>
-</header>
+<body>
+<div class="wrap" style="padding:0;max-width:600px">
 
-<main>
-  <div class="card">
-    <div class="body">
-      <div class="hero">What happened now?</div>
-      <div class="sub">This is not a menu. Choose the real shop-floor event.</div>
-      <div class="grid2" style="margin-top:16px">
-        <a class="btn primary" href="receive.html">Customer arrived</a>
-        <a class="btn" href="bench.html">Resume / Continue repair</a>
-        <a class="btn" href="work.html">Need part</a>
-        <a class="btn" href="bench.html">Machine ready / delivery</a>
-        <a class="btn" href="receive.html">Customer called</a>
-        <a class="btn" href="bench.html">Manager review</a>
-      </div>
+  <!-- Live header -->
+  <div class="live-header">
+    <div class="live-date" id="live-date"></div>
+    <div class="live-title" id="live-greeting">Good morning</div>
+    <div class="live-branch" id="live-branch"></div>
+  </div>
+
+  <!-- Stat pills -->
+  <div class="stat-pills" id="stat-pills"></div>
+
+  <!-- Primary action buttons -->
+  <div class="action-grid">
+    <a class="action-btn primary" href="receive.html">
+      <div class="action-icon">🔧</div>
+      <div class="action-label">Receive Machine</div>
+      <div class="action-sub">New job card</div>
+    </a>
+    <a class="action-btn" href="bench.html">
+      <div class="action-icon">🪛</div>
+      <div class="action-label">My Bench</div>
+      <div class="action-sub" id="bench-count">Loading...</div>
+    </a>
+    <a class="action-btn" href="tracker.html">
+      <div class="action-icon">📋</div>
+      <div class="action-label">All Jobs</div>
+      <div class="action-sub">Search and filter</div>
+    </a>
+    <a class="action-btn" href="purchase.html">
+      <div class="action-icon">🛒</div>
+      <div class="action-label">Parts Needed</div>
+      <div class="action-sub" id="po-count">0 open requests</div>
+    </a>
+  </div>
+
+  <!-- What happened today -->
+  <div class="activity-section">
+    <div class="section-title">What is happening now</div>
+    <div id="activity-feed"></div>
+  </div>
+
+  <!-- Secondary actions -->
+  <div class="activity-section">
+    <div class="section-title">More</div>
+    <div class="action-grid" style="padding:0">
+      <a class="action-btn" href="reports.html">
+        <div class="action-icon">📊</div>
+        <div class="action-label">Reports</div>
+        <div class="action-sub">Daily summary</div>
+      </a>
+      <a class="action-btn" href="parts.html">
+        <div class="action-icon">🔩</div>
+        <div class="action-label">Parts Master</div>
+        <div class="action-sub">Search and manage</div>
+      </a>
+      <a class="action-btn" href="links.html">
+        <div class="action-icon">🔗</div>
+        <div class="action-label">Links</div>
+        <div class="action-sub">Useful sites</div>
+      </a>
+      <a class="action-btn" href="config.html">
+        <div class="action-icon">⚙️</div>
+        <div class="action-label">Settings</div>
+        <div class="action-sub">Branch config</div>
+      </a>
     </div>
   </div>
 
-  <div class="grid3">
-    <div class="stat"><b>1</b><span>Customer waiting</span></div>
-    <div class="stat"><b>3</b><span>Need inspection</span></div>
-    <div class="stat"><b>2</b><span>Ready</span></div>
-  </div>
+  <div style="height:20px"></div>
+</div>
 
-  <div class="card" style="margin-top:14px">
-    <div class="card-head"><h2>Today in this workshop</h2><span class="pill">live</span></div>
-    <div class="body">
-      <div class="list click" onclick="location.href='bench.html'">
-        <div class="title">Rajeev paused MS382 <span class="pill amber">Resume note</span></div>
-        <div class="small">“Clutch removed. Next check oil pump drive.”</div>
-      </div>
-      <div class="list click" onclick="location.href='receive.html'">
-        <div class="title">Customer waiting at counter <span class="pill red">Now</span></div>
-        <div class="small">Machine stopped work. Get situation first, not diagnosis.</div>
-      </div>
-      <div class="list click" onclick="location.href='bench.html'">
-        <div class="title">3 machines waiting inspection</div>
-        <div class="small">Give small inspection window, not full doorway.</div>
-      </div>
-    </div>
-  </div>
-</main>
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('home');
 
-<nav class="bottom-nav">
-  <a class="navbtn" data-nav="home" href="home.html"><b>🏠</b>Home</a>
-  <a class="navbtn" data-nav="receive" href="receive.html"><b>➕</b>Receive</a>
-  <a class="navbtn" data-nav="bench" href="bench.html"><b>🔧</b>Bench</a>
-  <a class="navbtn" data-nav="work" href="work.html"><b>▶</b>Work</a>
-  <a class="navbtn" data-nav="more" href="#" onclick="logout()"><b>☰</b>Logout</a>
-</nav>
-<script src="assets/js/app.js"></script>
+// ── Header ────────────────────────────────────────────────
+function initHeader() {
+  const now  = new Date();
+  const hour = now.getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const dateStr  = now.toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+
+  document.getElementById('live-date').textContent = dateStr;
+  const nameParts = s.name.split(' ');
+  const displayName = nameParts[0].length <= 2 ? s.name : nameParts[0];
+  document.getElementById('live-greeting').textContent = greeting + ', ' + displayName;
+  document.getElementById('live-branch').textContent =
+    s.role === 'Owner' ? 'All Branches' : (s.branchName || s.branch);
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function renderStats() {
+  const myJobs = getMyBranchJobs();
+  const open      = myJobs.filter(j => !['Delivered','Completed'].includes(j.status));
+  const ready     = myJobs.filter(j => j.status === 'Ready');
+  const waiting   = myJobs.filter(j => j.status === 'Waiting Parts');
+  const pending   = myJobs.filter(j => ageDays(j) > 7 && !['Delivered','Completed'].includes(j.status));
+  const missingSerial = myJobs.filter(j => !j.machine?.serialNo && !['Delivered','Completed'].includes(j.status));
+  const poCount   = po().filter(p => s.role === 'Owner' || p.branch === s.branch).length;
+
+  document.getElementById('po-count').textContent = poCount + ' open request' + (poCount !== 1 ? 's' : '');
+
+  const myBenchJobs = myJobs.filter(j => j.assignedTo === s.name && !['Delivered','Completed','Ready'].includes(j.status));
+  document.getElementById('bench-count').textContent = myBenchJobs.length + ' machine' + (myBenchJobs.length !== 1 ? 's' : '');
+
+  const pills = [
+    { label: 'Open', val: open.length, cls: '' },
+    { label: 'Ready', val: ready.length, cls: 'good' },
+    { label: 'Waiting Parts', val: waiting.length, cls: waiting.length > 0 ? 'warn' : '' },
+    { label: 'Long Pending', val: pending.length, cls: pending.length > 0 ? 'alert' : '' },
+    { label: 'No Serial', val: missingSerial.length, cls: missingSerial.length > 0 ? 'warn' : '' },
+  ];
+
+  document.getElementById('stat-pills').innerHTML = pills.map(p =>
+    `<div class="stat-pill ${p.cls}"><b>${p.val}</b><span>${p.label}</span></div>`
+  ).join('');
+}
+
+// ── Activity feed ─────────────────────────────────────────
+function renderActivity() {
+  const myJobs  = getMyBranchJobs();
+  const events  = [];
+
+  // Machines waiting inspection (Received but no technician yet)
+  const waitInspect = myJobs.filter(j => j.status === 'Received' && !j.assignedTo);
+  if (waitInspect.length) {
+    events.push({
+      cls:   'urgent',
+      icon:  '🔍',
+      main:  waitInspect.length + ' machine' + (waitInspect.length > 1 ? 's' : '') + ' waiting inspection',
+      sub:   waitInspect.map(j => j.machine?.model + ' — ' + j.customer?.name).join(' · '),
+      time:  '',
+      actions: [{ label:'View Queue', cls:'orange', href:'tracker.html?status=Received' }]
+    });
+  }
+
+  // Ready machines
+  const ready = myJobs.filter(j => j.status === 'Ready');
+  if (ready.length) {
+    events.push({
+      cls:  'good',
+      icon: '✅',
+      main: ready.length + ' machine' + (ready.length > 1 ? 's' : '') + ' ready for collection',
+      sub:  ready.map(j => j.customer?.name + ' — ' + j.machine?.model).join(' · '),
+      time: '',
+      actions: [{ label:'View Ready', cls:'green', href:'tracker.html?status=Ready' }]
+    });
+  }
+
+  // Estimates waiting customer approval
+  const awaitApproval = myJobs.filter(j => j.status === 'Waiting Approval');
+  if (awaitApproval.length) {
+    events.push({
+      cls:  'attention',
+      icon: '💬',
+      main: awaitApproval.length + ' estimate' + (awaitApproval.length > 1 ? 's' : '') + ' awaiting customer approval',
+      sub:  awaitApproval.map(j => j.customer?.name + ' — ₹' + (j.estimate?.total || '?')).join(' · '),
+      time: '',
+      actions: [{ label:'View', cls:'orange', href:'tracker.html?status=Waiting Approval' }]
+    });
+  }
+
+  // Waiting parts
+  const waitParts = myJobs.filter(j => j.status === 'Waiting Parts');
+  if (waitParts.length) {
+    events.push({
+      cls:  'attention',
+      icon: '🛒',
+      main: waitParts.length + ' machine' + (waitParts.length > 1 ? 's' : '') + ' waiting for parts',
+      sub:  waitParts.map(j => j.machine?.model + ' — ' + j.customer?.name).join(' · '),
+      time: '',
+      actions: [{ label:'Purchase Requests', cls:'', href:'purchase.html' }]
+    });
+  }
+
+  // Long pending
+  const longPending = myJobs.filter(j => ageDays(j) > 7 && !['Delivered','Completed'].includes(j.status));
+  if (longPending.length) {
+    events.push({
+      cls:  'urgent',
+      icon: '⏰',
+      main: longPending.length + ' job' + (longPending.length > 1 ? 's' : '') + ' pending over 7 days',
+      sub:  longPending.map(j => j.customer?.name + ' (' + ageDays(j) + ' days)').join(' · '),
+      time: '',
+      actions: [{ label:'Review', cls:'orange', href:'tracker.html?filter=long' }]
+    });
+  }
+
+  // Recent timeline events (last 6 hours)
+  const recent = getRecentEvents(6);
+  recent.slice(0, 3).forEach(ev => {
+    events.push({
+      cls:  'info',
+      icon: eventIcon(ev.type),
+      main: ev.description,
+      sub:  ev.by || '',
+      time: timeAgo(ev.at),
+      actions: ev.jobId ? [{ label:'Open Job', cls:'', href:'work.html?id=' + ev.jobId }] : []
+    });
+  });
+
+  if (!events.length) {
+    document.getElementById('activity-feed').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🌅</div>
+        <p>No active jobs.<br>Receive a machine to get started.</p>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('activity-feed').innerHTML = events.map(ev => `
+    <div class="activity-item ${ev.cls}">
+      <div class="activity-icon">${ev.icon}</div>
+      <div class="activity-body">
+        <div class="activity-main">${ev.main}</div>
+        ${ev.sub ? `<div class="activity-sub">${ev.sub}</div>` : ''}
+        ${ev.time ? `<div class="activity-time">${ev.time}</div>` : ''}
+        ${ev.actions.map(a =>
+          `<a class="activity-action ${a.cls}" href="${a.href}">${a.label}</a>`
+        ).join(' ')}
+      </div>
+    </div>`
+  ).join('');
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function getMyBranchJobs() {
+  const all = jobs();
+  if (s.role === 'Owner') return all;
+  return all.filter(j => j.branch === s.branch);
+}
+
+function ageDays(job) {
+  return Math.floor((Date.now() - new Date(job.date).getTime()) / 86400000);
+}
+
+function getRecentEvents(hours) {
+  const cutoff = Date.now() - hours * 3600 * 1000;
+  const allEvents = jget('tagro_events_' + s.branch, []);
+  return allEvents.filter(e => new Date(e.at).getTime() > cutoff).reverse();
+}
+
+function eventIcon(type) {
+  const icons = {
+    received: '📥', inspection: '🔍', estimate: '📝',
+    approved: '✅', repair_start: '🔧', paused: '⏸',
+    resumed: '▶️', testing: '🧪', ready: '🔔', delivered: '📤',
+    sms: '💬', default: '📌'
+  };
+  return icons[type] || icons.default;
+}
+
+function timeAgo(iso) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+// ── Run ───────────────────────────────────────────────────
+initHeader();
+renderStats();
+renderActivity();
+
+// Refresh every 2 minutes
+setInterval(() => { renderStats(); renderActivity(); }, 120000);
+</script>
 </body>
 </html>
