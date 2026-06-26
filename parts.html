@@ -1,0 +1,233 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parts Master</title>
+<link rel="stylesheet" href="app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+.mono { font-family: 'Courier New', monospace; font-size: 12px; color: #555; }
+.sep  { color: #ccc; margin: 0 4px; }
+.muted { color: #999; font-size: 12px; }
+.suggest-row { display:block;width:100%;border:0;background:#fff;
+  text-align:left;padding:12px 14px;border-bottom:1px solid #f0f0f0;
+  cursor:pointer; }
+.suggest-row:hover { background:#fff8f4; }
+.suggest-main { font-size:15px;font-weight:700;margin-bottom:4px; }
+.suggest-sub  { font-size:12px;color:#666;display:flex;align-items:center;gap:4px;flex-wrap:wrap; }
+.suggest-empty { padding:14px;font-size:13px;color:#999;text-align:center; }
+.part-item { background:#fff;border:1px solid #e8e8e8;border-radius:12px;
+  padding:12px 14px;margin-bottom:10px; }
+.part-title { font-weight:900;font-size:15px;margin-bottom:4px; }
+.part-no    { font-family:'Courier New',monospace;font-size:11px;
+  color:#888;margin-bottom:6px; }
+.part-meta  { font-size:12px;color:#666;display:flex;gap:10px;flex-wrap:wrap; }
+.needs-update { border-left:3px solid #d97706; }
+.upload-zone { border:2px dashed #ddd;border-radius:14px;padding:28px 20px;
+  text-align:center;background:#fafafa;cursor:pointer;transition:.2s; }
+.upload-zone:hover { border-color:#df6427;background:#fff8f4; }
+.upload-zone input { display:none; }
+.stats-row { display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap; }
+.stat-chip { background:#f5f5f5;border-radius:99px;padding:6px 14px;
+  font-size:12px;font-weight:800;color:#555; }
+.stat-chip.orange { background:#fff1e9;color:#df6427; }
+.stat-chip.green  { background:#e8f5e9;color:#287a3e; }
+.stat-chip.amber  { background:#fff3d5;color:#d97706; }
+.filter-row { display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap; }
+.filter-btn { border:1px solid #ddd;background:#fff;border-radius:99px;
+  padding:7px 14px;font-size:12px;font-weight:800;color:#666;cursor:pointer; }
+.filter-btn.on { background:#df6427;border-color:#df6427;color:#fff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Upload card -->
+  <div class="card">
+    <div class="head">Parts Master</div>
+    <div class="body">
+      <div id="upload-stats" class="stats-row"></div>
+      <label class="upload-zone" id="upload-zone">
+        <input type="file" id="file-input" accept=".xlsx,.xls">
+        <div style="font-size:32px;margin-bottom:8px">📋</div>
+        <div style="font-weight:900;font-size:15px;margin-bottom:4px">Upload Parts Master Excel</div>
+        <div class="small">Download template → fill → upload here</div>
+        <div class="small" style="margin-top:8px;color:#df6427">TAGRO_Parts_Master_Template.xlsx</div>
+      </label>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn primary" id="dl-template" href="#" onclick="downloadTemplate()">
+          ⬇ Download Template
+        </a>
+        <button class="btn" onclick="clearParts()">Clear All Parts</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search card -->
+  <div class="card">
+    <div class="head">Search Parts</div>
+    <div class="body">
+      <div class="field">
+        <input id="search-input" placeholder="Type name or part number — e.g. 36RSC or 36210001640"
+               oninput="liveSearch()" autocorrect="off" autocapitalize="off" spellcheck="false">
+      </div>
+      <div id="search-results" class="suggest hide" style="margin-top:-6px"></div>
+    </div>
+  </div>
+
+  <!-- Filter + list -->
+  <div class="filter-row" id="filter-row"></div>
+  <div id="parts-list"></div>
+
+</div>
+
+<script src="app.js"></script>
+<script src="parts-search.js"></script>
+<script>
+let s = requireLogin();
+initShell('links');
+
+let currentFilter = 'ALL';
+let currentParts  = [];
+
+// ── On load ───────────────────────────────────────────────
+function init() {
+  renderStats();
+  renderFilters();
+  renderList(partsData().filter(p => p.active === 'Y').slice(0, 40));
+}
+
+// ── Stats bar ─────────────────────────────────────────────
+function renderStats() {
+  const all    = partsData();
+  const active = all.filter(p => p.active === 'Y').length;
+  const upd    = all.filter(p => p.needsUpdate).length;
+  const updated = localStorage.getItem('tagro_parts_updated');
+
+  document.getElementById('upload-stats').innerHTML = all.length === 0
+    ? '<span class="stat-chip">No parts loaded yet</span>'
+    : `<span class="stat-chip orange">${all.length} total</span>
+       <span class="stat-chip green">${active} active</span>
+       ${upd ? `<span class="stat-chip amber">${upd} need price update</span>` : ''}
+       ${updated ? `<span class="stat-chip">Updated ${new Date(updated).toLocaleDateString('en-IN')}</span>` : ''}`;
+}
+
+// ── Filters ───────────────────────────────────────────────
+function renderFilters() {
+  const groups = ['ALL', 'Spare parts', 'Accessories', 'Machines', 'Needs update'];
+  document.getElementById('filter-row').innerHTML = groups.map(g =>
+    `<button class="filter-btn ${currentFilter===g?'on':''}" onclick="setFilter('${g}')">${g}</button>`
+  ).join('');
+}
+
+function setFilter(g) {
+  currentFilter = g;
+  renderFilters();
+  const all = partsData();
+  let filtered = all;
+  if (g === 'Needs update') filtered = all.filter(p => p.needsUpdate);
+  else if (g !== 'ALL')     filtered = all.filter(p => p.group === g);
+  renderList(filtered.slice(0, 60));
+}
+
+// ── List ──────────────────────────────────────────────────
+function renderList(parts) {
+  currentParts = parts;
+  if (!parts.length) {
+    document.getElementById('parts-list').innerHTML =
+      '<div class="card"><div class="body small">No parts to show. Upload the parts master to get started.</div></div>';
+    return;
+  }
+
+  document.getElementById('parts-list').innerHTML = parts.map((p, i) => `
+    <div class="part-item ${p.needsUpdate ? 'needs-update' : ''}">
+      <div class="part-title">${p.name}
+        ${p.active === 'N' ? '<span class="badge red">Inactive</span>' : ''}
+        ${p.needsUpdate ? '<span class="badge amber">Price TBD</span>' : ''}
+      </div>
+      <div class="part-no">${p.no || '—'}</div>
+      <div class="part-meta">
+        ${p.price ? `<span>₹${Number(p.price).toLocaleString('en-IN')}</span>` : '<span>Price TBD</span>'}
+        ${p.mrp ? `<span class="muted">MRP ₹${Number(p.mrp).toLocaleString('en-IN')}</span>` : ''}
+        ${p.gst ? `<span>GST ${p.gst}%</span>` : ''}
+        ${p.unit ? `<span>${p.unit}</span>` : ''}
+        ${p.modelGroup ? `<span class="muted">${p.modelGroup}</span>` : ''}
+        ${p.group ? `<span class="muted">${p.group}</span>` : ''}
+      </div>
+      ${p.stihlName && !p.needsUpdate ? `<div class="small" style="margin-top:6px;color:#aaa">STIHL: ${p.stihlName}</div>` : ''}
+    </div>`
+  ).join('');
+}
+
+// ── Live search ───────────────────────────────────────────
+function liveSearch() {
+  const q = document.getElementById('search-input').value.trim();
+  const res = document.getElementById('search-results');
+
+  if (q.length < 2) {
+    res.classList.add('hide');
+    renderList(partsData().filter(p => p.active === 'Y').slice(0, 40));
+    return;
+  }
+
+  const results = searchParts(q, 12);
+  renderList(results);
+  res.classList.add('hide'); // hide floating dropdown, show inline
+}
+
+// ── File upload ───────────────────────────────────────────
+document.getElementById('file-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      const wb = XLSX.read(ev.target.result, { type: 'binary' });
+
+      // Find the PARTS DATA sheet
+      const sheetName = wb.SheetNames.find(n =>
+        n.toUpperCase().includes('PARTS') || n.toUpperCase().includes('DATA')
+      ) || wb.SheetNames[0];
+
+      const ws = wb.Sheets[sheetName];
+      // startRow = 2 (header), read from row 3
+      const rows = XLSX.utils.sheet_to_json(ws, {
+        defval: '',
+        range: 1, // skip first title row, use row 2 as header
+      });
+
+      const count = importPartsFromExcel(rows);
+      toast(`${count} parts loaded`);
+      renderStats();
+      renderFilters();
+      renderList(partsData().filter(p => p.active === 'Y').slice(0, 40));
+    } catch(err) {
+      toast('Error reading file: ' + err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+  e.target.value = ''; // reset so same file can be re-uploaded
+});
+
+// ── Download template ─────────────────────────────────────
+function downloadTemplate() {
+  // Point to the template in your repo
+  window.open('https://raw.githubusercontent.com/koffykraft/tagro-service/main/TAGRO_Parts_Master_Template.xlsx');
+}
+
+// ── Clear ─────────────────────────────────────────────────
+function clearParts() {
+  if (!confirm('Clear all parts data from this device?')) return;
+  localStorage.removeItem('tagro_parts_data');
+  localStorage.removeItem('tagro_parts_updated');
+  renderStats();
+  renderList([]);
+  toast('Parts cleared');
+}
+
+init();
+</script>
+</body>
+</html>
