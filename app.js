@@ -1,55 +1,241 @@
+// TAGRO Service — app.js
+// Data, auth, and API calls
+// API keys never in browser — all calls go through Cloudflare Worker
 
-const PEOPLE={KVR:["Vishnu (Manager)","Rajeev","Anandu","Thankachan"],MDM:["Ratheesh (Manager)","John Victor"],PKM:["Anoop K P (Manager)","Anoop P G"],SKT:["Karthick (Manager)","Mahalakshmi","Jothi"],NDD:["Yedhu (Manager)"]};
-const SAMPLE_JOBS=[{wo:"KVR/2606/014",customer:"Victor Farms",phone:"9447000003",model:"MS460",serial:"11258975355",status:"RECEIVED",complaint:"Fuel leak / Service"},{wo:"KVR/2606/015",customer:"Jose Sawmill",phone:"9447000004",model:"FS120",serial:"",status:"ON HOLD",complaint:"Carburetor"},{wo:"KVR/2606/016",customer:"Joseph",phone:"9447000005",model:"BR600",serial:"77889911",status:"READY",complaint:"No power"}];
-function session(){try{return JSON.parse(localStorage.getItem('tagro_session')||'null')}catch{return null}}
-function saveSession(s){localStorage.setItem('tagro_session',JSON.stringify(s))}
-function requireLogin(){let p=location.pathname.split('/').pop();if(!session() && !['login.html','index.html',''].includes(p)) location.href='login.html'}
-function setupHeader(){let s=session()||{branch:'DEMO',staff:'Demo'};document.querySelectorAll('[data-logo]').forEach(i=>i.src=localStorage.getItem('tagro_logo_data'));let b=document.getElementById('branchBadge');if(b)b.textContent=s.branch;let u=document.getElementById('userBadge');if(u)u.textContent=(s.staff||'Demo').replace(' (Manager)','');setActiveNav()}
-function loadUsers(){let b=document.getElementById('loginBranch')?.value||'KVR',u=document.getElementById('loginUser');if(!u)return;u.innerHTML='';(PEOPLE[b]||[]).forEach(n=>{let o=document.createElement('option');o.value=n;o.textContent=n;u.appendChild(o)})}
-function doLogin(demo=false){saveSession({branch:demo?'DEMO':document.getElementById('loginBranch').value,staff:demo?'Demo':document.getElementById('loginUser').value,demo,loginAt:new Date().toISOString()});location.href='home.html'}
-function logout(){localStorage.removeItem('tagro_session');location.href='login.html'}
-function jobs(){let saved=JSON.parse(localStorage.getItem('tagro_jobs')||'null');if(!saved){localStorage.setItem('tagro_jobs',JSON.stringify(SAMPLE_JOBS));return SAMPLE_JOBS}return saved}
-function renderQueue(){let el=document.getElementById('jobList');if(!el)return;el.innerHTML=jobs().map((j,i)=>`<div class="listitem"><div class="title">${j.customer} — ${j.model} <span class="pill ${j.status==='READY'?'green':j.status==='ON HOLD'?'amber':''}">${j.status}</span></div><div class="small">${j.wo} · ${j.phone} · Serial: ${j.serial||'MISSING'} · ${j.complaint}</div><div style="margin-top:12px"><a class="btn primary" href="job.html?id=${i}">Open job</a></div></div>`).join('')}
-function renderPO(){let el=document.getElementById('poList');if(!el)return;let arr=JSON.parse(localStorage.getItem('tagro_po')||'[]');let sample=[{part:'Carburetor Kit',branch:'KVR',note:'Low stock · Qty 2 · Suggested: Check MDM'},{part:'SR450 Hose',branch:'MDM',note:'No stock · Qty 3 · Urgent'}];el.innerHTML=arr.concat(sample).map(p=>`<div class="listitem"><div class="title">${p.part} <span class="pill">${p.branch}</span></div><div class="small">${p.note||'Added from job · Manager decides transfer/buy/defer.'}</div></div>`).join('')}
-function raisePO(part='Part required'){let s=session()||{branch:'DEMO',staff:'Demo'},arr=JSON.parse(localStorage.getItem('tagro_po')||'[]');arr.unshift({part,branch:s.branch,note:`Added by ${s.staff}. Purchase decision separate.`,at:new Date().toISOString()});localStorage.setItem('tagro_po',JSON.stringify(arr));alert('Added to Purchase Order. Purchase decision is separate.');renderPO()}
-function addTimeline(title,desc){let arr=JSON.parse(localStorage.getItem('tagro_timeline')||'[]');arr.push({at:new Date().toISOString(),title,desc});localStorage.setItem('tagro_timeline',JSON.stringify(arr))}
-function renderTimeline(){let el=document.getElementById('timeline');if(!el)return;let arr=[{at:new Date().toISOString(),title:'Received',desc:'By Rajeev at KVR'}].concat(JSON.parse(localStorage.getItem('tagro_timeline')||'[]'));el.innerHTML=arr.map(e=>`<div class="event"><div class="time">${new Date(e.at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div><div><b>${e.title}</b><div class="small">${e.desc||''}</div></div></div>`).join('')}
-function toggle(el){el.classList.toggle('selected')}
-function selectOne(el,sel){document.querySelectorAll(sel).forEach(x=>x.classList.remove('selected'));el.classList.add('selected')}
-function toggleChoice(el){el.classList.toggle('selected')}
-function openFeedback(){document.getElementById('feedbackModal')?.classList.add('open')}
-function closeFeedback(){document.getElementById('feedbackModal')?.classList.remove('open')}
-function submitFeedback(){let f=JSON.parse(localStorage.getItem('tagro_feedback')||'[]'),s=session()||{};f.push({at:new Date().toISOString(),staff:s.staff,branch:s.branch,rate:document.querySelector('.rate.selected')?.innerText||'',choices:[...document.querySelectorAll('.choice.selected')].map(x=>x.innerText),text:document.getElementById('feedbackText')?.value||'',page:location.pathname});localStorage.setItem('tagro_feedback',JSON.stringify(f));closeFeedback();alert('നന്ദി. Feedback saved on this device.')}
-function setActiveNav(){let p=location.pathname.split('/').pop()||'home.html',key=p.includes('receive')?'receive':p.includes('queue')||p.includes('job')||p.includes('ready')||p.includes('work')||p.includes('estimate')||p.includes('approval')||p.includes('test')||p.includes('hold')?'queue':p.includes('purchase')?'purchase':['daily.html','exceptions.html','reports.html','links.html','settings.html','feedback.html','handbook.html','more.html'].includes(p)?'more':'home';document.querySelectorAll('.navbtn').forEach(n=>n.classList.toggle('active',n.dataset.nav===key))}
-function commonInit(){requireLogin();setupHeader();renderQueue();renderPO();renderTimeline()}
-document.addEventListener('DOMContentLoaded',commonInit);
+const API = 'https://tagro-api.icy-fire-d2ac.workers.dev';
 
-const CUSTOMER_MEMORY=[
- {name:'Victor Farms', phone:'9447000003', alias:'Victor Estate / KVR', machines:['MS460 — Serial 11258975355','FS120 — Serial 8877001122']},
- {name:'Jose Sawmill', phone:'9447000004', alias:'Sawmill Jose', machines:['MS250 — Serial 5566778899','SR450 — Serial 22334455']},
- {name:'Venu', phone:'9447000011', alias:'Venu Rubber', machines:['MS250 — Serial 99887766','New machine / serial unknown']}
-];
-function searchCustomers(){
-  const q=(document.getElementById('custSearch')?.value||'').trim().toLowerCase();
-  const box=document.getElementById('customerSuggestions');
-  if(!box)return;
-  if(q.length<2){box.classList.remove('show');box.innerHTML='';return;}
-  const matches=CUSTOMER_MEMORY.filter(c=>[c.name,c.phone,c.alias,...c.machines].join(' ').toLowerCase().includes(q));
-  box.classList.add('show');
-  if(!matches.length){
-    box.innerHTML=`<div class="listitem"><div class="title">New customer</div><div class="small">No match found. Continue entering details.</div></div>`;
-    return;
-  }
-  box.innerHTML=matches.map((c,i)=>`<div class="listitem clickable" onclick="pickCustomerMemory(${i})"><div class="title">${c.name}</div><div class="small">${c.phone} · Alias: ${c.alias} · Machines: ${c.machines.join(', ')}</div></div>`).join('');
+const TAGRO = {
+  branches: {
+    KVR:'Karavaloor', PKM:'Ponkunnam', NDD:'Nedumangad',
+    MDM:'Marthandam', SKT:'Shencottai', OYR:'Oyoor', SDM:'Sadanandapuram'
+  },
+  people: {
+    KVR: { manager:'Vishnu', staff:['Rajeev','Anandu','Thankachan'] },
+    PKM: { manager:'Anoop K P', staff:['Anoop P G'] },
+    NDD: { manager:'Yedhu', staff:[] },
+    MDM: { manager:'Ratheesh', staff:['John Victor'] },
+    SKT: { manager:'Karthick', staff:['Mahalakshmi','Jothi'] },
+    OYR: { manager:'Manager', staff:[] },
+    SDM: { manager:'Manager', staff:[] }
+  },
+  owner: { name:'T M Thomas', role:'Owner' },
+  parts: [
+    { no:'1123-640-2000', name:'MS250 Clutch Drum', price:480, stock:{KVR:0,PKM:1,MDM:2,SKT:0} },
+    { no:'0000-400-7000', name:'Spark Plug', price:180, stock:{KVR:12,PKM:5,MDM:8,SKT:6} },
+    { no:'4134-120-0600', name:'FS120 Carburetor Kit', price:950, stock:{KVR:0,PKM:0,MDM:1,SKT:0} },
+    { no:'3639-000-0068', name:'36RS Chain', price:720, stock:{KVR:3,PKM:12,MDM:6,SKT:2} },
+    { no:'3005-000-4813', name:'MS250 Guide Bar', price:1450, stock:{KVR:1,PKM:0,MDM:0,SKT:1} }
+  ],
+  customers: [
+    { id:'c1', branch:'KVR', name:'Thomas Thumpassery', alias:['Thomas Estate'], phone:'9656361846', place:'Karavaloor',
+      machines:[{id:'m1',model:'MS 250',serial:'184-KVR-250',note:'Frequent chain/clutch work'},{id:'m2',model:'FS 120',serial:'361-KVR-120',note:'Estate brushcutter'}] },
+    { id:'c2', branch:'KVR', name:'Jose Sawmill', alias:['Sawmill Jose'], phone:'9447000001', place:'Anchal',
+      machines:[{id:'m3',model:'MS 383',serial:'382-JOSE',note:'Hard daily use'}] },
+    { id:'c3', branch:'KVR', name:'Rubber Biju', alias:['Biju','Kuttappan'], phone:'9447000002', place:'Oyoor',
+      machines:[{id:'m4',model:'SR 450',serial:'SR-BIJU',note:'Sprayer'}] },
+    { id:'c4', branch:'MDM', name:'Victor Farms', alias:['Victor'], phone:'9447000003', place:'Marthandam',
+      machines:[{id:'m5',model:'BR 600',serial:'BR-VIC',note:''}] }
+  ],
+  links: [
+    { title:'TAGRO', url:'https://tagro.in' },
+    { title:'STIHL India', url:'https://www.stihl.in' },
+    { title:'Jain Irrigation', url:'https://www.jains.com' },
+    { title:'GST Portal', url:'https://www.gst.gov.in' },
+    { title:'Kerala Agriculture', url:'https://keralaagriculture.gov.in' }
+  ],
+  charges: [
+    { name:'Full Service', amount:3000 },
+    { name:'Carburetor Service', amount:300 },
+    { name:'Carburetor Repairs', amount:500 },
+    { name:'Clutch Assembly Replacement', amount:250 },
+    { name:'Piston Replaced', amount:500 }
+  ]
+};
+
+// ── LOCAL STORAGE HELPERS ─────────────────────────────────
+
+function jget(k, d) { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch { return d } }
+function jset(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
+
+// ── SESSION ───────────────────────────────────────────────
+
+function session() { return jget('tagro_session', null) }
+function setSession(s) { jset('tagro_session', s) }
+function logout() { localStorage.removeItem('tagro_session'); location.href = 'login.html' }
+function isDemo() { let s = session(); return s && s.demo }
+function requireLogin() { let s = session(); if (!s) { location.href = 'login.html'; return null } return s }
+
+// ── USERS / AUTH ──────────────────────────────────────────
+
+function users() { return jget('tagro_users', {}) }
+function saveUsers(u) { jset('tagro_users', u) }
+
+async function hashPin(pin) {
+  const txt = new TextEncoder().encode(pin + '|tagro-service-v1');
+  const buf = await crypto.subtle.digest('SHA-256', txt);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
-function pickCustomerMemory(i){
-  const c=CUSTOMER_MEMORY[i];
-  const input=document.getElementById('custSearch');
-  const machine=document.getElementById('machineSelect');
-  const box=document.getElementById('customerSuggestions');
-  if(input)input.value=`${c.name} — ${c.phone}`;
-  if(machine){
-    machine.innerHTML=c.machines.map(m=>`<option>${m}</option>`).join('')+`<option>+ Add new machine</option>`;
-  }
-  if(box){box.classList.remove('show');box.innerHTML='';}
+
+function userKey(branch, name) { return branch + '_' + name.replace(/\s+/g, '_') }
+
+function allPeople(branch) {
+  let p = TAGRO.people[branch] || { manager:'Manager', staff:[] };
+  let arr = [{ name: p.manager, role:'Manager' }, ...p.staff.map(n => ({ name: n, role:'Staff' }))];
+  arr.push({ name:'Demo', role:'Practice' });
+  return arr;
 }
+
+// ── DATA ──────────────────────────────────────────────────
+
+function seed() {
+  if (!localStorage.getItem('tagro_customers')) jset('tagro_customers', TAGRO.customers);
+  if (!localStorage.getItem('tagro_parts')) jset('tagro_parts', TAGRO.parts);
+  if (!localStorage.getItem('tagro_links')) jset('tagro_links', TAGRO.links);
+  if (!localStorage.getItem('tagro_comments')) jset('tagro_comments', []);
+  if (!localStorage.getItem('tagro_jobs')) jset('tagro_jobs', []);
+  if (!localStorage.getItem('tagro_po')) jset('tagro_po', []);
+}
+
+function customers() { return jget('tagro_customers', TAGRO.customers) }
+function jobs() { return jget(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', []) }
+function saveJobs(a) { jset(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', a); syncJobs(a) }
+function po() { return jget(isDemo() ? 'tagro_demo_po' : 'tagro_po', []) }
+function savePo(a) { jset(isDemo() ? 'tagro_demo_po' : 'tagro_po', a) }
+function comments() { return jget('tagro_comments', []) }
+function saveComment(txt) {
+  let s = session();
+  let a = comments();
+  a.unshift({ by: s.name, branch: s.branch || 'ALL', text: txt, at: new Date().toISOString() });
+  jset('tagro_comments', a);
+}
+function parts() { return jget('tagro_parts', TAGRO.parts) }
+function findParts(q) {
+  q = q.toLowerCase().trim();
+  return parts().filter(p => (p.name + ' ' + p.no).toLowerCase().includes(q)).slice(0, 8);
+}
+function totalStock(p) { return Object.values(p.stock || {}).reduce((a, b) => a + Number(b || 0), 0) }
+function findCustomers(q, branch) {
+  q = q.toLowerCase().trim();
+  if (!q) return [];
+  return customers().filter(c =>
+    (c.branch === branch || session()?.role === 'Owner' || isDemo()) &&
+    [c.name, c.phone, c.place, ...(c.alias || [])].join(' ').toLowerCase().includes(q)
+  ).slice(0, 8);
+}
+
+// ── WORK ORDER ────────────────────────────────────────────
+
+function wo(branch) {
+  if (isDemo()) return 'DEMO-' + String(Date.now()).slice(-4);
+  let y = new Date().getFullYear().toString().slice(-2);
+  let m = String(new Date().getMonth() + 1).padStart(2, '0');
+  let key = 'wo_' + branch + '_' + y + m;
+  let n = Number(localStorage.getItem(key) || 0) + 1;
+  localStorage.setItem(key, n);
+  return `${branch}/${y}${m}/${String(n).padStart(3, '0')}`;
+}
+
+// ── API CALLS via Cloudflare Worker ──────────────────────
+
+// Send SMS via Worker (API key stays on server)
+async function sendSMS(type, data) {
+  if (isDemo()) { toast('Demo: SMS would be sent to ' + data.phone); return; }
+  try {
+    const res = await fetch(`${API}/sms/${type}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if (result.ok) toast('SMS sent');
+    else toast('SMS failed');
+    return result;
+  } catch (e) {
+    toast('SMS error — check connection');
+  }
+}
+
+// Sync jobs to Dropbox via Worker
+async function syncJobs(jobsArr) {
+  if (isDemo()) return;
+  let s = session();
+  if (!s || !s.branch) return;
+  try {
+    await fetch(`${API}/dropbox/save-job`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ branch: s.branch, job: jobsArr[jobsArr.length - 1] })
+    });
+  } catch {}
+}
+
+// AI fault diagnosis via Worker
+async function diagnose(model, complaint, observations) {
+  try {
+    const res = await fetch(`${API}/ai/diagnose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model, complaint, observations })
+    });
+    const result = await res.json();
+    return result.ok ? result.data : null;
+  } catch { return null; }
+}
+
+// Scan paper form via Worker
+async function scanForm(imageBase64, mediaType) {
+  try {
+    const res = await fetch(`${API}/ai/scan-form`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64, mediaType: mediaType || 'image/jpeg' })
+    });
+    const result = await res.json();
+    return result.ok ? result.data : null;
+  } catch { return null; }
+}
+
+// ── UI HELPERS ────────────────────────────────────────────
+
+function toast(m) {
+  let t = document.querySelector('.toast') || document.body.appendChild(
+    Object.assign(document.createElement('div'), { className: 'toast' })
+  );
+  t.textContent = m;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function today() { return new Date().toISOString().slice(0, 10) }
+
+function initShell(active) {
+  seed();
+  let s = session();
+  let top = document.createElement('div');
+  top.className = 'top';
+  top.innerHTML = `
+    <div class="logo">TAGRO</div>
+    <span class="tag">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'ALL' : s?.branch || '—'}</span>
+    <span class="user" onclick="logout()">${s?.name || ''} ×</span>`;
+  document.body.prepend(top);
+
+  if (s?.demo) document.body.insertAdjacentHTML('afterbegin',
+    '<div class="demo">DEMO MODE — practice data only. Nothing here is a real job.</div>');
+
+  let nav = document.createElement('div');
+  nav.className = 'nav';
+  let tabs = [
+    ['home.html','Home','home'],
+    ['quick.html','Receive','quick'],
+    ['tracker.html','Jobs','jobs'],
+    ['purchase.html','PO','po'],
+    ['reports.html','Reports','reports'],
+    ['links.html','Links','links']
+  ];
+  nav.innerHTML = tabs.map(t =>
+    `<a href="${t[0]}" class="${active === t[2] ? 'on' : ''}">${t[1]}</a>`
+  ).join('');
+  document.body.insertBefore(nav, document.body.children[s?.demo ? 2 : 1]);
+}
+
+seed();
