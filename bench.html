@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>My Bench — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+.bench-header { padding:14px 16px; }
+.bench-name { font-size:20px; font-weight:900; }
+.bench-sub { font-size:13px; color:#aaa; margin-top:2px; }
+
+/* Active machine — large and prominent */
+.active-machine { background:linear-gradient(135deg,#df6427,#c4551f); border-radius:20px; margin:0 14px 14px; padding:20px; color:#fff; }
+.active-machine .label { font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; opacity:.7; }
+.active-machine .model { font-size:28px; font-weight:900; margin:6px 0 2px; }
+.active-machine .customer { font-size:16px; opacity:.9; }
+.active-machine .wo { font-size:12px; opacity:.6; margin-top:4px; font-family:monospace; }
+.active-machine .timer { font-size:13px; opacity:.8; margin-top:8px; }
+.active-machine .actions { display:flex; gap:8px; margin-top:16px; }
+.active-machine .act-btn { flex:1; padding:12px; border-radius:10px; text-align:center; font-weight:900; font-size:14px; cursor:pointer; border:none; }
+.act-btn.pause { background:rgba(255,255,255,.2); color:#fff; }
+.act-btn.complete { background:#fff; color:#df6427; }
+.act-btn.pause:hover { background:rgba(255,255,255,.3); }
+
+/* Queue sections */
+.section-head { font-size:11px; font-weight:900; color:#aaa; letter-spacing:1.5px; text-transform:uppercase; padding:8px 16px 6px; }
+
+.queue-item { background:#fff; border-radius:14px; margin:0 14px 8px; padding:14px; border-left:3px solid #e8e8e8; }
+.queue-item.waiting-parts { border-left-color:#d97706; }
+.queue-item.waiting-customer { border-left-color:#2f7deb; }
+.queue-item.ready { border-left-color:#287a3e; }
+.queue-item.paused { border-left-color:#aaa; }
+
+.queue-item .qi-model { font-weight:900; font-size:15px; }
+.queue-item .qi-customer { font-size:13px; color:#888; margin-top:2px; }
+.queue-item .qi-status { display:inline-block; margin-top:6px; padding:4px 10px; border-radius:99px; font-size:11px; font-weight:900; background:#f5f5f5; color:#555; }
+.queue-item .qi-status.amber { background:#fff3d5; color:#d97706; }
+.queue-item .qi-status.blue { background:#e8f0fe; color:#2f7deb; }
+.queue-item .qi-status.green { background:#e8f5e9; color:#287a3e; }
+.queue-item .qi-pause-reason { font-size:12px; color:#aaa; margin-top:4px; font-style:italic; }
+.queue-item .qi-actions { display:flex; gap:8px; margin-top:10px; }
+
+.no-active { background:#f9f9f9; border:2px dashed #e8e8e8; border-radius:20px; margin:0 14px 14px; padding:32px 20px; text-align:center; }
+.no-active .icon { font-size:36px; margin-bottom:8px; }
+.no-active p { font-size:14px; color:#aaa; }
+
+/* Pause modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:flex-end; }
+.modal-overlay.show { display:flex; }
+.modal-sheet { background:#fff; border-radius:20px 20px 0 0; padding:24px; width:100%; max-width:600px; margin:0 auto; }
+.modal-title { font-size:16px; font-weight:900; margin-bottom:16px; }
+.pause-reason-btn { display:block; width:100%; padding:14px; margin-bottom:8px; border:1.5px solid #e8e8e8; border-radius:12px; text-align:left; font-size:15px; font-weight:700; cursor:pointer; background:#fff; }
+.pause-reason-btn:hover { border-color:#df6427; background:#fff8f4; }
+.pause-reason-btn.selected { border-color:#df6427; background:#fff8f4; color:#df6427; }
+</style>
+</head>
+<body>
+<div class="wrap" style="padding:0;max-width:600px">
+
+  <div class="bench-header">
+    <div class="bench-name" id="bench-name">My Bench</div>
+    <div class="bench-sub" id="bench-sub"></div>
+  </div>
+
+  <!-- Active machine -->
+  <div id="active-section"></div>
+
+  <!-- Paused machines -->
+  <div id="paused-section"></div>
+
+  <!-- Waiting sections -->
+  <div id="waiting-section"></div>
+
+  <!-- Ready for collection -->
+  <div id="ready-section"></div>
+
+  <!-- Completed today -->
+  <div id="completed-section"></div>
+
+  <div style="height:20px"></div>
+</div>
+
+<!-- Pause reason modal -->
+<div class="modal-overlay" id="pause-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">Why are you pausing?</div>
+    <button class="pause-reason-btn" onclick="confirmPause('Waiting Customer')">👤 Waiting Customer</button>
+    <button class="pause-reason-btn" onclick="confirmPause('Waiting Parts')">🛒 Waiting Parts</button>
+    <button class="pause-reason-btn" onclick="confirmPause('Outside Work')">🚗 Outside Work</button>
+    <button class="pause-reason-btn" onclick="confirmPause('Priority Changed')">🔄 Priority Changed</button>
+    <button class="pause-reason-btn" onclick="confirmPause('End of Day')">🌙 End of Day</button>
+    <button class="pause-reason-btn" onclick="confirmPause('Other')">✏️ Other</button>
+    <div id="pause-note-section" style="display:none;margin-top:10px">
+      <div class="field">
+        <label>Resume reminder (optional)</label>
+        <textarea id="pause-note" placeholder="What to remember when resuming..." style="min-height:60px"></textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn block" onclick="closePauseModal()">Cancel</button>
+      <button class="btn primary block" id="confirm-pause-btn" onclick="savePause()" style="display:none">Pause</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('bench');
+
+let activePauseJob  = null;
+let selectedReason  = null;
+
+document.getElementById('bench-name').textContent = s.name + "'s Bench";
+document.getElementById('bench-sub').textContent  =
+  new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+
+// ── Render ────────────────────────────────────────────────
+function render() {
+  const myJobs = getBranchJobs().filter(j =>
+    j.assignedTo === s.name || j.acceptedBy === s.name
+  );
+
+  const active    = myJobs.find(j => j.status === 'Repairing');
+  const paused    = myJobs.filter(j => j.status === 'Paused');
+  const waitParts = myJobs.filter(j => j.status === 'Waiting Parts');
+  const waitCust  = myJobs.filter(j => j.status === 'Waiting Customer' || j.status === 'Waiting Approval');
+  const ready     = myJobs.filter(j => j.status === 'Ready');
+  const completed = myJobs.filter(j =>
+    ['Delivered','Completed'].includes(j.status) && isToday(j.updatedAt || j.date)
+  );
+
+  renderActive(active);
+  renderSection('paused-section', 'Paused', paused, 'paused', renderPausedItem);
+  renderSection('waiting-section', 'Waiting for Parts', waitParts, 'waiting-parts', renderWaitingItem);
+  renderSection(null, 'Waiting for Customer', waitCust, 'waiting-customer', renderWaitingItem, 'waiting-section');
+  renderSection('ready-section', 'Ready for Collection', ready, 'ready', renderReadyItem);
+  renderSection('completed-section', 'Completed Today', completed, '', renderCompletedItem);
+}
+
+function renderActive(job) {
+  const el = document.getElementById('active-section');
+  if (!job) {
+    el.innerHTML = `
+      <div class="no-active">
+        <div class="icon">🪛</div>
+        <p>No active repair.<br>Select a paused job to resume,<br>or receive a new machine.</p>
+        <a class="btn primary" href="receive.html" style="margin-top:14px;display:inline-block">Receive Machine</a>
+      </div>`;
+    return;
+  }
+
+  const age = timeSince(job.repairStartedAt || job.date);
+  el.innerHTML = `
+    <div class="section-head">Currently Working</div>
+    <div class="active-machine">
+      <div class="label">Active Repair</div>
+      <div class="model">${job.machine?.model || '—'}</div>
+      <div class="customer">${job.customer?.name}</div>
+      <div class="wo">${job.workOrder}</div>
+      <div class="timer">⏱ Working for ${age}</div>
+      <div class="actions">
+        <button class="act-btn pause" onclick="openPauseModal('${job.id}')">⏸ Pause</button>
+        <button class="act-btn complete" onclick="markComplete('${job.id}')">✓ Complete</button>
+      </div>
+    </div>`;
+}
+
+function renderSection(elId, title, jobs, cls, itemFn, appendToId) {
+  if (!jobs.length) {
+    if (elId) document.getElementById(elId).innerHTML = '';
+    return;
+  }
+  const html = `<div class="section-head">${title} (${jobs.length})</div>` +
+    jobs.map(j => `<div class="queue-item ${cls}">${itemFn(j)}</div>`).join('');
+
+  if (elId) {
+    document.getElementById(elId).innerHTML = html;
+  } else if (appendToId) {
+    document.getElementById(appendToId).innerHTML += html;
+  }
+}
+
+function renderPausedItem(j) {
+  const pr = j.pauseReason || '';
+  return `
+    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
+    <div class="qi-customer">${j.workOrder}</div>
+    ${pr ? `<div class="qi-pause-reason">Paused: ${pr}</div>` : ''}
+    ${j.pauseNote ? `<div class="qi-pause-reason">"${j.pauseNote}"</div>` : ''}
+    <div class="qi-actions">
+      <button class="btn primary" onclick="resumeJob('${j.id}')">▶ Resume</button>
+      <a class="btn" href="work.html?id=${j.id}">Open</a>
+    </div>`;
+}
+
+function renderWaitingItem(j) {
+  const cls = j.status === 'Waiting Parts' ? 'amber' : 'blue';
+  return `
+    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
+    <div class="qi-customer">${j.workOrder} · ${timeSince(j.date)} ago</div>
+    <span class="qi-status ${cls}">${j.status}</span>
+    <div class="qi-actions">
+      <a class="btn" href="work.html?id=${j.id}">Open</a>
+      <button class="btn" onclick="callCustomer('${j.customer?.phone}')">📞 Call</button>
+    </div>`;
+}
+
+function renderReadyItem(j) {
+  return `
+    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
+    <div class="qi-customer">${j.workOrder}</div>
+    <span class="qi-status green">Ready</span>
+    <div class="qi-actions">
+      <button class="btn primary" onclick="markDelivered('${j.id}')">Delivered ✓</button>
+      <button class="btn" onclick="callCustomer('${j.customer?.phone}')">📞 Call</button>
+    </div>`;
+}
+
+function renderCompletedItem(j) {
+  return `
+    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
+    <div class="qi-customer">${j.workOrder} · ${j.status}</div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────
+function resumeJob(id) {
+  const all = jobs();
+  const idx = all.findIndex(j => j.id === id);
+  if (idx < 0) return;
+
+  // If another job is active, auto-pause it
+  const active = all.find(j => j.status === 'Repairing' && (j.assignedTo === s.name || j.acceptedBy === s.name));
+  if (active && active.id !== id) {
+    active.status = 'Paused';
+    active.pauseReason = 'Priority Changed';
+    active.pausedAt = new Date().toISOString();
+    addTimeline(active, 'paused', 'Paused — priority changed');
+  }
+
+  const job = all[idx];
+  job.status = 'Repairing';
+  job.assignedTo = s.name;
+  job.repairStartedAt = job.repairStartedAt || new Date().toISOString();
+  delete job.pauseReason;
+  delete job.pauseNote;
+  addTimeline(job, 'resumed', 'Repair resumed by ' + s.name);
+
+  saveJobs(all);
+  recordBranchEvent(job, 'resumed', 'Repair resumed — ' + job.machine?.model);
+  toast('Resumed ' + job.machine?.model);
+  render();
+}
+
+function markComplete(id) {
+  const all = jobs();
+  const job = all.find(j => j.id === id);
+  if (!job) return;
+  job.status = 'Ready';
+  job.completedAt = new Date().toISOString();
+  addTimeline(job, 'ready', 'Machine ready — ' + s.name);
+  saveJobs(all);
+  recordBranchEvent(job, 'ready', job.machine?.model + ' ready for collection');
+  toast('Marked ready. Customer can be notified.');
+  render();
+}
+
+function markDelivered(id) {
+  if (!confirm('Confirm delivery to customer?')) return;
+  const all = jobs();
+  const job = all.find(j => j.id === id);
+  if (!job) return;
+  job.status = 'Delivered';
+  job.deliveredAt = new Date().toISOString();
+  job.deliveredBy = s.name;
+  addTimeline(job, 'delivered', 'Machine delivered to ' + job.customer?.name);
+  saveJobs(all);
+  recordBranchEvent(job, 'delivered', job.machine?.model + ' delivered to ' + job.customer?.name);
+  toast('Delivered');
+  render();
+}
+
+function callCustomer(phone) {
+  if (phone) window.location.href = 'tel:' + phone;
+}
+
+// ── Pause modal ───────────────────────────────────────────
+function openPauseModal(id) {
+  activePauseJob = id;
+  selectedReason = null;
+  document.querySelectorAll('.pause-reason-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('pause-note-section').style.display = 'none';
+  document.getElementById('pause-note').value = '';
+  document.getElementById('confirm-pause-btn').style.display = 'none';
+  document.getElementById('pause-modal').classList.add('show');
+}
+
+function confirmPause(reason) {
+  selectedReason = reason;
+  document.querySelectorAll('.pause-reason-btn').forEach(b => b.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.getElementById('pause-note-section').style.display = 'block';
+  document.getElementById('confirm-pause-btn').style.display = 'block';
+  document.getElementById('pause-note').focus();
+}
+
+function savePause() {
+  if (!selectedReason || !activePauseJob) return;
+
+  const note = document.getElementById('pause-note').value.trim();
+  const all  = jobs();
+  const job  = all.find(j => j.id === activePauseJob);
+
+  if (job) {
+    job.status      = selectedReason === 'Waiting Parts' ? 'Waiting Parts' :
+                      selectedReason === 'Waiting Customer' ? 'Waiting Customer' : 'Paused';
+    job.pauseReason = selectedReason;
+    job.pauseNote   = note;
+    job.pausedAt    = new Date().toISOString();
+    job.pausedBy    = s.name;
+    addTimeline(job, 'paused', 'Paused: ' + selectedReason + (note ? ' — ' + note : ''));
+    saveJobs(all);
+    recordBranchEvent(job, 'paused', 'Paused: ' + selectedReason);
+  }
+
+  closePauseModal();
+  toast('Paused — ' + selectedReason);
+  render();
+}
+
+function closePauseModal() {
+  document.getElementById('pause-modal').classList.remove('show');
+  activePauseJob = null;
+}
+
+// ── Helpers ───────────────────────────────────────────────
+function getBranchJobs() {
+  const all = jobs();
+  if (s.role === 'Owner') return all;
+  return all.filter(j => j.branch === s.branch);
+}
+
+function addTimeline(job, type, description) {
+  if (!job.timeline) job.timeline = [];
+  job.timeline.push({ type, description, by: s.name, at: new Date().toISOString() });
+}
+
+function recordBranchEvent(job, type, description) {
+  const key    = 'tagro_events_' + (job.branch || s.branch);
+  const events = jget(key, []);
+  events.unshift({ type, description, jobId: job.id, workOrder: job.workOrder, by: s.name, at: new Date().toISOString() });
+  if (events.length > 200) events.splice(200);
+  jset(key, events);
+}
+
+function timeSince(iso) {
+  if (!iso) return '—';
+  const diff = Date.now() - new Date(iso).getTime();
+  const m    = Math.floor(diff / 60000);
+  if (m < 60)  return m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 24)  return h + 'h ' + (m % 60) + 'm';
+  return Math.floor(h / 24) + ' days';
+}
+
+function isToday(iso) {
+  if (!iso) return false;
+  return new Date(iso).toDateString() === new Date().toDateString();
+}
+
+render();
+</script>
+</body>
+</html>
