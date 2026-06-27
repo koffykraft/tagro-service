@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Staff Admin — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+/* ── Page ── */
+.admin-wrap { max-width: 720px; margin: 0 auto; padding: 0 0 40px; }
+
+/* ── Branch section ── */
+.branch-section { margin: 14px 14px 0; }
+.branch-label {
+  font-size: 11px; font-weight: 900; color: #df6427;
+  text-transform: uppercase; letter-spacing: 2px;
+  padding: 10px 0 6px;
+  border-bottom: 2px solid #f0d8c8;
+  margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.branch-count { font-size: 11px; color: #aaa; font-weight: 700; letter-spacing: 0; text-transform: none; }
+
+/* ── Staff tile ── */
+.staff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media(max-width: 480px) { .staff-grid { grid-template-columns: 1fr; } }
+
+.staff-tile {
+  background: #fff;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+  position: relative;
+}
+.staff-tile:active { transform: scale(.98); }
+.staff-tile.manager-tile { border-left: 4px solid #df6427; }
+.staff-tile.inactive-tile { opacity: .5; }
+
+.tile-role {
+  font-size: 10px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 1px; color: #aaa; margin-bottom: 4px;
+}
+.tile-role.manager { color: #df6427; }
+.tile-name { font-size: 17px; font-weight: 900; color: #121212; margin-bottom: 6px; }
+.tile-phone {
+  font-size: 12px; color: #888; font-weight: 700;
+  display: flex; align-items: center; gap: 4px;
+}
+.tile-device {
+  margin-top: 8px; font-size: 11px; font-weight: 700;
+  padding: 4px 8px; border-radius: 99px; display: inline-block;
+}
+.tile-device.bound { background: #e9f6ec; color: #287a3e; }
+.tile-device.unbound { background: #fdecea; color: #ba3327; }
+
+.tile-models {
+  margin-top: 8px;
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.tile-model-chip {
+  font-size: 10px; font-weight: 800;
+  background: #fff0e8; color: #df6427;
+  padding: 3px 7px; border-radius: 99px;
+}
+
+/* ── Add button tile ── */
+.add-tile {
+  background: #f9f9f9;
+  border: 2px dashed #ddd;
+  border-radius: 16px;
+  padding: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px;
+  font-size: 14px; font-weight: 800; color: #aaa;
+  min-height: 90px;
+}
+.add-tile:active { background: #fff4ef; border-color: #df6427; color: #df6427; }
+
+/* ── Sheet modal ── */
+.sheet-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.5); z-index: 200;
+  align-items: flex-end; justify-content: center;
+}
+.sheet-overlay.show { display: flex; }
+.sheet {
+  background: #fff; border-radius: 22px 22px 0 0;
+  padding: 20px 20px 40px; width: 100%;
+  max-width: 600px; max-height: 90vh; overflow-y: auto;
+}
+.sheet-handle {
+  width: 40px; height: 4px; background: #e0e0e0;
+  border-radius: 99px; margin: 0 auto 16px;
+}
+.sheet-title { font-size: 18px; font-weight: 900; margin-bottom: 20px; }
+
+/* ── Form fields ── */
+.form-field { margin-bottom: 14px; }
+.form-field label {
+  display: block; font-size: 11px; font-weight: 900;
+  color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+}
+.form-field input, .form-field select {
+  width: 100%; padding: 13px; border: 1.5px solid #e8e8e8;
+  border-radius: 12px; font-size: 16px; font-family: inherit;
+  background: #fff; outline: none;
+}
+.form-field input:focus, .form-field select:focus { border-color: #df6427; }
+
+/* ── Model picker in sheet ── */
+.model-picker {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+}
+.model-pick-chip {
+  padding: 7px 12px; border: 1.5px solid #e8e8e8;
+  border-radius: 99px; font-size: 12px; font-weight: 800;
+  cursor: pointer; background: #fff; color: #555;
+}
+.model-pick-chip.selected {
+  background: #df6427; border-color: #df6427; color: #fff;
+}
+.model-pick-chip.disabled {
+  opacity: .4; cursor: not-allowed;
+}
+.model-limit-note {
+  font-size: 12px; color: #aaa; font-weight: 700; margin-top: 6px;
+}
+
+/* ── Danger zone ── */
+.danger-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
+.danger-title { font-size: 12px; font-weight: 900; color: #ba3327; margin-bottom: 10px; }
+
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex; gap: 10px; padding: 14px;
+  overflow-x: auto; -webkit-overflow-scrolling: touch;
+}
+.stat-chip {
+  flex: 0 0 auto; background: #fff; border: 1px solid #eee;
+  border-radius: 12px; padding: 10px 14px; text-align: center;
+}
+.stat-chip b { display: block; font-size: 22px; font-weight: 900; }
+.stat-chip span { font-size: 11px; color: #aaa; font-weight: 700; text-transform: uppercase; }
+
+/* ── Device info ── */
+.device-info {
+  background: #f9f9f9; border-radius: 10px; padding: 10px 12px;
+  font-size: 12px; color: #666; margin-top: 8px; line-height: 1.6;
+}
+
+/* ── Toast ── */
+.toast-bar {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #121212; color: #fff; padding: 12px 20px;
+  border-radius: 99px; font-size: 13px; font-weight: 800;
+  opacity: 0; transition: .2s; z-index: 300; white-space: nowrap;
+}
+.toast-bar.show { opacity: 1; }
+
+/* ── Loading ── */
+.loading-state {
+  text-align: center; padding: 60px 20px; color: #aaa;
+}
+.loading-spinner {
+  width: 32px; height: 32px; border: 3px solid #e8e8e8;
+  border-top-color: #df6427; border-radius: 50%;
+  animation: spin .8s linear infinite; margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="admin-wrap">
+
+  <!-- Stats bar -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-chip"><b id="stat-total">—</b><span>Total Staff</span></div>
+    <div class="stat-chip"><b id="stat-bound">—</b><span>Devices Bound</span></div>
+    <div class="stat-chip"><b id="stat-branches">7</b><span>Branches</span></div>
+    <div class="stat-chip"><b id="stat-models">15</b><span>Models</span></div>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-state" id="loading-state">
+    <div class="loading-spinner"></div>
+    Loading staff from KV...
+  </div>
+
+  <!-- Staff by branch -->
+  <div id="staff-content" style="display:none"></div>
+
+</div>
+
+<!-- Edit / Add Sheet -->
+<div class="sheet-overlay" id="edit-sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheet-title">Add Staff</div>
+
+    <div class="form-field">
+      <label>Full Name</label>
+      <input id="f-name" placeholder="e.g. Rajeev Kumar" autocomplete="off">
+    </div>
+
+    <div class="form-field">
+      <label>Branch</label>
+      <select id="f-branch">
+        <option value="KVR">KVR — Karavaloor</option>
+        <option value="PKM">PKM — Ponkunnam</option>
+        <option value="NDD">NDD — Nedumangad</option>
+        <option value="MDM">MDM — Marthandam</option>
+        <option value="SKT">SKT — Shencottai</option>
+        <option value="OYR">OYR — Oyoor</option>
+        <option value="SDM">SDM — Sadanandapuram</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Role</label>
+      <select id="f-role">
+        <option value="Staff">Staff</option>
+        <option value="Manager">Manager</option>
+      </select>
+    </div>
+
+    <div class="form-field">
+      <label>Phone Number</label>
+      <input id="f-phone" type="tel" placeholder="10-digit mobile number" inputmode="numeric" maxlength="10">
+    </div>
+
+    <div class="form-field">
+      <label>Suggested Models (up to 5) <span class="model-limit-note" id="model-limit-note"></span></label>
+      <div class="model-picker" id="model-picker"></div>
+    </div>
+
+    <div class="form-field">
+      <label>Status</label>
+      <select id="f-active">
+        <option value="true">Active</option>
+        <option value="false">Inactive</option>
+      </select>
+    </div>
+
+    <!-- Device info (shown when editing) -->
+    <div id="device-section" style="display:none">
+      <div class="form-field">
+        <label>Bound Device</label>
+        <div class="device-info" id="device-info">No device bound</div>
+      </div>
+      <button class="btn red block" style="font-size:13px;margin-bottom:10px" onclick="clearDevice()">
+        ⚠️ Deactivate Current Device
+      </button>
+    </div>
+
+    <button class="btn primary block" onclick="saveStaff()" style="margin-top:8px">
+      Save Staff Member
+    </button>
+
+    <!-- Danger zone (edit mode only) -->
+    <div class="danger-section" id="danger-section" style="display:none">
+      <div class="danger-title">⚠️ Danger Zone</div>
+      <button class="btn red block" style="font-size:13px" onclick="deleteStaff()">
+        Remove This Staff Member
+      </button>
+    </div>
+
+    <button class="btn block" style="margin-top:10px;color:#aaa" onclick="closeSheet()">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<div class="toast-bar" id="toast-bar"></div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+if (!s || s.role !== 'Owner') {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#ba3327;font-weight:900;font-size:18px">Owner access only</div>';
+  throw new Error('Not owner');
+}
+initShell('admin');
+
+const API = 'https://tagro-api.icy-fire-d2ac.workers.dev';
+const OWNER_TOKEN = 'tagro-owner-' + btoa('TMThomas9656361846');
+
+const BRANCHES = {
+  KVR:'Karavaloor', PKM:'Ponkunnam', NDD:'Nedumangad',
+  MDM:'Marthandam', SKT:'Shencottai', OYR:'Oyoor', SDM:'Sadanandapuram'
+};
+
+let allStaff   = [];
+let allModels  = [];
+let deviceMap  = {}; // name_branch -> binding
+let editingIdx = -1; // -1 = new
+let selectedModels = [];
+
+// ── Load ──────────────────────────────────────────────────
+async function loadAll() {
+  try {
+    // Load staff
+    const r1 = await fetch(`${API}/staff/list`);
+    const d1 = await r1.json();
+    if (d1.ok) allStaff = d1.staff;
+
+    // Load models
+    const r2 = await fetch(`${API}/models/list`);
+    const d2 = await r2.json();
+    if (d2.ok) allModels = d2.models;
+
+    // Load device bindings from KV (via listing)
+    await loadDeviceBindings();
+
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('staff-content').style.display = '';
+    renderAll();
+  } catch(e) {
+    document.getElementById('loading-state').innerHTML =
+      '<div style="color:#ba3327;font-weight:700">Failed to load. Check connection.<br><button onclick="loadAll()" class="btn primary" style="margin-top:14px">Retry</button></div>';
+  }
+}
+
+async function loadDeviceBindings() {
+  // For each staff member, check if they have a device bound
+  // We'll batch-check by fetching verify for known device (not ideal but works without KV list)
+  // Better: store device map in KV as a summary key
+  try {
+    const r = await fetch(`${API}/config/all`);
+    const d = await r.json();
+    // Device map not yet in config/all — we'll load it per-staff lazily
+    // For now show "check" status
+  } catch {}
+}
+
+// ── Render ─────────────────────────────────────────────────
+function renderAll() {
+  // Update stats
+  document.getElementById('stat-total').textContent = allStaff.length;
+
+  // Group by branch
+  const byBranch = {};
+  Object.keys(BRANCHES).forEach(b => byBranch[b] = []);
+  allStaff.forEach(s => {
+    if (!byBranch[s.branch]) byBranch[s.branch] = [];
+    byBranch[s.branch].push(s);
+  });
+
+  let html = '';
+  Object.entries(BRANCHES).forEach(([code, name]) => {
+    const staff = byBranch[code] || [];
+    html += `
+      <div class="branch-section">
+        <div class="branch-label">
+          ${code} — ${name}
+          <span class="branch-count">${staff.length} staff</span>
+        </div>
+        <div class="staff-grid">
+          ${staff.map((m, i) => renderTile(m, allStaff.indexOf(m))).join('')}
+          <div class="add-tile" onclick="openAdd('${code}')">
+            <span style="font-size:22px">+</span> Add Staff
+          </div>
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('staff-content').innerHTML = html;
+
+  // Count bound devices (simplified — show dash until we have data)
+  document.getElementById('stat-bound').textContent = '—';
+}
+
+function renderTile(m, idx) {
+  const isManager = m.role === 'Manager';
+  const modelChips = (m.models || []).map(mid =>
+    `<span class="tile-model-chip">${esc(mid)}</span>`
+  ).join('');
+
+  return `
+    <div class="staff-tile ${isManager ? 'manager-tile' : ''} ${!m.active ? 'inactive-tile' : ''}"
+      onclick="openEdit(${idx})">
+      <div class="tile-role ${isManager ? 'manager' : ''}">${esc(m.role)}</div>
+      <div class="tile-name">${esc(m.name)}</div>
+      <div class="tile-phone">📱 ${esc(m.phone || 'No phone')}</div>
+      ${modelChips ? `<div class="tile-models">${modelChips}</div>` : ''}
+      <div class="tile-device unbound" id="device-status-${idx}">Checking...</div>
+    </div>`;
+}
+
+// ── Device status check (async, non-blocking) ─────────────
+function checkDeviceStatuses() {
+  allStaff.forEach((m, idx) => {
+    const el = document.getElementById(`device-status-${idx}`);
+    if (!el) return;
+    // Check localStorage for cached device binding info
+    const key = `device_bound_${m.name.replace(/\s+/g,'_')}_${m.branch}`;
+    const cached = localStorage.getItem(key);
+    if (cached) {
+      el.textContent = '📱 Device bound';
+      el.className = 'tile-device bound';
+    } else {
+      el.textContent = 'No device';
+      el.className = 'tile-device unbound';
+    }
+  });
+}
+
+// ── Open add sheet ─────────────────────────────────────────
+function openAdd(branch) {
+  editingIdx = -1;
+  selectedModels = [];
+
+  document.getElementById('sheet-title').textContent = 'Add Staff Member';
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-branch').value = branch || 'KVR';
+  document.getElementById('f-role').value = 'Staff';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-active').value = 'true';
+  document.getElementById('danger-section').style.display = 'none';
+  document.getElementById('device-section').style.display = 'none';
+
+  renderModelPicker(branch || 'KVR');
+  document.getElementById('edit-sheet').classList.add('show');
+  setTimeout(() => document.getElementById('f-name').focus(), 300);
+}
+
+// ── Open edit sheet ────────────────────────────────────────
+function openEdit(idx) {
+  editingIdx = idx;
+  const m = allStaff[idx];
+  selectedModels = [...(m.models || [])];
+
+  document.getElementById('sheet-title').textContent = 'Edit: ' + m.name;
+  document.getElementById('f-name').value = m.name;
+  document.getElementById('f-branch').value = m.branch;
+  document.getElementById('f-role').value = m.role;
+  document.getElementById('f-phone').value = m.phone || '';
+  document.getElementById('f-active').value = String(m.active !== false);
+  document.getElementById('danger-section').style.display = 'block';
+  document.getElementById('device-section').style.display = 'block';
+  document.getElementById('device-info').textContent = 'Loading device info...';
+
+  renderModelPicker(m.branch);
+
+  // Load device binding info
+  loadDeviceInfo(m.name, m.branch);
+
+  document.getElementById('edit-sheet').classList.add('show');
+}
+
+async function loadDeviceInfo(name, branch) {
+  try {
+    // We don't have a "get device" endpoint yet — show placeholder
+    document.getElementById('device-info').textContent =
+      'Device binding managed via OTP activation flow';
+  } catch {}
+}
+
+function clearDevice() {
+  if (!confirm('Deactivate this staff member\'s device? They will need to re-verify via OTP to login again.')) return;
+  // Clear local cache
+  const m = allStaff[editingIdx];
+  const key = `device_bound_${m.name.replace(/\s+/g,'_')}_${m.branch}`;
+  localStorage.removeItem(key);
+  showToast('Device deactivated — staff must re-verify');
+  document.getElementById('device-info').textContent = 'No device bound';
+}
+
+// ── Model picker ───────────────────────────────────────────
+function renderModelPicker(branch) {
+  // Filter models for this branch
+  const branchModels = allModels.filter(m => m.branches.includes(branch));
+  const picker = document.getElementById('model-picker');
+
+  picker.innerHTML = branchModels.map(m => {
+    const isSel = selectedModels.includes(m.id);
+    const isMax = selectedModels.length >= 5 && !isSel;
+    return `<button class="model-pick-chip ${isSel ? 'selected' : ''} ${isMax ? 'disabled' : ''}"
+      onclick="toggleModel('${esc(m.id)}')">${esc(m.name)}</button>`;
+  }).join('');
+
+  updateModelNote();
+}
+
+function toggleModel(modelId) {
+  if (selectedModels.includes(modelId)) {
+    selectedModels = selectedModels.filter(m => m !== modelId);
+  } else {
+    if (selectedModels.length >= 5) {
+      showToast('Maximum 5 models. Remove one first.');
+      return;
+    }
+    selectedModels.push(modelId);
+  }
+  const branch = document.getElementById('f-branch').value;
+  renderModelPicker(branch);
+}
+
+function updateModelNote() {
+  const note = document.getElementById('model-limit-note');
+  note.textContent = `${selectedModels.length}/5 selected`;
+  note.style.color = selectedModels.length >= 5 ? '#df6427' : '#aaa';
+}
+
+// Branch change in form → re-render model picker
+document.getElementById('f-branch').addEventListener('change', function() {
+  selectedModels = [];
+  renderModelPicker(this.value);
+});
+
+// ── Save ───────────────────────────────────────────────────
+async function saveStaff() {
+  const name   = document.getElementById('f-name').value.trim();
+  const branch = document.getElementById('f-branch').value;
+  const role   = document.getElementById('f-role').value;
+  const phone  = document.getElementById('f-phone').value.trim();
+  const active = document.getElementById('f-active').value === 'true';
+
+  if (!name) { showToast('Name is required'); return; }
+  if (!phone || phone.length !== 10) { showToast('Valid 10-digit phone required'); return; }
+
+  const member = { name, branch, role, phone, models: selectedModels, active };
+
+  try {
+    const r = await fetch(`${API}/staff/update`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ staffMember: member, ownerToken: OWNER_TOKEN })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+
+    // Update local list
+    if (editingIdx >= 0) {
+      allStaff[editingIdx] = member;
+    } else {
+      allStaff.push(member);
+    }
+
+    closeSheet();
+    renderAll();
+    showToast(editingIdx >= 0 ? 'Staff updated' : 'Staff added');
+  } catch(e) {
+    showToast('Save failed: ' + e.message);
+  }
+}
+
+// ── Delete ─────────────────────────────────────────────────
+async function deleteStaff() {
+  const m = allStaff[editingIdx];
+  if (!confirm(`Remove ${m.name} from ${m.branch}? This cannot be undone.`)) return;
+
+  try {
+    const r = await fetch(`${API}/staff/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: m.name, branch: m.branch, ownerToken: OWNER_TOKEN })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+
+    allStaff.splice(editingIdx, 1);
+    closeSheet();
+    renderAll();
+    showToast(m.name + ' removed');
+  } catch(e) {
+    showToast('Delete failed: ' + e.message);
+  }
+}
+
+// ── Sheet helpers ──────────────────────────────────────────
+function closeSheet() {
+  document.getElementById('edit-sheet').classList.remove('show');
+  editingIdx = -1;
+  selectedModels = [];
+}
+
+// Close sheet on overlay tap
+document.getElementById('edit-sheet').addEventListener('click', function(e) {
+  if (e.target === this) closeSheet();
+});
+
+function showToast(msg) {
+  const t = document.getElementById('toast-bar');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── Init ───────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>

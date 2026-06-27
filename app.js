@@ -223,7 +223,102 @@ async function scanForm(imageBase64, mediaType) {
   } catch { return null; }
 }
 
-// ── UI HELPERS ────────────────────────────────────────────
+// ── DEVICE ID ─────────────────────────────────────────────
+// Generates a stable device ID stored in localStorage
+function getDeviceId() {
+  let id = localStorage.getItem('tagro_device_id');
+  if (!id) {
+    id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    localStorage.setItem('tagro_device_id', id);
+  }
+  return id;
+}
+
+// ── KV CONFIG LOADER ──────────────────────────────────────
+// Loads staff and models from Worker KV on app start
+// Falls back to TAGRO hardcoded data if KV unavailable
+
+let _kvLoaded = false;
+
+async function loadKVConfig() {
+  if (_kvLoaded) return;
+  try {
+    const s = session();
+    const branch = s?.branch || jget('tagro_device_branch', null);
+    const name   = s?.name || null;
+
+    const params = new URLSearchParams();
+    if (branch && branch !== 'ALL') params.set('branch', branch);
+    if (name) params.set('name', name);
+
+    const resp = await fetch(`${API}/config/all?${params}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data.ok) return;
+
+    // Cache staff list locally
+    if (data.staff?.length) {
+      jset('tagro_kv_staff', data.staff);
+    }
+    // Cache models
+    if (data.models?.length) {
+      jset('tagro_kv_models', data.models);
+    }
+    // Cache personal model banner
+    if (data.personalModels) {
+      jset('tagro_personal_models_' + (name||''), data.personalModels);
+    }
+
+    _kvLoaded = true;
+  } catch(e) {
+    // Silent fail — use local data
+  }
+}
+
+function kvStaff() {
+  return jget('tagro_kv_staff', null);
+}
+
+function kvModels() {
+  return jget('tagro_kv_models', null);
+}
+
+// Get staff for a branch — KV first, fallback to TAGRO.people
+function getBranchStaff(branch) {
+  const kv = kvStaff();
+  if (kv) {
+    return kv.filter(s => s.branch === branch && s.active !== false);
+  }
+  // Fallback
+  const p = TAGRO.people[branch] || { manager:'Manager', staff:[] };
+  return [
+    { name: p.manager, branch, role: 'Manager', phone: '' },
+    ...p.staff.map(n => ({ name: n, branch, role: 'Staff', phone: '' }))
+  ].filter(s => s.name && s.name !== 'Manager');
+}
+
+// Get phone for a staff member — KV first
+function getStaffPhoneKV(name, branch) {
+  const kv = kvStaff();
+  if (kv) {
+    const found = kv.find(s => s.name === name && (!branch || s.branch === branch));
+    if (found?.phone) return found.phone;
+  }
+  // Fallback to localStorage
+  const phones = jget('tagro_staff_phones', {});
+  return phones[name] || '';
+}
+
+// Get models for a branch — KV first
+function getBranchModels(branch) {
+  const kv = kvModels();
+  if (kv) {
+    return kv.filter(m => !branch || m.branches.includes(branch));
+  }
+  return [];
+}
+
+
 
 function toast(m) {
   let t = document.querySelector('.toast') || document.body.appendChild(
@@ -261,10 +356,16 @@ function initShell(active) {
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];
+  // Owner gets Staff Admin
+  if (s?.role === 'Owner') tabs.push(['staff-admin.html','Staff','admin']);
+
   nav.innerHTML = tabs.map(t =>
     `<a href="${t[0]}" class="${active === t[2] ? 'on' : ''}">${t[1]}</a>`
   ).join('');
   document.body.insertBefore(nav, document.body.children[s?.demo ? 2 : 1]);
+
+  // Load KV config silently in background
+  loadKVConfig().catch(() => {});
 }
 
 seed();

@@ -160,7 +160,6 @@ function init() {
   }
 
   if (!branch) {
-    // No branch configured — redirect to config
     document.getElementById('branch-tag').textContent = 'Not configured';
     showToast('Device not configured. Opening setup...');
     setTimeout(() => location.href = 'config.html', 1500);
@@ -170,44 +169,45 @@ function init() {
   document.getElementById('branch-tag').textContent =
     branch + ' — ' + (TAGRO.branches[branch] || branch);
 
+  // Async — loads from KV
   populateStaff();
-
-  // Remember last login
-  const last = jget('tagro_last_staff', null);
-  if (last) {
-    const sel = document.getElementById('staff-select');
-    sel.value = last;
-    if (sel.value) onStaffChange();
-  }
 }
 
 // ── Populate staff from all branches ─────────────────────
-function populateStaff() {
+// ── Populate staff — KV first, fallback to TAGRO defaults ──
+async function populateStaff() {
   const sel = document.getElementById('staff-select');
-  sel.innerHTML = '<option value="">Select your name</option>';
+  sel.innerHTML = '<option value="">Loading staff...</option>';
 
-  // Get staff from config (device-stored additions) + TAGRO defaults
-  const configStaff = jget('tagro_staff_list', []);
-
-  // Build full list: all TAGRO branches + config additions
-  const allStaff = [];
-
-  // Default staff from TAGRO object
-  Object.entries(TAGRO.people).forEach(([branch, data]) => {
-    const branchName = TAGRO.branches[branch] || branch;
-    [data.manager, ...data.staff].forEach(name => {
-      if (name && name !== 'Manager') {
-        allStaff.push({ name, branch, branchName, phone: getStaffPhone(name) });
-      }
-    });
-  });
-
-  // Config-added staff (override or supplement)
-  configStaff.forEach(s => {
-    if (!allStaff.find(x => x.name === s.name)) {
-      allStaff.push(s);
+  // Try KV first
+  let allStaff = [];
+  try {
+    const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/staff/list');
+    const data = await resp.json();
+    if (data.ok && data.staff?.length) {
+      // Cache locally
+      jset('tagro_kv_staff', data.staff);
+      allStaff = data.staff.filter(s => s.active !== false);
     }
-  });
+  } catch {}
+
+  // Fallback to cached KV data or TAGRO defaults
+  if (!allStaff.length) {
+    const cached = jget('tagro_kv_staff', null);
+    if (cached?.length) {
+      allStaff = cached.filter(s => s.active !== false);
+    } else {
+      // Last resort — TAGRO.people
+      Object.entries(TAGRO.people).forEach(([branch, data]) => {
+        const branchName = TAGRO.branches[branch] || branch;
+        [data.manager, ...data.staff].forEach(name => {
+          if (name && name !== 'Manager') {
+            allStaff.push({ name, branch, branchName, phone: '', role: data.manager === name ? 'Manager' : 'Staff' });
+          }
+        });
+      });
+    }
+  }
 
   // Sort by name
   allStaff.sort((a, b) => a.name.localeCompare(b.name));
@@ -215,11 +215,12 @@ function populateStaff() {
   // Group by branch
   const byBranch = {};
   allStaff.forEach(s => {
-    const key = s.branchName || s.branch;
-    if (!byBranch[key]) byBranch[key] = [];
-    byBranch[key].push(s);
+    const bName = TAGRO.branches[s.branch] || s.branch;
+    if (!byBranch[bName]) byBranch[bName] = [];
+    byBranch[bName].push(s);
   });
 
+  sel.innerHTML = '<option value="">Select your name</option>';
   Object.entries(byBranch).forEach(([bName, staffList]) => {
     const grp = document.createElement('optgroup');
     grp.label = bName;
@@ -227,8 +228,9 @@ function populateStaff() {
       const opt = document.createElement('option');
       opt.value = s.name;
       opt.textContent = s.name;
-      opt.dataset.phone = s.phone || '';
+      opt.dataset.phone  = s.phone || '';
       opt.dataset.branch = s.branch || '';
+      opt.dataset.role   = s.role || 'Staff';
       grp.appendChild(opt);
     });
     sel.appendChild(grp);
@@ -236,9 +238,23 @@ function populateStaff() {
 
   // Store for lookup
   window._allStaff = allStaff;
+
+  // Remember last login
+  const last = jget('tagro_last_staff', null);
+  if (last) {
+    sel.value = last;
+    if (sel.value) onStaffChange();
+  }
 }
 
 function getStaffPhone(name) {
+  // KV staff first
+  const kv = jget('tagro_kv_staff', null);
+  if (kv) {
+    const found = kv.find(s => s.name === name);
+    if (found?.phone) return found.phone;
+  }
+  // Legacy localStorage
   const phones = jget('tagro_staff_phones', {});
   return phones[name] || '';
 }
@@ -305,9 +321,24 @@ async function doLogin() {
 async function requestOTP() {
   if (!selectedStaff) { showToast('Select your name first'); return; }
 
-  const phone = selectedStaff.phone || getStaffPhone(selectedStaff.name);
+  // Get phone from Worker KV (works on any device)
+  let phone = selectedStaff.phone || getStaffPhone(selectedStaff.name);
+
   if (!phone) {
-    showToast('No phone number registered. Contact manager.');
+    // Try fetching from Worker
+    try {
+      const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/staff/phone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: selectedStaff.name, branch: selectedStaff.branch })
+      });
+      const data = await resp.json();
+      if (data.ok && data.phone) phone = data.phone;
+    } catch {}
+  }
+
+  if (!phone) {
+    showToast('No phone registered. Contact T M Thomas.');
     return;
   }
 
@@ -387,28 +418,48 @@ async function saveNewPin() {
 }
 
 // ── Complete login ────────────────────────────────────────
-function completeLogin() {
+async function completeLogin() {
   const deviceBranch = jget('tagro_device_branch', 'KVR');
   const branchName   = TAGRO.branches[deviceBranch] || deviceBranch;
 
-  // Determine role
-  const branchData = TAGRO.people[deviceBranch] || {};
+  // Get role from KV staff data
   let role = 'Staff';
-  if (branchData.manager === selectedStaff.name) role = 'Manager';
+  const kvStaff = jget('tagro_kv_staff', null);
+  if (kvStaff) {
+    const found = kvStaff.find(s => s.name === selectedStaff.name);
+    if (found?.role) role = found.role;
+  } else {
+    // Fallback to TAGRO.people
+    const branchData = TAGRO.people[deviceBranch] || {};
+    if (branchData.manager === selectedStaff.name) role = 'Manager';
+  }
 
-  // Also check config staff
-  const configStaff = jget('tagro_staff_list', []);
-  const configEntry = configStaff.find(s => s.name === selectedStaff.name);
-  if (configEntry && configEntry.role) role = configEntry.role;
+  // Get phone from KV
+  const phone = getStaffPhone(selectedStaff.name) || selectedStaff.phone || '';
 
   setSession({
     name:       selectedStaff.name,
-    phone:      selectedStaff.phone || '',
-    branch:     deviceBranch,
-    branchName: branchName,
-    role:       role,
+    phone,
+    branch:     selectedStaff.branch || deviceBranch,
+    branchName: TAGRO.branches[selectedStaff.branch || deviceBranch] || branchName,
+    role,
     loginAt:    new Date().toISOString()
   });
+
+  // Activate device binding in background
+  try {
+    const deviceId = getDeviceId();
+    await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/device/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:       selectedStaff.name,
+        branch:     selectedStaff.branch || deviceBranch,
+        deviceId,
+        deviceInfo: navigator.userAgent.slice(0, 100)
+      })
+    });
+  } catch {}
 
   location.href = 'home.html';
 }
