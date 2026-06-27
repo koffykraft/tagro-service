@@ -223,8 +223,109 @@ async function scanForm(imageBase64, mediaType) {
   } catch { return null; }
 }
 
+// ── CACHE-FIRST KV CONFIG LOADER ──────────────────────────
+// Loads staff, models, parts from Worker KV
+// Cache-first: uses localStorage until server version changes
+// Called silently on every page load after login
+
+const CACHE_KEYS = {
+  staff:          'tagro_kv_staff',
+  models:         'tagro_kv_models',
+  parts:          'tagro_parts_data',
+  personalModels: 'tagro_personal_models',
+  versions:       'tagro_cache_versions'
+};
+
+function getCachedVersions() {
+  return jget(CACHE_KEYS.versions, { staff: null, models: null, parts: null });
+}
+
+function setCachedVersions(v) {
+  jset(CACHE_KEYS.versions, v);
+}
+
+async function loadKVConfig() {
+  try {
+    const s        = session();
+    const branch   = s?.branch || jget('tagro_device_branch', null);
+    const name     = s?.name || null;
+    const cached   = getCachedVersions();
+
+    // Build query — tell server what versions we have
+    const params = new URLSearchParams();
+    if (branch && branch !== 'ALL') params.set('branch', branch);
+    if (name) params.set('name', name);
+    if (cached.staff)  params.set('v_staff',  cached.staff);
+    if (cached.models) params.set('v_models', cached.models);
+    if (cached.parts)  params.set('v_parts',  cached.parts);
+
+    const resp = await fetch(`${API}/config/all?${params}`);
+    if (!resp.ok) return;
+    const data = await resp.json();
+    if (!data.ok) return;
+
+    const newVersions = { ...cached };
+
+    // Update staff if server sent new version
+    if (data.staff?.length) {
+      jset(CACHE_KEYS.staff, data.staff);
+      newVersions.staff = data.versions?.staff || cached.staff;
+    }
+
+    // Update models if server sent new version
+    if (data.models?.length) {
+      jset(CACHE_KEYS.models, data.models);
+      newVersions.models = data.versions?.models || cached.models;
+    }
+
+    // Update parts if server sent new version (large payload)
+    if (data.parts?.length) {
+      jset(CACHE_KEYS.parts, data.parts);
+      newVersions.parts = data.versions?.parts || cached.parts;
+    }
+
+    // Update personal model banner
+    if (data.personalModels !== undefined) {
+      jset(CACHE_KEYS.personalModels + '_' + (name || ''), data.personalModels);
+    }
+
+    setCachedVersions(newVersions);
+
+  } catch(e) {
+    // Silent fail — cached data still works
+  }
+}
+
+// Accessors — always use cache, load is background
+function kvStaff()  { return jget(CACHE_KEYS.staff, null); }
+function kvModels() { return jget(CACHE_KEYS.models, null); }
+function kvParts()  { return jget(CACHE_KEYS.parts, null); }
+
+function getBranchStaff(branch) {
+  const kv = kvStaff();
+  if (kv) return kv.filter(s => s.branch === branch && s.active !== false);
+  const p = TAGRO.people[branch] || { manager:'Manager', staff:[] };
+  return [
+    { name: p.manager, branch, role:'Manager', phone:'' },
+    ...p.staff.map(n => ({ name: n, branch, role:'Staff', phone:'' }))
+  ].filter(s => s.name && s.name !== 'Manager');
+}
+
+function getStaffPhoneKV(name, branch) {
+  const kv = kvStaff();
+  if (kv) {
+    const found = kv.find(s => s.name === name && (!branch || s.branch === branch));
+    if (found?.phone) return found.phone;
+  }
+  return jget('tagro_staff_phones', {})[name] || '';
+}
+
+function getBranchModels(branch) {
+  const kv = kvModels();
+  if (kv) return kv.filter(m => !branch || m.branches.includes(branch));
+  return [];
+}
 // ── DEVICE ID ─────────────────────────────────────────────
-// Generates a stable device ID stored in localStorage
 function getDeviceId() {
   let id = localStorage.getItem('tagro_device_id');
   if (!id) {
@@ -234,89 +335,6 @@ function getDeviceId() {
   return id;
 }
 
-// ── KV CONFIG LOADER ──────────────────────────────────────
-// Loads staff and models from Worker KV on app start
-// Falls back to TAGRO hardcoded data if KV unavailable
-
-let _kvLoaded = false;
-
-async function loadKVConfig() {
-  if (_kvLoaded) return;
-  try {
-    const s = session();
-    const branch = s?.branch || jget('tagro_device_branch', null);
-    const name   = s?.name || null;
-
-    const params = new URLSearchParams();
-    if (branch && branch !== 'ALL') params.set('branch', branch);
-    if (name) params.set('name', name);
-
-    const resp = await fetch(`${API}/config/all?${params}`);
-    if (!resp.ok) return;
-    const data = await resp.json();
-    if (!data.ok) return;
-
-    // Cache staff list locally
-    if (data.staff?.length) {
-      jset('tagro_kv_staff', data.staff);
-    }
-    // Cache models
-    if (data.models?.length) {
-      jset('tagro_kv_models', data.models);
-    }
-    // Cache personal model banner
-    if (data.personalModels) {
-      jset('tagro_personal_models_' + (name||''), data.personalModels);
-    }
-
-    _kvLoaded = true;
-  } catch(e) {
-    // Silent fail — use local data
-  }
-}
-
-function kvStaff() {
-  return jget('tagro_kv_staff', null);
-}
-
-function kvModels() {
-  return jget('tagro_kv_models', null);
-}
-
-// Get staff for a branch — KV first, fallback to TAGRO.people
-function getBranchStaff(branch) {
-  const kv = kvStaff();
-  if (kv) {
-    return kv.filter(s => s.branch === branch && s.active !== false);
-  }
-  // Fallback
-  const p = TAGRO.people[branch] || { manager:'Manager', staff:[] };
-  return [
-    { name: p.manager, branch, role: 'Manager', phone: '' },
-    ...p.staff.map(n => ({ name: n, branch, role: 'Staff', phone: '' }))
-  ].filter(s => s.name && s.name !== 'Manager');
-}
-
-// Get phone for a staff member — KV first
-function getStaffPhoneKV(name, branch) {
-  const kv = kvStaff();
-  if (kv) {
-    const found = kv.find(s => s.name === name && (!branch || s.branch === branch));
-    if (found?.phone) return found.phone;
-  }
-  // Fallback to localStorage
-  const phones = jget('tagro_staff_phones', {});
-  return phones[name] || '';
-}
-
-// Get models for a branch — KV first
-function getBranchModels(branch) {
-  const kv = kvModels();
-  if (kv) {
-    return kv.filter(m => !branch || m.branches.includes(branch));
-  }
-  return [];
-}
 
 
 

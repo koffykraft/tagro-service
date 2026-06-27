@@ -147,8 +147,7 @@ body { background:#f0f0f0; display:flex; align-items:center; justify-content:cen
 <script>
 // ── State ─────────────────────────────────────────────────
 let selectedStaff = null;
-let otpGenerated  = null;
-let otpVerified   = false;
+// OTP is now fully server-side — no client state needed
 
 // ── Init ──────────────────────────────────────────────────
 function init() {
@@ -323,82 +322,103 @@ async function doLogin() {
   completeLogin();
 }
 
-// ── OTP flow ──────────────────────────────────────────────
+// ── OTP flow — fully server-side ─────────────────────────
 async function requestOTP() {
   if (!selectedStaff) { showToast('Select your name first'); return; }
 
-  // Get phone from Worker KV (works on any device)
-  let phone = selectedStaff.phone || getStaffPhone(selectedStaff.name);
+  const btn = document.getElementById('btn-get-pin');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
 
-  if (!phone) {
-    // Try fetching from Worker
-    try {
-      const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/staff/phone', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: selectedStaff.name, branch: selectedStaff.branch })
-      });
-      const data = await resp.json();
-      if (data.ok && data.phone) phone = data.phone;
-    } catch {}
-  }
-
-  if (!phone) {
-    showToast('No phone registered. Contact T M Thomas.');
-    return;
-  }
-
-  // Generate 6-digit OTP
-  otpGenerated = String(Math.floor(100000 + Math.random() * 900000));
-
-  // Send via Worker
   try {
-    const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/send', {
+    const resp = await fetch(`${API}/auth/otp-send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        phone,
-        message: `TAGRO Service: Your login code is ${otpGenerated}. Valid for 10 minutes.`
+        name:   selectedStaff.name,
+        branch: selectedStaff.branch
       })
     });
-    const result = await resp.json();
-    if (!result.ok) throw new Error('SMS failed');
+    const data = await resp.json();
+
+    if (!data.ok) {
+      showToast(data.error || 'Could not send OTP. Contact T M Thomas.');
+      btn.textContent = 'Get PIN via SMS';
+      btn.disabled = false;
+      return;
+    }
+
+    // Show masked phone — OTP is on server, browser never sees it
+    document.getElementById('otp-phone-display').textContent =
+      data.masked || selectedStaff.phone?.slice(0,2) + '****' + selectedStaff.phone?.slice(-4);
+
+    if (!data.smsSent) {
+      showToast('SMS delivery issue — please retry or contact T M Thomas');
+    }
+
+    showStep('step-otp');
+    setTimeout(() => document.getElementById('otp-input').focus(), 200);
+
   } catch(e) {
-    // In dev / offline: show OTP as toast for testing
-    showToast('Code: ' + otpGenerated + ' (SMS failed, use this)');
+    showToast('Connection error. Check internet and retry.');
   }
 
-  document.getElementById('otp-phone-display').textContent = phone;
-  showStep('step-otp');
-  setTimeout(() => document.getElementById('otp-input').focus(), 200);
-
-  // OTP expires in 10 minutes
-  setTimeout(() => { otpGenerated = null; }, 10 * 60 * 1000);
+  btn.textContent = 'Get PIN via SMS';
+  btn.disabled = false;
 }
 
-function verifyOTP() {
+async function verifyOTP() {
   const entered = document.getElementById('otp-input').value.trim();
-  if (!otpGenerated) {
-    document.getElementById('otp-error').textContent = 'Code expired. Request a new one.';
+  if (!entered || entered.length < 6) {
+    document.getElementById('otp-error').textContent = 'Enter the 6-digit code';
     return;
   }
-  if (entered !== otpGenerated) {
-    document.getElementById('otp-error').textContent = 'Wrong code. Try again.';
-    return;
-  }
-  otpVerified = true;
-  otpGenerated = null;
 
-  // Check if they already have a PIN — if yes, just login
-  const key = 'pin_' + selectedStaff.name.replace(/\s+/g, '_');
-  const stored = jget(key, null);
-  if (stored) {
-    // Already has PIN, verified via OTP — direct login
-    completeLogin();
-  } else {
-    // No PIN yet — ask them to set one
-    showStep('step-set-pin');
-    setTimeout(() => document.getElementById('new-pin').focus(), 200);
+  const btn = document.querySelector('#step-otp .btn-login');
+  btn.textContent = 'Verifying...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(`${API}/auth/otp-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:   selectedStaff.name,
+        branch: selectedStaff.branch,
+        otp:    entered
+      })
+    });
+    const data = await resp.json();
+
+    if (!data.ok) {
+      const msgs = {
+        expired: 'Code expired. Request a new one.',
+        wrong:   `Wrong code. ${data.attemptsLeft || ''} attempts left.`,
+        blocked: 'Too many attempts. Request a new code.'
+      };
+      document.getElementById('otp-error').textContent = msgs[data.reason] || 'Verification failed.';
+      btn.textContent = 'Verify';
+      btn.disabled = false;
+      return;
+    }
+
+    // OTP verified — update selected staff with full KV record
+    if (data.member) selectedStaff = data.member;
+
+    // Check if they already have a PIN
+    const pinKey = 'pin_' + selectedStaff.name.replace(/\s+/g, '_');
+    const stored = jget(pinKey, null);
+    if (stored) {
+      completeLogin();
+    } else {
+      showStep('step-set-pin');
+      setTimeout(() => document.getElementById('new-pin').focus(), 200);
+    }
+
+  } catch(e) {
+    document.getElementById('otp-error').textContent = 'Connection error. Try again.';
+    btn.textContent = 'Verify';
+    btn.disabled = false;
   }
 }
 
@@ -425,43 +445,30 @@ async function saveNewPin() {
 
 // ── Complete login ────────────────────────────────────────
 async function completeLogin() {
-  const deviceBranch = jget('tagro_device_branch', 'KVR');
-  const branchName   = TAGRO.branches[deviceBranch] || deviceBranch;
-
-  // Get role from KV staff data
-  let role = 'Staff';
-  const kvStaff = jget('tagro_kv_staff', null);
-  if (kvStaff) {
-    const found = kvStaff.find(s => s.name === selectedStaff.name);
-    if (found?.role) role = found.role;
-  } else {
-    // Fallback to TAGRO.people
-    const branchData = TAGRO.people[deviceBranch] || {};
-    if (branchData.manager === selectedStaff.name) role = 'Manager';
-  }
-
-  // Get phone from KV
-  const phone = getStaffPhone(selectedStaff.name) || selectedStaff.phone || '';
+  // Branch always comes from staff's KV profile, not device
+  const staffBranch  = selectedStaff.branch || jget('tagro_device_branch', 'KVR');
+  const branchName   = TAGRO.branches[staffBranch] || staffBranch;
+  const role         = selectedStaff.role || 'Staff';
+  const phone        = selectedStaff.phone || getStaffPhone(selectedStaff.name) || '';
 
   setSession({
     name:       selectedStaff.name,
     phone,
-    branch:     selectedStaff.branch || deviceBranch,
-    branchName: TAGRO.branches[selectedStaff.branch || deviceBranch] || branchName,
+    branch:     staffBranch,
+    branchName,
     role,
     loginAt:    new Date().toISOString()
   });
 
-  // Activate device binding in background
+  // Bind device in background
   try {
-    const deviceId = getDeviceId();
-    await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/device/activate', {
+    await fetch(`${API}/device/activate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name:       selectedStaff.name,
-        branch:     selectedStaff.branch || deviceBranch,
-        deviceId,
+        branch:     staffBranch,
+        deviceId:   getDeviceId(),
         deviceInfo: navigator.userAgent.slice(0, 100)
       })
     });
