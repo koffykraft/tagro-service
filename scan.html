@@ -1,1 +1,5 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scan</title><link rel="stylesheet" href="app.css"></head><body><div class="wrap"><div class="card"><div class="head">Scan Paper Job Card</div><div class="body"><p class="small">OCR scan will be connected through a backend later. For now use Quick Receive for live jobs.</p><a class="btn primary" href="quick.html">Quick Receive</a></div></div></div><script src="app.js"></script><script>requireLogin();initShell('links')</script></body></html>
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Scan</title><link rel="stylesheet" href="app.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</head><body><div class="wrap"><div class="card"><div class="head">Scan Paper Job Card</div><div class="body"><p class="small">OCR scan will be connected through a backend later. For now use Quick Receive for live jobs.</p><a class="btn primary" href="quick.html">Quick Receive</a></div></div></div><script src="app.js"></script><script>requireLogin();initShell('links')</script></body></html>

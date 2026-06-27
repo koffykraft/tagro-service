@@ -1,5 +1,5 @@
 // TAGRO Service — app.js
-// Data, auth, and API calls
+// v3.0 full release: data, auth, API calls, Dropbox sync
 // API keys never in browser — all calls go through Cloudflare Worker
 
 const API = 'https://tagro-api.icy-fire-d2ac.workers.dev';
@@ -126,7 +126,16 @@ function seed() {
 
 function customers() { return jget('tagro_customers', TAGRO.customers) }
 function jobs() { return jget(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', []) }
-function saveJobs(a) { jset(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', a); syncJobs(a) }
+
+// Save locally first, then sync only the changed job(s) to Dropbox through the Worker.
+// localStorage remains only an offline safety copy. Dropbox becomes the central record.
+function saveJobs(a) {
+  const key = isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs';
+  const before = jget(key, []);
+  jset(key, a);
+  syncChangedJobs(before, a).catch(() => {});
+}
+
 function po() { return jget(isDemo() ? 'tagro_demo_po' : 'tagro_po', []) }
 function savePo(a) { jset(isDemo() ? 'tagro_demo_po' : 'tagro_po', a) }
 function comments() { return jget('tagro_comments', []) }
@@ -183,19 +192,132 @@ async function sendSMS(type, data) {
   }
 }
 
-// Sync jobs to Dropbox via Worker
-async function syncJobs(jobsArr) {
-  if (isDemo()) return;
-  let s = session();
-  if (!s || !s.branch) return;
-  try {
-    await fetch(`${API}/dropbox/save-job`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ branch: s.branch, job: jobsArr[jobsArr.length - 1] })
-    });
-  } catch {}
+// ── DROPBOX JOB SYNC via Worker ─────────────────────────
+// Central rule:
+//   Device writes local copy immediately.
+//   Worker writes/updates Dropbox JSON.
+//   On load, device pulls branch jobs back and merges.
+
+function localJobsKey() { return isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs'; }
+function pendingSyncKey() { return 'tagro_pending_job_sync'; }
+
+function jobWorkOrder(job) {
+  return job?.workOrder || job?.workOrderNo || job?.id || job?.jobId || '';
 }
+
+function jobBranch(job) {
+  const wo = jobWorkOrder(job);
+  return job?.branch || session()?.branch || (wo && wo.includes('/') ? wo.split('/')[0] : null);
+}
+
+function stableJobString(job) {
+  try {
+    const copy = { ...(job || {}) };
+    delete copy.syncedAt;
+    delete copy.syncError;
+    return JSON.stringify(copy, Object.keys(copy).sort());
+  } catch {
+    return JSON.stringify(job || {});
+  }
+}
+
+function mergeJobArrays(localArr, remoteArr) {
+  const map = new Map();
+  for (const job of [...(localArr || []), ...(remoteArr || [])]) {
+    const wo = jobWorkOrder(job) || ('no_wo_' + Math.random().toString(36).slice(2));
+    const existing = map.get(wo);
+    if (!existing) {
+      map.set(wo, job);
+      continue;
+    }
+    const a = Date.parse(existing.updatedAt || existing.savedAt || existing.createdAt || existing.date || 0) || 0;
+    const b = Date.parse(job.updatedAt || job.savedAt || job.createdAt || job.date || 0) || 0;
+    map.set(wo, b >= a ? { ...existing, ...job } : { ...job, ...existing });
+  }
+  return Array.from(map.values());
+}
+
+function queuePendingJob(job, reason) {
+  if (!job || isDemo()) return;
+  const q = jget(pendingSyncKey(), []);
+  const wo = jobWorkOrder(job);
+  const next = q.filter(x => jobWorkOrder(x.job) !== wo);
+  next.push({ job, branch: jobBranch(job), reason: reason || 'sync failed', queuedAt: new Date().toISOString() });
+  jset(pendingSyncKey(), next);
+}
+
+async function saveJobToCloud(job) {
+  if (isDemo()) return { ok: true, demo: true };
+  const branch = jobBranch(job);
+  const workOrder = jobWorkOrder(job);
+  if (!branch || !workOrder) throw new Error('Missing branch or work order');
+  const res = await fetch(`${API}/dropbox/save-job`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ branch, job: { ...job, branch, workOrder } })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Cloud sync failed');
+  return data;
+}
+
+async function syncChangedJobs(before, after) {
+  if (isDemo()) return;
+  const beforeMap = new Map((before || []).map(j => [jobWorkOrder(j), stableJobString(j)]));
+  const changed = [];
+  for (const job of after || []) {
+    const wo = jobWorkOrder(job);
+    if (!wo) continue;
+    if (beforeMap.get(wo) !== stableJobString(job)) changed.push(job);
+  }
+  for (const job of changed) {
+    try { await saveJobToCloud(job); }
+    catch (e) { queuePendingJob(job, e.message); }
+  }
+}
+
+async function flushPendingSync() {
+  if (isDemo()) return { ok: true, sent: 0, remaining: 0 };
+  const q = jget(pendingSyncKey(), []);
+  const remaining = [];
+  let sent = 0;
+  for (const item of q) {
+    try { await saveJobToCloud(item.job); sent++; }
+    catch (e) { remaining.push({ ...item, reason: e.message, lastTriedAt: new Date().toISOString() }); }
+  }
+  jset(pendingSyncKey(), remaining);
+  return { ok: remaining.length === 0, sent, remaining: remaining.length };
+}
+
+async function loadJobsFromCloud(branch) {
+  if (isDemo()) return [];
+  const s = session();
+  const b = branch || s?.branch;
+  if (!b || b === 'ALL') return [];
+  const res = await fetch(`${API}/dropbox/jobs?branch=${encodeURIComponent(b)}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.error || 'Could not load cloud jobs');
+  const local = jget(localJobsKey(), []);
+  const merged = mergeJobArrays(local, data.jobs || []);
+  jset(localJobsKey(), merged);
+  window.dispatchEvent(new CustomEvent('tagro-jobs-updated', { detail: { branch: b, count: merged.length } }));
+  return merged;
+}
+
+async function syncNow() {
+  if (isDemo()) { toast('Demo mode — no cloud sync'); return; }
+  try {
+    const sent = await flushPendingSync();
+    await loadJobsFromCloud();
+    const pending = jget(pendingSyncKey(), []).length;
+    toast(pending ? `Sync partial — ${pending} pending` : 'Sync complete');
+    return sent;
+  } catch (e) {
+    toast('Sync failed — saved offline');
+    return { ok: false, error: e.message };
+  }
+}
+
 
 // AI fault diagnosis via Worker
 async function diagnose(model, complaint, observations) {
@@ -382,8 +504,9 @@ function initShell(active) {
   ).join('');
   document.body.insertBefore(nav, document.body.children[s?.demo ? 2 : 1]);
 
-  // Load KV config silently in background
+  // Load KV config and branch jobs silently in background
   loadKVConfig().catch(() => {});
+  setTimeout(() => { syncNow().catch(() => {}); }, 800);
 }
 
 seed();

@@ -1,0 +1,9 @@
+{
+  "name": "TAGRO Service",
+  "short_name": "TAGRO Service",
+  "start_url": "home.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#df6427",
+  "icons": []
+}

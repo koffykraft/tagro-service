@@ -1,4 +1,8 @@
-<!DOCTYPE html><html lang="ml"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>More</title><link rel="stylesheet" href="assets/app.css"></head><body>
+<!DOCTYPE html><html lang="ml"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>More</title><link rel="stylesheet" href="assets/app.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</head><body>
 <header><a class="logo-link" href="home.html" title="Home"><img data-logo alt="TAGRO"></a><span class="branch" id="branchBadge">KVR</span><span class="user" id="userBadge">Staff</span></header>
 <main><div class="card"><div class="card-head"><h2>More</h2></div><div class="content grid2"><a class="btn" href="daily.html">Daily Review</a><a class="btn" href="exceptions.html">Exceptions</a><a class="btn" href="reports.html">Reports</a><a class="btn" href="links.html">Links</a><a class="btn" href="handbook.html">Handbook</a><button class="btn red" onclick="logout()">Logout</button></div></div></main>
 <nav class="bottomnav"><a class="navbtn" data-nav="home" href="home.html"><b>🏠</b>Home</a><a class="navbtn" data-nav="receive" href="receive.html"><b>➕</b>Receive</a><a class="navbtn" data-nav="queue" href="queue.html"><b>🔧</b>Work</a><a class="navbtn" data-nav="purchase" href="purchase.html"><b>📦</b>PO</a><a class="navbtn" data-nav="more" href="more.html"><b>☰</b>More</a></nav>

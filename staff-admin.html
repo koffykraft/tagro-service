@@ -171,6 +171,10 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 </head>
 <body>
 <div class="admin-wrap">

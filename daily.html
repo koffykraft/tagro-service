@@ -1,4 +1,8 @@
-<!DOCTYPE html><html lang="ml"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Daily Review</title><link rel="stylesheet" href="assets/app.css"></head><body>
+<!DOCTYPE html><html lang="ml"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Daily Review</title><link rel="stylesheet" href="assets/app.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</head><body>
 <header><a class="logo-link" href="home.html" title="Home"><img data-logo alt="TAGRO"></a><span class="branch" id="branchBadge">KVR</span><span class="user" id="userBadge">Staff</span></header>
 <main><div class="card"><div class="card-head"><h2>Daily Machine List</h2><span class="pill">Manager review</span></div><div class="content"><div class="grid3"><div class="stat"><b>14</b><span>Open</span></div><div class="stat"><b>4</b><span>WIP</span></div><div class="stat"><b>3</b><span>Ready</span></div></div><div class="listitem" style="margin-top:14px"><div class="title">Machines waiting to begin <span class="pill amber">5</span></div></div><div class="listitem"><div class="title">Work on hold <span class="pill red">2</span></div></div><div class="listitem"><div class="title">Complete not collected <span class="pill amber">3</span></div></div><button class="btn green block">Manager reviewed today</button></div></div></main>
 <nav class="bottomnav"><a class="navbtn" data-nav="home" href="home.html"><b>🏠</b>Home</a><a class="navbtn" data-nav="receive" href="receive.html"><b>➕</b>Receive</a><a class="navbtn" data-nav="queue" href="queue.html"><b>🔧</b>Work</a><a class="navbtn" data-nav="purchase" href="purchase.html"><b>📦</b>PO</a><a class="navbtn" data-nav="more" href="more.html"><b>☰</b>More</a></nav>

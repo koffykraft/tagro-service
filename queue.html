@@ -1,4 +1,8 @@
-<!DOCTYPE html><html lang="ml"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Work Queue</title><link rel="stylesheet" href="assets/app.css"></head><body>
+<!DOCTYPE html><html lang="ml"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Work Queue</title><link rel="stylesheet" href="assets/app.css">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+</head><body>
 <header><a class="logo-link" href="home.html" title="Home"><img data-logo alt="TAGRO"></a><span class="branch" id="branchBadge">KVR</span><span class="user" id="userBadge">Staff</span></header>
 <main><div class="card"><div class="card-head"><h2>Service Centre Queue</h2><span class="pill">Status by action</span></div><div class="content"><input placeholder="Search phone, alias, model, serial, work order"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn primary">Waiting to begin</button><button class="btn">Observed</button><button class="btn">Estimate ready</button><button class="btn">Work in progress</button><button class="btn">On hold</button></div></div></div><div id="jobList"></div></main>
 <nav class="bottomnav"><a class="navbtn" data-nav="home" href="home.html"><b>🏠</b>Home</a><a class="navbtn" data-nav="receive" href="receive.html"><b>➕</b>Receive</a><a class="navbtn" data-nav="queue" href="queue.html"><b>🔧</b>Work</a><a class="navbtn" data-nav="purchase" href="purchase.html"><b>📦</b>PO</a><a class="navbtn" data-nav="more" href="more.html"><b>☰</b>More</a></nav>
