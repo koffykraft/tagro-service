@@ -185,8 +185,10 @@
 
 <script src="app.js"></script>
 <script>
-const s = requireLogin();
-initShell('links');
+// Soft auth check — config must work on fresh devices before login
+// Branch setting is always accessible; staff management requires login
+const s = session();
+if (s) initShell('links'); // only init nav shell if logged in
 
 // Only owner and managers can access config
 // (soft check — not a security boundary)

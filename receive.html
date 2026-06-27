@@ -179,11 +179,11 @@
           <!-- Common complaints as pills -->
         </div>
 
-        <div class="field">
-          <textarea id="complaint-text" placeholder="Customer's exact words..." style="min-height:72px"></textarea>
+        <div class="field" id="complaint-text-wrap" style="display:none;margin-top:4px">
+          <textarea id="complaint-text" placeholder="Customer's exact words..." style="min-height:56px"></textarea>
         </div>
 
-        <div id="complaint-list" style="margin-bottom:12px"></div>
+        <div id="complaint-list" style="margin-bottom:8px"></div>
 
         <div class="field">
           <label>How urgently is the machine needed?</label>
@@ -332,11 +332,8 @@ function confirmNewCustomer() {
 function showMachineStep() {
   loadCustomModels();
 
-  // Populate common complaints
-  const common = ["Won't Start","No Power","Chain Problem","Carburetor Issue","Fuel Leak","Engine Noise","Full Service","Sprayer Issue","Brushcutter Problem","Other"];
-  document.getElementById('complaint-pills').innerHTML = common.map(c =>
-    `<div class="complaint-pill" onclick="quickComplaint('${c}')">${c}</div>`
-  ).join('');
+  // Populate common complaints — use renderComplaintPills for consistent state
+  renderComplaintPills();
 
   // Show previous machines if existing customer
   const prev = document.getElementById('prev-machines');
@@ -422,8 +419,48 @@ function saveCustomModelLocal() {
 }
 
 function quickComplaint(text) {
-  if (text === 'Other') { document.getElementById('complaint-text').focus(); return; }
-  document.getElementById('complaint-text').value = text;
+  if (text === 'Other') {
+    const wrap = document.getElementById('complaint-text-wrap');
+    if (wrap) wrap.style.display = 'block';
+    document.getElementById('complaint-text').focus();
+    return;
+  }
+  // Toggle — tap again to deselect
+  const existing = complaintArr.findIndex(c => c.text === text);
+  if (existing >= 0) {
+    complaintArr.splice(existing, 1);
+  } else {
+    complaintArr.push({ text, at: new Date().toISOString() });
+  }
+  renderComplaintPills();
+  renderComplaintList();
+}
+
+function renderComplaintPills() {
+  const selected = complaintArr.map(c => c.text);
+  const common = ["Won't Start","No Power","Chain Problem","Carburetor Issue",
+    "Fuel Leak","Engine Noise","Full Service","Sprayer Issue","Brushcutter Problem","Other"];
+  document.getElementById('complaint-pills').innerHTML = common.map(c => {
+    const isSel = selected.includes(c);
+    return `<div class="complaint-pill${isSel ? ' selected' : ''}" onclick="quickComplaint('${c}')">${c}${isSel ? ' ✓' : ''}</div>`;
+  }).join('');
+}
+
+function renderComplaintList() {
+  const el = document.getElementById('complaint-list');
+  if (!complaintArr.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:4px;font-weight:700">RECORDED (${complaintArr.length})</div>` +
+    complaintArr.map((c,i) => `
+      <div style="display:flex;align-items:center;gap:8px;background:#fff8f4;border:1.5px solid #df6427;border-radius:10px;padding:8px 12px;margin-bottom:4px">
+        <div style="flex:1;font-size:13px;font-weight:700;color:#121212">"${esc(c.text)}"</div>
+        <button onclick="removeComplaint(${i})" style="border:0;background:0;color:#aaa;font-size:16px;cursor:pointer;padding:0">✕</button>
+      </div>`).join('');
+}
+
+function removeComplaint(i) {
+  complaintArr.splice(i, 1);
+  renderComplaintPills();
+  renderComplaintList();
 }
 
 function setUrgency(val, el) {
@@ -436,11 +473,12 @@ function goToConfirm() {
   const model = getModelValue();
   if (!model) { toast('Select the machine model'); return; }
 
+  // Also capture anything typed in textarea
   const complaintText = document.getElementById('complaint-text').value.trim();
   if (complaintText && !complaintArr.find(c => c.text === complaintText)) {
     complaintArr.push({ text: complaintText, at: new Date().toISOString() });
   }
-  if (!complaintArr.length) { toast('Record at least one complaint'); return; }
+  if (!complaintArr.length) { toast('Tap at least one complaint'); return; }
 
   buildConfirmSummary();
   goToStep(2);
