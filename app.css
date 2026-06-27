@@ -115,17 +115,14 @@ label{display:block;font-size:11px;color:#777;text-transform:uppercase;letter-sp
   gap: 10px;
 }
 .logo {
-  font-size: 22px;
-  font-weight: 950;
-  font-style: italic;
-  letter-spacing: -1.5px;
-  color: var(--dark);
+  display: flex;
+  align-items: center;
+  line-height: 1;
 }
-.logo::before {
-  content: '▰';
-  color: var(--orange);
-  font-style: normal;
-  margin-right: 3px;
+.logo img {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 .tag {
   background: var(--orange);
