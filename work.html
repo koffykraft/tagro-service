@@ -210,29 +210,56 @@
       </div>
     </div>
 
-    <button class="sms-btn" onclick="sendEstimateSMS()">
-      <div class="sms-icon">📝</div>
-      <div>
-        <div class="sms-label">Send Estimate</div>
-        <div class="sms-sub">Customer receives amount and approval link</div>
-      </div>
-    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
+      <button class="sms-btn" onclick="sendEstimateSMS()" style="margin:0">
+        <div class="sms-icon">📝</div>
+        <div>
+          <div class="sms-label">Estimate SMS</div>
+          <div class="sms-sub">Send via SMS</div>
+        </div>
+      </button>
+      <button class="sms-btn" onclick="openWhatsApp('estimate')" style="margin:0;background:#e8f5e9;border-color:#25D366">
+        <div class="sms-icon">💬</div>
+        <div>
+          <div class="sms-label" style="color:#128C7E">Estimate WA</div>
+          <div class="sms-sub">Open in WhatsApp</div>
+        </div>
+      </button>
+    </div>
 
-    <button class="sms-btn" onclick="sendStatusSMS()">
-      <div class="sms-icon">🔧</div>
-      <div>
-        <div class="sms-label">Send Status Update</div>
-        <div class="sms-sub">Repair in progress notification</div>
-      </div>
-    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
+      <button class="sms-btn" onclick="sendStatusSMS()" style="margin:0">
+        <div class="sms-icon">🔧</div>
+        <div>
+          <div class="sms-label">Status SMS</div>
+          <div class="sms-sub">Send via SMS</div>
+        </div>
+      </button>
+      <button class="sms-btn" onclick="openWhatsApp('status')" style="margin:0;background:#e8f5e9;border-color:#25D366">
+        <div class="sms-icon">💬</div>
+        <div>
+          <div class="sms-label" style="color:#128C7E">Status WA</div>
+          <div class="sms-sub">Open in WhatsApp</div>
+        </div>
+      </button>
+    </div>
 
-    <button class="sms-btn" onclick="sendReadySMS()">
-      <div class="sms-icon">✅</div>
-      <div>
-        <div class="sms-label">Machine Ready</div>
-        <div class="sms-sub">Customer notified to collect</div>
-      </div>
-    </button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:2px">
+      <button class="sms-btn" onclick="sendReadySMS()" style="margin:0">
+        <div class="sms-icon">✅</div>
+        <div>
+          <div class="sms-label">Ready SMS</div>
+          <div class="sms-sub">Send via SMS</div>
+        </div>
+      </button>
+      <button class="sms-btn" onclick="openWhatsApp('ready')" style="margin:0;background:#e8f5e9;border-color:#25D366">
+        <div class="sms-icon">💬</div>
+        <div>
+          <div class="sms-label" style="color:#128C7E">Ready WA</div>
+          <div class="sms-sub">Open in WhatsApp</div>
+        </div>
+      </button>
+    </div>
 
     <div class="card">
       <div class="head">SMS History</div>
@@ -833,6 +860,41 @@ async function sendReadySMS() {
     saveJob(); renderTimeline(); renderSMSHistory();
     toast('Ready notification sent');
   } catch { toast('SMS failed'); }
+}
+
+// ── WhatsApp fallback ─────────────────────────────────────
+const WA_SENDER = '919388312248'; // TAGRO WhatsApp number
+
+function openWhatsApp(type) {
+  const phone = job.customer?.phone;
+  if (!phone) { toast('No customer phone number'); return; }
+  const model    = job.machine?.model || 'your machine';
+  const wo       = job.workOrder || '';
+  const total    = Math.round(getTotalAmount()).toLocaleString('en-IN');
+  const branch   = getBranchPhone();
+  let msg = '';
+
+  if (type === 'estimate') {
+    msg = `TAGRO Service: Your ${model} estimate is ready.\nWork Order: ${wo}\nAmount: ₹${total}\nPlease call us to approve: ${branch}`;
+  } else if (type === 'status') {
+    msg = `TAGRO Service: Update on your ${model}.\nWork Order: ${wo}\nStatus: ${job.status}\nQuery: ${branch}`;
+  } else if (type === 'ready') {
+    msg = `TAGRO Service: Your ${model} is ready for collection.\nWork Order: ${wo}\nInvoice: ₹${total}\nContact: ${branch}`;
+  }
+
+  // Format customer phone — ensure country code
+  let custPhone = phone.replace(/\D/g,'');
+  if (custPhone.length === 10) custPhone = '91' + custPhone;
+
+  const url = `https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+
+  // Log it
+  addTimeline('sms', `WhatsApp ${type} opened for ${phone}`);
+  saveJob();
+  renderTimeline();
+  renderSMSHistory();
+  toast('WhatsApp opened — send from TAGRO number');
 }
 
 function renderSMSHistory() {
