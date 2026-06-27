@@ -209,6 +209,12 @@ async function populateStaff() {
     }
   }
 
+  // Filter by device branch — each device only shows its own branch staff
+  const deviceBranch = jget('tagro_device_branch', null);
+  if (deviceBranch) {
+    allStaff = allStaff.filter(s => s.branch === deviceBranch);
+  }
+
   // Sort by name
   allStaff.sort((a, b) => a.name.localeCompare(b.name));
 

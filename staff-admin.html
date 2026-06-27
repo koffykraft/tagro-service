@@ -306,20 +306,39 @@ async function loadAll() {
     const d1 = await r1.json();
     if (d1.ok) allStaff = d1.staff;
 
-    // Load models
-    const r2 = await fetch(`${API}/models/list`);
-    const d2 = await r2.json();
-    if (d2.ok) allModels = d2.models;
-
-    // Load device bindings from KV (via listing)
-    await loadDeviceBindings();
+    // Load models — non-blocking, use fallback if fails
+    try {
+      const r2 = await fetch(`${API}/models/list`);
+      const d2 = await r2.json();
+      if (d2.ok) allModels = d2.models;
+    } catch {
+      // Fallback model list
+      allModels = [
+        { id:'MS 460', name:'MS 460', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'MS 461', name:'MS 461', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'MS 382', name:'MS 382', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'MS 381', name:'MS 381', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'MS 250', name:'MS 250', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'MS 180', name:'MS 180', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'MS 182', name:'MS 182', branches:['KVR','NDD','MDM','PKM','SKT'] },
+        { id:'FS 120', name:'FS 120', branches:['KVR','MDM','PKM','SKT'] },
+        { id:'FS 250', name:'FS 250', branches:['KVR','PKM','SKT'] },
+        { id:'FS 130', name:'FS 130', branches:['KVR','PKM'] },
+        { id:'SR 420', name:'SR 420', branches:['KVR','PKM'] },
+        { id:'SR 450', name:'SR 450', branches:['KVR','PKM'] },
+        { id:'BR 600', name:'BR 600', branches:['KVR','PKM'] },
+        { id:'MS 660', name:'MS 660', branches:['KVR','MDM','PKM'] },
+        { id:'MS 661', name:'MS 661', branches:['MDM'] }
+      ];
+    }
 
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('staff-content').style.display = '';
     renderAll();
+    setTimeout(checkDeviceStatuses, 500);
   } catch(e) {
     document.getElementById('loading-state').innerHTML =
-      '<div style="color:#ba3327;font-weight:700">Failed to load. Check connection.<br><button onclick="loadAll()" class="btn primary" style="margin-top:14px">Retry</button></div>';
+      `<div style="color:#ba3327;font-weight:700">Failed to load staff.<br><small>${e.message}</small><br><button onclick="loadAll()" class="btn primary" style="margin-top:14px">Retry</button></div>`;
   }
 }
 
