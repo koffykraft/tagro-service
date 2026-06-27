@@ -277,14 +277,14 @@
 
 <script src="app.js"></script>
 <script>
-const s = requireLogin();
-if (!s || s.role !== 'Owner') {
+const _session = requireLogin();
+if (!_session || _session.role !== 'Owner') {
   document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#ba3327;font-weight:900;font-size:18px">Owner access only</div>';
   throw new Error('Not owner');
 }
 initShell('admin');
 
-const API = 'https://tagro-api.icy-fire-d2ac.workers.dev';
+// API already defined in app.js — do not redefine
 const OWNER_TOKEN = 'tagro-owner-' + btoa('TMThomas9656361846');
 
 const BRANCHES = {
