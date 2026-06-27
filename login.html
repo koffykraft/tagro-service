@@ -269,23 +269,38 @@ function onStaffChange() {
   const name = sel.value;
   if (!name) {
     selectedStaff = null;
-    document.getElementById('pin-field').style.display = 'none';
-    document.getElementById('btn-login').style.display = 'none';
-    document.getElementById('otp-divider').style.display = 'none';
-    document.getElementById('btn-get-pin').style.display = 'none';
+    document.getElementById('pin-field').style.display    = 'none';
+    document.getElementById('btn-login').style.display    = 'none';
+    document.getElementById('otp-divider').style.display  = 'none';
+    document.getElementById('btn-get-pin').style.display  = 'none';
     return;
   }
 
-  selectedStaff = window._allStaff.find(s => s.name === name) || { name };
+  selectedStaff = window._allStaff?.find(s => s.name === name) || { name };
   jset('tagro_last_staff', name);
 
-  document.getElementById('pin-field').style.display = 'block';
-  document.getElementById('btn-login').style.display = 'block';
-  document.getElementById('otp-divider').style.display = 'block';
-  document.getElementById('btn-get-pin').style.display = 'block';
-  document.getElementById('pin-input').value = '';
-  document.getElementById('pin-error').textContent = '';
-  setTimeout(() => document.getElementById('pin-input').focus(), 100);
+  const key    = 'pin_' + name.replace(/\s+/g, '_');
+  const hasPin = !!jget(key, null);
+
+  const btnLogin = document.getElementById('btn-login');
+
+  if (hasPin) {
+    // Has PIN — show PIN field and Login button
+    document.getElementById('pin-field').style.display   = 'block';
+    btnLogin.textContent = 'Login';
+    btnLogin.style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-error').textContent = '';
+    setTimeout(() => document.getElementById('pin-input').focus(), 100);
+  } else {
+    // No PIN yet — hide PIN field, show "Set PIN" button directly
+    document.getElementById('pin-field').style.display   = 'none';
+    btnLogin.textContent = 'Set PIN & Login';
+    btnLogin.style.display = 'block';
+  }
+
+  document.getElementById('otp-divider').style.display  = 'none';
+  document.getElementById('btn-get-pin').style.display  = 'none';
 }
 
 function togglePin() {
@@ -297,17 +312,19 @@ function togglePin() {
 async function doLogin() {
   if (!selectedStaff) { showToast('Select your name first'); return; }
 
-  const pin = document.getElementById('pin-input').value.trim();
-  if (pin.length < 4) {
-    document.getElementById('pin-error').textContent = 'PIN must be at least 4 digits';
+  const pin    = document.getElementById('pin-input').value.trim();
+  const key    = 'pin_' + selectedStaff.name.replace(/\s+/g, '_');
+  const stored = jget(key, null);
+
+  // No PIN set yet — go directly to set PIN (OTP bypassed for test period)
+  if (!stored) {
+    showStep('step-set-pin');
+    setTimeout(() => document.getElementById('new-pin').focus(), 200);
     return;
   }
 
-  const key   = 'pin_' + selectedStaff.name.replace(/\s+/g, '_');
-  const stored = jget(key, null);
-
-  if (!stored) {
-    document.getElementById('pin-error').textContent = 'No PIN set. Use Get PIN via SMS.';
+  if (pin.length < 4) {
+    document.getElementById('pin-error').textContent = 'Enter your PIN';
     return;
   }
 
