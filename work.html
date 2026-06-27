@@ -396,45 +396,64 @@ function renderEstimate() {
   if (!lines.length) {
     document.getElementById('estimate-lines').innerHTML =
       '<div class="card"><div class="body small">No estimate yet. Search for parts and labour above.</div></div>';
+    document.getElementByIfunction toggleEstimateLine(i) {
+  const el = document.getElementById('el-' + i);
+  if (!el) return;
+  const isOpen = el.classList.contains('expanded');
+  document.querySelectorAll('.estimate-line').forEach(e => e.classList.remove('expanded'));
+  if (!isOpen) el.classList.add('expanded');
+}
+
+function renderEstimate() {
+  const lines = job.estimate?.lines || [];
+  if (!lines.length) {
+    document.getElementById('estimate-lines').innerHTML =
+      '<div class="card"><div class="body small">No estimate yet. Search for parts and labour above.</div></div>';
     document.getElementById('estimate-total').innerHTML = '';
     return;
   }
 
-  document.getElementById('estimate-lines').innerHTML = lines.map((ln, i) => {
-    const variance = ln.amount - ln.standardRate;
-    const varStr   = variance === 0 ? '' :
-      variance > 0 ? `<span style="color:#287a3e">+₹${variance} above standard</span>` :
-                     `<span style="color:#ba3327">₹${Math.abs(variance)} below standard</span>`;
+  const parts  = lines.map((ln,i) => ({...ln,_i:i})).filter(ln => ln.type === 'part');
+  const labour = lines.map((ln,i) => ({...ln,_i:i})).filter(ln => ln.type === 'labour');
+
+  function lineHTML(ln) {
+    const i = ln._i;
+    const lineTotal = (ln.amount * ln.qty).toLocaleString('en-IN');
+    const variance  = ln.amount - (ln.standardRate || ln.amount);
+    const varStr = variance === 0 ? '' :
+      variance > 0 ? `+₹${variance} above standard` : `₹${Math.abs(variance)} below standard`;
+    const varColor = variance > 0 ? '#287a3e' : '#ba3327';
     return `
-      <div class="estimate-line">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div style="flex:1">
-            <div class="el-name">${esc(ln.name)}</div>
-            <div class="el-detail">
-              ${ln.type === 'part' ? `Part No: ${esc(ln.no || '—')} · ` : ''}
-              GST ${ln.gst}%
-            </div>
-            ${ln.editReason ? `<div class="el-edited">Edited: ${esc(ln.editReason)}</div>` : ''}
-            ${varStr ? `<div class="el-edited">${varStr}</div>` : ''}
-          </div>
-          <div style="text-align:right;flex-shrink:0;margin-left:12px">
-            <div class="el-amount">₹${(ln.amount * ln.qty).toLocaleString('en-IN')}</div>
-            ${ln.qty > 1 ? `<div style="font-size:11px;color:#aaa">₹${ln.amount} each</div>` : ''}
-          </div>
+    <div class="estimate-line" id="el-${i}" onclick="toggleEstimateLine(${i})">
+      <div class="el-row">
+        <div class="el-type-dot ${ln.type}"></div>
+        <div class="el-name">${esc(ln.name)}</div>
+        <div class="el-qty-badge">${ln.qty > 1 ? ln.qty + '×' : ''}</div>
+        <div class="el-amount">₹${lineTotal}</div>
+        <div class="el-chevron">›</div>
+      </div>
+      <div class="el-expand">
+        <div class="el-detail">${ln.type === 'part' ? 'Part: ' + esc(ln.no||'—') + ' · ' : ''}GST ${ln.gst}%${ln.editReason ? ' · Edited: '+esc(ln.editReason) : ''}</div>
+        ${varStr ? `<div class="el-edited" style="color:${varColor}">${varStr}</div>` : ''}
+        <div class="el-qty-row">
+          <button class="el-qty-btn" onclick="event.stopPropagation();adjustQty(${i},-1)">−</button>
+          <div class="el-qty-val" id="el-qty-${i}">${ln.qty}</div>
+          <button class="el-qty-btn" onclick="event.stopPropagation();adjustQty(${i},1)">+</button>
+          <div class="el-amount-each">${ln.qty > 1 ? '₹'+ln.amount+' each' : ''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-          <label style="font-size:12px;color:#888;font-weight:700;white-space:nowrap">Qty:</label>
-          <input type="number" min="1" value="${ln.qty}"
-            style="width:60px;padding:6px 8px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-weight:800;text-align:center"
-            onchange="updateQty(${i}, this.value)">
+        <div class="el-actions" onclick="event.stopPropagation()">
+          <button class="btn" onclick="openEditModal(${i})">Edit ₹</button>
+          <button class="btn" onclick="changePOStatus(${i})">${esc(ln.poStatus||'Need Purchase')}</button>
+          <button class="btn red" onclick="removeLine(${i})">Remove</button>
         </div>
-        <div class="el-actions">
-          <button class="btn" style="font-size:12px;padding:6px 10px" onclick="openEditModal(${i})">Edit ₹</button>
-          <button class="btn" style="font-size:12px;padding:6px 10px" onclick="changePOStatus(${i})">${esc(ln.poStatus || 'Need Purchase')}</button>
-          <button class="btn red" style="font-size:12px;padding:6px 10px" onclick="removeLine(${i})">Remove</button>
-        </div>
-      </div>`;
-  }).join('');
+      </div>
+    </div>`;
+  }
+
+  let html = '';
+  if (parts.length)  html += '<div class="est-section-head">Parts (' + parts.length + ')</div>' + parts.map(lineHTML).join('');
+  if (labour.length) html += '<div class="est-section-head" style="margin-top:8px">Labour (' + labour.length + ')</div>' + labour.map(lineHTML).join('');
+  document.getElementById('estimate-lines').innerHTML = html;
 
   const subtotal = lines.reduce((a, ln) => a + ln.amount * ln.qty, 0);
   const taxTotal = lines.reduce((a, ln) => a + (ln.amount * ln.qty * ln.gst / 100), 0);
@@ -443,12 +462,10 @@ function renderEstimate() {
   document.getElementById('estimate-total').innerHTML = `
     <div class="estimate-total">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span class="et-label">Subtotal</span>
-        <span style="color:#aaa">₹${subtotal.toLocaleString('en-IN')}</span>
+        <span class="et-label">Subtotal</span><span style="color:#aaa">₹${subtotal.toLocaleString('en-IN')}</span>
       </div>
       <div style="display:flex;justify-content:space-between;margin-bottom:10px">
-        <span class="et-label">GST</span>
-        <span style="color:#aaa">₹${taxTotal.toLocaleString('en-IN')}</span>
+        <span class="et-label">GST</span><span style="color:#aaa">₹${taxTotal.toLocaleString('en-IN')}</span>
       </div>
       <div style="display:flex;justify-content:space-between">
         <span class="et-label" style="font-size:14px">Total</span>
@@ -456,16 +473,8 @@ function renderEstimate() {
       </div>
     </div>`;
 
-  // Update SMS preview
   updateSMSPreview(total);
-}
-
-function updateSMSPreview(total) {
-  const el = document.getElementById('sms-estimate-preview');
-  const branchPhone = getBranchPhone();
-  const approvalUrl = `https://service.tagro.in/approve?id=${(job.workOrder||'').replace(/\//g,'')}`;
-  el.textContent =
-    `TAGRO Service: Estimate ready for your ${job.machine?.model}.\n` +
+} for your ${job.machine?.model}.\n` +
     `Work Order: ${job.workOrder}\n` +
     `Amount: Rs.${total.toLocaleString('en-IN')}\n` +
     `Approve: ${approvalUrl}\n` +
@@ -710,6 +719,46 @@ function updateQty(idx, val) {
   renderEstimate();
 }
 
+function adjustQty(idx, delta) {
+  const lines = job.estimate?.lines || [];
+  if (!lines[idx]) return;
+  const newQty = Math.max(1, (lines[idx].qty || 1) + delta);
+  lines[idx].qty = newQty;
+  job.estimate.lines = lines;
+  saveJob();
+  const qtyEl = document.getElementById('el-qty-' + idx);
+  if (qtyEl) qtyEl.textContent = newQty;
+  const rowEl = document.getElementById('el-' + idx);
+  if (rowEl) {
+    const amountEl = rowEl.querySelector('.el-amount');
+    if (amountEl) amountEl.textContent = '₹' + (lines[idx].amount * newQty).toLocaleString('en-IN');
+    const eachEl = rowEl.querySelector('.el-amount-each');
+    if (eachEl) eachEl.textContent = newQty > 1 ? `₹${lines[idx].amount} each` : '';
+  }
+  updateEstimateTotal();
+}
+
+function updateEstimateTotal() {
+  const lines = job.estimate?.lines || [];
+  const subtotal = lines.reduce((a, ln) => a + ln.amount * ln.qty, 0);
+  const taxTotal = lines.reduce((a, ln) => a + (ln.amount * ln.qty * ln.gst / 100), 0);
+  const total = subtotal + taxTotal;
+  document.getElementById('estimate-total').innerHTML = `
+    <div class="estimate-total">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span class="et-label">Subtotal</span><span style="color:#aaa">₹${subtotal.toLocaleString('en-IN')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <span class="et-label">GST</span><span style="color:#aaa">₹${taxTotal.toLocaleString('en-IN')}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span class="et-label" style="font-size:14px">Total</span>
+        <div class="et-amount">₹${total.toLocaleString('en-IN')}</div>
+      </div>
+    </div>`;
+  updateSMSPreview(total);
+}
+
 function removeLine(idx) {
   const ln = job.estimate.lines[idx];
   job.estimate.lines.splice(idx, 1);
@@ -868,33 +917,213 @@ const WA_SENDER = '919388312248'; // TAGRO WhatsApp number
 function openWhatsApp(type) {
   const phone = job.customer?.phone;
   if (!phone) { toast('No customer phone number'); return; }
-  const model    = job.machine?.model || 'your machine';
-  const wo       = job.workOrder || '';
-  const total    = Math.round(getTotalAmount()).toLocaleString('en-IN');
-  const branch   = getBranchPhone();
-  let msg = '';
+  const model  = job.machine?.model || 'your machine';
+  const wo     = job.workOrder || '';
+  const total  = Math.round(getTotalAmount()).toLocaleString('en-IN');
+  const branch = getBranchPhone();
 
-  if (type === 'estimate') {
-    msg = `TAGRO Service: Your ${model} estimate is ready.\nWork Order: ${wo}\nAmount: ₹${total}\nPlease call us to approve: ${branch}`;
-  } else if (type === 'status') {
-    msg = `TAGRO Service: Update on your ${model}.\nWork Order: ${wo}\nStatus: ${job.status}\nQuery: ${branch}`;
-  } else if (type === 'ready') {
-    msg = `TAGRO Service: Your ${model} is ready for collection.\nWork Order: ${wo}\nInvoice: ₹${total}\nContact: ${branch}`;
-  }
-
-  // Format customer phone — ensure country code
-  let custPhone = phone.replace(/\D/g,'');
+  let custPhone = (phone + '').replace(/\D/g,'');
   if (custPhone.length === 10) custPhone = '91' + custPhone;
 
-  const url = `https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`;
-  window.open(url, '_blank');
+  if (type === 'estimate') {
+    // Generate image then open WhatsApp
+    generateEstimateImage().then(dataUrl => {
+      if (dataUrl) {
+        // Show share sheet with image
+        showEstimateShare(dataUrl, custPhone);
+      } else {
+        // Fallback to text
+        const msg = `TAGRO Service: Your ${model} estimate is ready.\nWork Order: ${wo}\nAmount: ₹${total}\nApprove/Query: ${branch}`;
+        window.open(`https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+      }
+    });
+  } else {
+    let msg = '';
+    if (type === 'status') {
+      msg = `TAGRO Service: Update on your ${model}.\nWork Order: ${wo}\nStatus: ${job.status}\nQuery: ${branch}`;
+    } else if (type === 'ready') {
+      msg = `TAGRO Service: Your ${model} is ready for collection.\nWork Order: ${wo}\nInvoice: ₹${total}\nContact: ${branch}`;
+    }
+    window.open(`https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
 
-  // Log it
-  addTimeline('sms', `WhatsApp ${type} opened for ${phone}`);
-  saveJob();
-  renderTimeline();
-  renderSMSHistory();
+  addTimeline('sms', `WhatsApp ${type} sent to ${phone}`);
+  saveJob(); renderTimeline(); renderSMSHistory();
   toast('WhatsApp opened — send from TAGRO number');
+}
+
+async function generateEstimateImage() {
+  try {
+    const lines   = job.estimate?.lines || [];
+    const parts   = lines.filter(l => l.type === 'part');
+    const labour  = lines.filter(l => l.type === 'labour');
+    const subtotal = lines.reduce((a,l) => a + l.amount * l.qty, 0);
+    const tax     = lines.reduce((a,l) => a + l.amount * l.qty * l.gst/100, 0);
+    const total   = subtotal + tax;
+
+    const W = 640, PAD = 32;
+    const rowH = 36, sectionHead = 28;
+    const headerH = 120, footerH = 80;
+    const bodyH = (parts.length ? sectionHead + parts.length * rowH + 8 : 0)
+                + (labour.length ? sectionHead + labour.length * rowH + 8 : 0)
+                + 60; // totals
+    const H = headerH + bodyH + footerH + PAD * 2;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+
+    // Header strip
+    ctx.fillStyle = '#df6427';
+    ctx.fillRect(0, 0, W, headerH);
+
+    // Logo
+    const logo = new Image();
+    logo.src = TAGRO_LOGO;
+    await new Promise(r => { logo.onload = r; logo.onerror = r; });
+    // Draw logo white-ish (it's on orange bg) — scale to fit 120px wide
+    const logoW = 120, logoH = Math.round(logoW * logo.height / logo.width);
+    ctx.drawImage(logo, PAD, (headerH - logoH) / 2, logoW, logoH);
+
+    // Header text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 22px -apple-system,sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('ESTIMATE', W - PAD, 44);
+    ctx.font = '500 14px -apple-system,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillText(job.machine?.model || '', W - PAD, 68);
+    ctx.fillText(job.customer?.name || '', W - PAD, 88);
+    ctx.fillText('WO: ' + (job.workOrder || ''), W - PAD, 108);
+    ctx.textAlign = 'left';
+
+    let y = headerH + PAD;
+
+    function drawSection(label, items, color) {
+      ctx.fillStyle = '#888';
+      ctx.font = '700 11px -apple-system,sans-serif';
+      ctx.fillText(label.toUpperCase(), PAD, y + 14);
+      ctx.fillStyle = color;
+      ctx.fillRect(PAD, y + 18, 24, 2);
+      y += sectionHead;
+
+      items.forEach((ln, idx) => {
+        ctx.fillStyle = idx % 2 === 0 ? '#f9f9f9' : '#ffffff';
+        ctx.fillRect(0, y, W, rowH);
+        // Dot
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(PAD + 6, y + rowH/2, 4, 0, Math.PI*2);
+        ctx.fill();
+        // Name
+        ctx.fillStyle = '#121212';
+        ctx.font = '700 13px -apple-system,sans-serif';
+        const name = ln.name.length > 38 ? ln.name.slice(0,36)+'…' : ln.name;
+        ctx.fillText(name, PAD + 18, y + rowH/2 + 5);
+        // Qty × amount
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#121212';
+        ctx.font = '800 14px -apple-system,sans-serif';
+        ctx.fillText('₹' + (ln.amount * ln.qty).toLocaleString('en-IN'), W - PAD, y + rowH/2 + 5);
+        if (ln.qty > 1) {
+          ctx.fillStyle = '#aaa';
+          ctx.font = '500 11px -apple-system,sans-serif';
+          ctx.fillText(ln.qty + ' × ₹' + ln.amount, W - PAD, y + rowH/2 - 6);
+        }
+        ctx.textAlign = 'left';
+        y += rowH;
+      });
+      y += 8;
+    }
+
+    if (parts.length)  drawSection('Parts',  parts,  '#df6427');
+    if (labour.length) drawSection('Labour', labour, '#287a3e');
+
+    // Divider
+    ctx.fillStyle = '#eee';
+    ctx.fillRect(PAD, y, W - PAD*2, 1);
+    y += 12;
+
+    // Totals
+    function drawTotal(label, val, big) {
+      ctx.fillStyle = big ? '#121212' : '#888';
+      ctx.font = big ? '900 18px -apple-system,sans-serif' : '500 13px -apple-system,sans-serif';
+      ctx.fillText(label, PAD, y);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = big ? '#121212' : '#aaa';
+      ctx.font = big ? '900 18px -apple-system,sans-serif' : '500 13px -apple-system,sans-serif';
+      ctx.fillText('₹' + val.toLocaleString('en-IN'), W - PAD, y);
+      ctx.textAlign = 'left';
+      y += big ? 24 : 20;
+    }
+    drawTotal('Subtotal', subtotal, false);
+    drawTotal('GST', tax, false);
+    ctx.fillStyle = '#eee'; ctx.fillRect(PAD, y, W - PAD*2, 1); y += 12;
+    drawTotal('TOTAL', total, true);
+
+    // Footer
+    y = H - footerH + 16;
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0, H - footerH, W, footerH);
+    ctx.fillStyle = '#888';
+    ctx.font = '500 12px -apple-system,sans-serif';
+    ctx.fillText('TAGRO Authorized STIHL Dealer · ' + (job.branch || ''), PAD, y + 14);
+    ctx.fillText('Contact: ' + getBranchPhone() + ' · service.tagro.in', PAD, y + 32);
+
+    return canvas.toDataURL('image/png');
+  } catch(e) {
+    console.error('Image gen failed:', e);
+    return null;
+  }
+}
+
+function showEstimateShare(dataUrl, custPhone) {
+  // Show the image in a modal with share/download options
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:12px';
+  
+  const img = document.createElement('img');
+  img.src = dataUrl;
+  img.style.cssText = 'max-width:100%;max-height:60vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4)';
+  
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;width:100%;max-width:400px';
+
+  const waBtn = document.createElement('button');
+  waBtn.textContent = '💬 Open WhatsApp';
+  waBtn.style.cssText = 'flex:1;padding:14px;background:#25D366;color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer';
+  waBtn.onclick = () => {
+    // Download image first, then open WA
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = 'TAGRO-Estimate-' + (job.workOrder||'').replace(/\//g,'-') + '.png';
+    a.click();
+    setTimeout(() => {
+      window.open(`https://wa.me/${custPhone}`, '_blank');
+      document.body.removeChild(overlay);
+    }, 800);
+  };
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕';
+  closeBtn.style.cssText = 'padding:14px 18px;background:#fff;color:#333;border:0;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer';
+  closeBtn.onclick = () => document.body.removeChild(overlay);
+
+  btnRow.appendChild(waBtn);
+  btnRow.appendChild(closeBtn);
+  overlay.appendChild(img);
+  overlay.appendChild(btnRow);
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'color:rgba(255,255,255,.7);font-size:12px;text-align:center';
+  hint.textContent = 'Image will download → attach it in WhatsApp';
+  overlay.appendChild(hint);
+
+  document.body.appendChild(overlay);
 }
 
 function renderSMSHistory() {
