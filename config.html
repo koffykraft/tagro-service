@@ -185,8 +185,10 @@
 
 <script src="app.js"></script>
 <script>
-const s = requireLogin();
-initShell('links');
+// Config page — branch setup allowed without login
+// Other sections require manager/owner session
+const s = session(); // don't redirect if no session
+if (s) initShell('links'); // only show nav if logged in
 
 // Only owner and managers can access config
 // (soft check — not a security boundary)
@@ -223,6 +225,8 @@ function saveBranch() {
   if (!selectedBranch) { toast('Select a branch'); return; }
   jset('tagro_device_branch', selectedBranch);
   toast('Branch set to ' + selectedBranch + ' — ' + TAGRO.branches[selectedBranch]);
+  // Redirect to login after short delay
+  setTimeout(() => location.href = 'login.html', 1200);
 }
 
 // ── Staff management ──────────────────────────────────────

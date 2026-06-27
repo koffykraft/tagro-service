@@ -160,8 +160,10 @@ function init() {
 
   if (!branch) {
     document.getElementById('branch-tag').textContent = 'Not configured';
-    showToast('Device not configured. Opening setup...');
-    setTimeout(() => location.href = 'config.html', 1500);
+    document.getElementById('branch-tag').style.cursor = 'pointer';
+    document.getElementById('branch-tag').onclick = () => location.href = 'config.html';
+    document.getElementById('branch-tag').title = 'Tap to configure';
+    showToast('Tap the branch button to set up this device');
     return;
   }
 
