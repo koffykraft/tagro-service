@@ -1,9 +1,25 @@
 {
   "name": "TAGRO Service",
-  "short_name": "TAGRO Service",
-  "start_url": "home.html",
+  "short_name": "TAGRO",
+  "description": "Workshop service management for TAGRO branches",
+  "start_url": "/login.html",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
+  "orientation": "portrait",
+  "background_color": "#df6427",
   "theme_color": "#df6427",
-  "icons": []
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
