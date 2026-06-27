@@ -272,11 +272,11 @@ function renderActivity() {
     <div class="activity-item ${ev.cls}">
       <div class="activity-icon">${ev.icon}</div>
       <div class="activity-body">
-        <div class="activity-main">${ev.main}</div>
-        ${ev.sub ? `<div class="activity-sub">${ev.sub}</div>` : ''}
-        ${ev.time ? `<div class="activity-time">${ev.time}</div>` : ''}
+        <div class="activity-main">${esc(ev.main)}</div>
+        ${ev.sub ? `<div class="activity-sub">${esc(ev.sub)}</div>` : ''}
+        ${ev.time ? `<div class="activity-time">${esc(ev.time)}</div>` : ''}
         ${ev.actions.map(a =>
-          `<a class="activity-action ${a.cls}" href="${a.href}">${a.label}</a>`
+          `<a class="activity-action ${a.cls}" href="${a.href}">${esc(a.label)}</a>`
         ).join(' ')}
       </div>
     </div>`

@@ -86,6 +86,10 @@
     <div class="job-title" id="j-title"></div>
     <div class="job-customer" id="j-customer"></div>
     <div class="job-status-row" id="j-status-row"></div>
+    <div style="margin-top:10px">
+      <button class="btn" style="font-size:13px;padding:8px 14px;background:#fff8f4;border-color:#f0d8c8;color:#df6427"
+        onclick="openTechAssistant()">🛠️ Tech Assistant</button>
+    </div>
   </div>
 
   <!-- Tab navigation -->
@@ -302,9 +306,9 @@ function renderHeader() {
   const urgencyColor = { urgent:'#ba3327', normal:'#df6427', no_rush:'#287a3e' }[job.urgency] || '#df6427';
 
   document.getElementById('j-status-row').innerHTML = `
-    <span class="badge orange">${job.status}</span>
-    ${job.urgency && job.urgency !== 'normal' ? `<span class="badge" style="background:#fff3d5;color:${urgencyColor}">${job.urgency}</span>` : ''}
-    ${job.assignedTo ? `<span class="badge">🔧 ${job.assignedTo}</span>` : '<span class="badge" style="background:#fdecea;color:#ba3327">Unassigned</span>'}
+    <span class="badge orange">${esc(job.status)}</span>
+    ${job.urgency && job.urgency !== 'normal' ? `<span class="badge" style="background:#fff3d5;color:${urgencyColor}">${esc(job.urgency)}</span>` : ''}
+    ${job.assignedTo ? `<span class="badge">🔧 ${esc(job.assignedTo)}</span>` : '<span class="badge" style="background:#fdecea;color:#ba3327">Unassigned</span>'}
     ${job.machine?.serialNo ? '' : '<span class="badge" style="background:#fff3d5;color:#d97706">No Serial</span>'}
     <span class="badge">${ageDays()} day${ageDays() !== 1 ? 's' : ''} old</span>`;
 }
@@ -316,9 +320,21 @@ function ageDays() {
 // ── Timeline ──────────────────────────────────────────────
 function renderTimeline() {
   const tl = job.timeline || [];
+
+  // Complaint + urgency context at top (Item 1)
+  const complaint = job.complaint || job.complaintText || '';
+  const urgencyLabel = { urgent:'Urgent', normal:'Normal', no_rush:'No Rush' }[job.urgency] || '';
+  const urgencyColor = { urgent:'#ba3327', normal:'#287a3e', no_rush:'#aaa' }[job.urgency] || '#aaa';
+  const contextHtml = complaint ? `
+    <div style="background:#fff8f4;border:1.5px solid #f0e0d6;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;color:#aaa;font-weight:800;margin-bottom:4px">COMPLAINT</div>
+      <div style="font-size:14px;font-weight:700">${esc(complaint)}</div>
+      ${urgencyLabel ? `<div style="font-size:12px;color:${urgencyColor};font-weight:800;margin-top:4px">${esc(urgencyLabel)}</div>` : ''}
+    </div>` : '';
+
   if (!tl.length) {
     document.getElementById('timeline-content').innerHTML =
-      '<div class="small" style="padding:8px 0">No timeline events yet.</div>';
+      contextHtml + '<div class="small" style="padding:8px 0">No timeline events yet.</div>';
     return;
   }
 
@@ -328,11 +344,11 @@ function renderTimeline() {
     ready:'🔔', delivered:'📤', sms:'💬', note:'📌', default:'•'
   };
 
-  document.getElementById('timeline-content').innerHTML = [...tl].reverse().map(ev => `
+  document.getElementById('timeline-content').innerHTML = contextHtml + [...tl].reverse().map(ev => `
     <div class="tl-item">
       <div class="tl-dot ${['delivered','ready','approved'].includes(ev.type) ? 'green' : ['paused'].includes(ev.type) ? 'grey' : ''}"></div>
-      <div class="tl-text">${icons[ev.type] || icons.default} ${ev.description}</div>
-      <div class="tl-meta">${ev.by || ''} · ${formatTime(ev.at)}</div>
+      <div class="tl-text">${icons[ev.type] || icons.default} ${esc(ev.description)}</div>
+      <div class="tl-meta">${esc(ev.by || '')} · ${formatTime(ev.at)}</div>
     </div>`
   ).join('');
 }
@@ -366,12 +382,12 @@ function renderEstimate() {
       <div class="estimate-line">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div style="flex:1">
-            <div class="el-name">${ln.name}</div>
+            <div class="el-name">${esc(ln.name)}</div>
             <div class="el-detail">
-              ${ln.type === 'part' ? `Part No: ${ln.no || '—'} · ` : ''}
-              Qty: ${ln.qty} · GST ${ln.gst}%
+              ${ln.type === 'part' ? `Part No: ${esc(ln.no || '—')} · ` : ''}
+              GST ${ln.gst}%
             </div>
-            ${ln.editReason ? `<div class="el-edited">Edited: ${ln.editReason}</div>` : ''}
+            ${ln.editReason ? `<div class="el-edited">Edited: ${esc(ln.editReason)}</div>` : ''}
             ${varStr ? `<div class="el-edited">${varStr}</div>` : ''}
           </div>
           <div style="text-align:right;flex-shrink:0;margin-left:12px">
@@ -379,9 +395,15 @@ function renderEstimate() {
             ${ln.qty > 1 ? `<div style="font-size:11px;color:#aaa">₹${ln.amount} each</div>` : ''}
           </div>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+          <label style="font-size:12px;color:#888;font-weight:700;white-space:nowrap">Qty:</label>
+          <input type="number" min="1" value="${ln.qty}"
+            style="width:60px;padding:6px 8px;border:1.5px solid #e8e8e8;border-radius:8px;font-size:14px;font-weight:800;text-align:center"
+            onchange="updateQty(${i}, this.value)">
+        </div>
         <div class="el-actions">
           <button class="btn" style="font-size:12px;padding:6px 10px" onclick="openEditModal(${i})">Edit ₹</button>
-          <button class="btn" style="font-size:12px;padding:6px 10px" onclick="changePOStatus(${i})">${ln.poStatus || 'Need Purchase'}</button>
+          <button class="btn" style="font-size:12px;padding:6px 10px" onclick="changePOStatus(${i})">${esc(ln.poStatus || 'Need Purchase')}</button>
           <button class="btn red" style="font-size:12px;padding:6px 10px" onclick="removeLine(${i})">Remove</button>
         </div>
       </div>`;
@@ -484,6 +506,23 @@ function addPartLine(idx) {
   };
 
   if (!job.estimate) job.estimate = { lines: [] };
+
+  // Duplicate detection — if same part number exists, increment qty (Item 6)
+  const partKey = p.no || p.id;
+  if (partKey) {
+    const existing = job.estimate.lines.find(ln => ln.type === 'part' && (ln.no === partKey || ln.id === partKey));
+    if (existing) {
+      existing.qty = (existing.qty || 1) + 1;
+      sug.classList.add('hide');
+      document.getElementById('parts-search').value = '';
+      addTimeline('estimate', `Qty increased: ${p.name} × ${existing.qty}`);
+      saveJob();
+      renderEstimate();
+      toast(p.name + ' qty updated to ' + existing.qty);
+      return;
+    }
+  }
+
   job.estimate.lines.push(line);
 
   sug.classList.add('hide');
@@ -635,6 +674,13 @@ function saveEdit() {
 function closeEditModal() {
   document.getElementById('edit-modal').classList.remove('show');
   editIdx = null;
+}
+
+function updateQty(idx, val) {
+  const qty = Math.max(1, parseInt(val) || 1);
+  job.estimate.lines[idx].qty = qty;
+  saveJob();
+  renderEstimate();
 }
 
 function removeLine(idx) {
@@ -792,7 +838,7 @@ async function sendReadySMS() {
 function renderSMSHistory() {
   const smsTl = (job.timeline || []).filter(t => t.type === 'sms');
   document.getElementById('sms-history').innerHTML = smsTl.length
-    ? smsTl.reverse().map(t => `<div class="item"><div class="title">${t.description}</div><div class="sub">${formatTime(t.at)}</div></div>`).join('')
+    ? smsTl.reverse().map(t => `<div class="item"><div class="title">${esc(t.description)}</div><div class="sub">${formatTime(t.at)}</div></div>`).join('')
     : '<div class="small">No messages sent yet.</div>';
 }
 
@@ -815,6 +861,15 @@ function saveJob() {
   const idx = all.findIndex(j => j.id === job.id);
   if (idx >= 0) all[idx] = job; else all.push(job);
   saveJobs(all);
+}
+
+function openTechAssistant() {
+  const model    = encodeURIComponent(job.machine?.model || '');
+  const wo       = encodeURIComponent(job.workOrder || '');
+  const complaint = encodeURIComponent(
+    (job.complaints || []).map(c => c.text).join('; ') || job.complaintText || ''
+  );
+  location.href = `tech.html?job=${wo}&model=${model}&complaint=${complaint}`;
 }
 
 function getBranchPhone() {

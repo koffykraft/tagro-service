@@ -57,13 +57,41 @@ const TAGRO = {
 function jget(k, d) { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch { return d } }
 function jset(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
 
+// ── XSS SANITIZER ─────────────────────────────────────────
+// Always use esc() when injecting user data into innerHTML
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ── SESSION ───────────────────────────────────────────────
 
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
 function session() { return jget('tagro_session', null) }
-function setSession(s) { jset('tagro_session', s) }
+function setSession(s) { jset('tagro_session', { ...s, loginAt: s.loginAt || new Date().toISOString() }) }
 function logout() { localStorage.removeItem('tagro_session'); location.href = 'login.html' }
 function isDemo() { let s = session(); return s && s.demo }
-function requireLogin() { let s = session(); if (!s) { location.href = 'login.html'; return null } return s }
+function requireLogin() {
+  let s = session();
+  if (!s) { location.href = 'login.html'; return null; }
+  // Check 12-hour expiry (demo sessions exempt)
+  if (!s.demo && s.loginAt) {
+    const age = Date.now() - new Date(s.loginAt).getTime();
+    if (age > SESSION_TTL_MS) {
+      localStorage.removeItem('tagro_session');
+      location.href = 'login.html?expired=1';
+      return null;
+    }
+  }
+  return s;
+}
 
 // ── USERS / AUTH ──────────────────────────────────────────
 
@@ -215,8 +243,8 @@ function initShell(active) {
   top.className = 'top';
   top.innerHTML = `
     <div class="logo">TAGRO</div>
-    <span class="tag">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'ALL' : s?.branch || '—'}</span>
-    <span class="user" onclick="logout()">${s?.name || ''} ×</span>`;
+    <span class="tag">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'ALL' : esc(s?.branch) || '—'}</span>
+    <span class="user" onclick="logout()">${esc(s?.name) || ''} ×</span>`;
   document.body.prepend(top);
 
   if (s?.demo) document.body.insertAdjacentHTML('afterbegin',
@@ -229,6 +257,7 @@ function initShell(active) {
     ['receive.html','Receive','quick'],
     ['bench.html','Bench','bench'],
     ['tracker.html','Jobs','jobs'],
+    ['tech.html','Tech','tech'],
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];

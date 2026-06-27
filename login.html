@@ -154,6 +154,11 @@ let otpVerified   = false;
 function init() {
   const branch = jget('tagro_device_branch', null);
 
+  // Show session expired notice if redirected here due to expiry
+  if (new URLSearchParams(location.search).get('expired') === '1') {
+    showToast('Session expired after 12 hours. Please log in again.');
+  }
+
   if (!branch) {
     // No branch configured — redirect to config
     document.getElementById('branch-tag').textContent = 'Not configured';
@@ -402,7 +407,7 @@ function completeLogin() {
     branch:     deviceBranch,
     branchName: branchName,
     role:       role,
-    loginAt:    Date.now()
+    loginAt:    new Date().toISOString()
   });
 
   location.href = 'home.html';
@@ -434,7 +439,7 @@ async function ownerLogin() {
     branch:     'ALL',
     branchName: 'All Branches',
     role:       'Owner',
-    loginAt:    Date.now()
+    loginAt:    new Date().toISOString()
   });
 
   location.href = 'home.html';

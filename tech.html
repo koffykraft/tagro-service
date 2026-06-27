@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Tech Assistant — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+/* ── Tech Assistant layout ── */
+.tech-wrap { max-width: 640px; margin: 0 auto; padding: 0; }
+
+/* Model selector strip */
+.model-strip {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 10px 14px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.model-chip {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 800;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.model-chip.active {
+  background: #df6427;
+  border-color: #df6427;
+  color: #fff;
+}
+
+/* Mode tabs */
+.mode-tabs {
+  display: flex;
+  background: #f5f5f5;
+  padding: 4px;
+  border-radius: 12px;
+  margin: 14px 14px 0;
+  gap: 4px;
+}
+.mode-tab {
+  flex: 1;
+  padding: 9px 4px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #888;
+  cursor: pointer;
+}
+.mode-tab.active {
+  background: #fff;
+  color: #df6427;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+/* Symptom quick-pick */
+.symptom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 14px;
+  margin-top: 10px;
+}
+.symptom-btn {
+  border: 1.5px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 12px 10px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
+}
+.symptom-btn:active { background: #fff8f4; border-color: #df6427; }
+.symptom-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+/* Chat area */
+.chat-area {
+  padding: 0 14px;
+  margin-top: 14px;
+  min-height: 200px;
+}
+
+/* Bubbles */
+.bubble-wrap { margin-bottom: 14px; }
+.bubble-wrap.user { text-align: right; }
+.bubble {
+  display: inline-block;
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: left;
+}
+.bubble-wrap.user .bubble {
+  background: #df6427;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.bubble-wrap.ai .bubble {
+  background: #fff;
+  border: 1px solid #eee;
+  color: #121212;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.bubble-meta {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 700;
+  margin-top: 4px;
+  padding: 0 4px;
+}
+
+/* AI thinking state */
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  font-size: 13px;
+  color: #aaa;
+  font-weight: 700;
+}
+.dot-pulse { display: flex; gap: 4px; }
+.dot-pulse span {
+  width: 6px; height: 6px; border-radius: 50%; background: #df6427;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.dot-pulse span:nth-child(2) { animation-delay: .2s; }
+.dot-pulse span:nth-child(3) { animation-delay: .4s; }
+@keyframes pulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* Parts result card */
+.parts-result {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.parts-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f5f5f5;
+  font-size: 13px;
+}
+.parts-row:last-child { border-bottom: none; }
+.parts-no { font-family: monospace; font-size: 11px; color: #aaa; }
+.parts-name { font-weight: 700; }
+.parts-mrp { font-weight: 900; color: #df6427; white-space: nowrap; margin-left: 12px; }
+
+/* Input area — fixed bottom */
+.input-area {
+  position: sticky;
+  bottom: 0;
+  background: #f5f5f5;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.input-area textarea {
+  flex: 1;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  min-height: 44px;
+  max-height: 100px;
+  overflow-y: auto;
+  background: #fff;
+  line-height: 1.4;
+}
+.send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #df6427;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.send-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+/* Section divider */
+.section-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 14px 4px;
+}
+
+/* Empty state */
+.empty-chat {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 15px; font-weight: 700; color: #888; }
+.empty-sub { font-size: 13px; margin-top: 6px; line-height: 1.5; }
+
+/* History clear */
+.clear-btn {
+  font-size: 12px;
+  color: #aaa;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 14px;
+  font-weight: 700;
+}
+
+/* Formatted AI response */
+.ai-content h4 { margin: 10px 0 4px; font-size: 14px; }
+.ai-content ul { margin: 4px 0 8px; padding-left: 18px; }
+.ai-content li { margin-bottom: 4px; line-height: 1.5; }
+.ai-content p { margin: 6px 0; }
+.ai-content strong { color: #df6427; }
+.ai-content code {
+  background: #f5f5f5;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+}
+
+/* Job context banner */
+.job-context {
+  background: #fff8f4;
+  border: 1.5px solid #f0d8c8;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 10px 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.job-context-icon { font-size: 20px; }
+.job-context-text { flex: 1; }
+.job-context-label { font-weight: 700; color: #df6427; }
+.job-context-detail { color: #888; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="tech-wrap">
+
+  <!-- Model selector -->
+  <div class="model-strip" id="model-strip">
+    <button class="model-chip active" onclick="selectModel('MS 462', this)">MS 462</button>
+    <button class="model-chip" onclick="selectModel('MS 250', this)">MS 250</button>
+    <button class="model-chip" onclick="selectModel('MS 170', this)">MS 170</button>
+    <button class="model-chip" onclick="selectModel('MS 180', this)">MS 180</button>
+    <button class="model-chip" onclick="selectModel('FS 120', this)">FS 120</button>
+    <button class="model-chip" onclick="selectModel('FS 250', this)">FS 250</button>
+    <button class="model-chip" onclick="selectModel('BR 600', this)">BR 600</button>
+    <button class="model-chip" onclick="selectModel('SR 450', this)">SR 450</button>
+    <button class="model-chip" onclick="selectModel('BG 86', this)">BG 86</button>
+    <button class="model-chip" onclick="selectModel('HT 101', this)">HT 101</button>
+  </div>
+
+  <!-- Job context (shown if launched from work.html) -->
+  <div class="job-context" id="job-context" style="display:none">
+    <div class="job-context-icon">🔧</div>
+    <div class="job-context-text">
+      <div class="job-context-label" id="jc-title">—</div>
+      <div class="job-context-detail" id="jc-detail">—</div>
+    </div>
+    <button onclick="clearJobContext()" style="background:none;border:none;color:#aaa;font-size:18px;cursor:pointer">×</button>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('troubleshoot', this)">🔍 Troubleshoot</button>
+    <button class="mode-tab" onclick="setMode('howto', this)">🔧 How To</button>
+    <button class="mode-tab" onclick="setMode('parts', this)">🔩 Parts</button>
+    <button class="mode-tab" onclick="setMode('train', this)">📚 Learn</button>
+  </div>
+
+  <!-- Quick symptoms (shown in Troubleshoot mode) -->
+  <div id="quick-panel">
+    <div class="section-label">Common Symptoms — tap to ask</div>
+    <div class="symptom-grid" id="symptom-grid">
+      <!-- populated by JS based on mode + model -->
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-area" id="chat-area">
+    <div class="empty-chat" id="empty-state">
+      <div class="empty-icon">🛠️</div>
+      <div class="empty-text">Tech Assistant ready</div>
+      <div class="empty-sub">Select a symptom above or type your question.<br>I know troubleshooting, repair steps, parts, and carburetor settings.</div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-area">
+    <textarea id="q-input" placeholder="Describe the problem or ask anything…"
+      rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendQuestion()">↑</button>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('tech');
+
+// ── State ─────────────────────────────────────────────────
+let currentModel = 'MS 462';
+let currentMode  = 'troubleshoot';
+let chatHistory  = []; // {role, content} for API
+let jobContext   = null;
+
+// ── Job context from work.html ─────────────────────────────
+(function loadJobContext() {
+  const params = new URLSearchParams(location.search);
+  const jobId  = params.get('job');
+  const model  = params.get('model');
+  const complaint = params.get('complaint');
+
+  if (model) {
+    // Pre-select model chip
+    selectModelByName(model);
+  }
+
+  if (jobId || complaint) {
+    jobContext = { jobId, model: model || currentModel, complaint };
+    const ctx = document.getElementById('job-context');
+    ctx.style.display = 'flex';
+    document.getElementById('jc-title').textContent =
+      (model || currentModel) + (jobId ? ' · WO: ' + jobId : '');
+    document.getElementById('jc-detail').textContent =
+      complaint ? 'Complaint: ' + complaint : 'Tap a symptom or type your question';
+
+    // Auto-inject complaint into first message if present
+    if (complaint) {
+      setTimeout(() => {
+        document.getElementById('q-input').value = complaint;
+        sendQuestion();
+      }, 400);
+    }
+  }
+})();
+
+function clearJobContext() {
+  jobContext = null;
+  document.getElementById('job-context').style.display = 'none';
+}
+
+// ── Model selection ────────────────────────────────────────
+function selectModel(name, btn) {
+  currentModel = name;
+  document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderSymptoms();
+  chatHistory = [];
+  renderWelcome();
+}
+
+function selectModelByName(name) {
+  currentModel = name;
+  document.querySelectorAll('.model-chip').forEach(c => {
+    if (c.textContent.trim() === name) {
+      c.classList.add('active');
+    } else {
+      c.classList.remove('active');
+    }
+  });
+}
+
+// ── Mode selection ─────────────────────────────────────────
+function setMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderSymptoms();
+
+  const qp = document.getElementById('quick-panel');
+  const ph = document.getElementById('q-input');
+
+  if (mode === 'troubleshoot') {
+    qp.style.display = '';
+    ph.placeholder = 'Describe the problem — e.g. chain stops under load…';
+  } else if (mode === 'howto') {
+    qp.style.display = '';
+    ph.placeholder = 'What do you need to do? e.g. replace clutch springs…';
+  } else if (mode === 'parts') {
+    qp.style.display = '';
+    ph.placeholder = 'Part name or number — e.g. oil seal, carburetor kit…';
+  } else if (mode === 'train') {
+    qp.style.display = '';
+    ph.placeholder = 'What do you want to learn? e.g. how does the chain brake work…';
+  }
+}
+
+// ── Symptom quick buttons ──────────────────────────────────
+const SYMPTOMS = {
+  troubleshoot: [
+    { icon: '⛓️', text: 'Chain stops under load' },
+    { icon: '🔄', text: 'Chain runs at idle' },
+    { icon: '📢', text: 'Loud unusual noise' },
+    { icon: '🚫', text: 'Engine won\'t start' },
+    { icon: '💨', text: 'Engine runs rough / misfires' },
+    { icon: '⛽', text: 'Engine won\'t idle' },
+    { icon: '⚡', text: 'No ignition spark' },
+    { icon: '🛑', text: 'Engine stops suddenly' },
+    { icon: '🔋', text: 'No full power' },
+    { icon: '🧴', text: 'Oil not lubricating chain' },
+    { icon: '🔁', text: 'Starter cord won\'t rewind' },
+    { icon: '⛔', text: 'Chain brake won\'t stop chain' },
+  ],
+  howto: [
+    { icon: '🔧', text: 'Replace clutch' },
+    { icon: '🔩', text: 'Remove flywheel' },
+    { icon: '⚙️', text: 'Adjust carburetor' },
+    { icon: '🪝', text: 'Replace rewind starter rope' },
+    { icon: '🛢️', text: 'Replace oil pump' },
+    { icon: '🔬', text: 'Check ignition module' },
+    { icon: '💧', text: 'Replace oil seals' },
+    { icon: '🔑', text: 'Torque specs for assembly' },
+  ],
+  parts: [
+    { icon: '⛓️', text: 'Clutch parts' },
+    { icon: '🔩', text: 'Crankcase parts' },
+    { icon: '⚙️', text: 'Carburetor parts' },
+    { icon: '🔋', text: 'Ignition parts' },
+    { icon: '🪝', text: 'Starter parts' },
+    { icon: '🛢️', text: 'Oil pump parts' },
+    { icon: '⛔', text: 'Chain brake parts' },
+    { icon: '🔑', text: 'Screws and seals kit' },
+  ],
+  train: [
+    { icon: '🏫', text: 'How does the clutch work?' },
+    { icon: '⛽', text: 'How to tune the carburetor' },
+    { icon: '🔁', text: 'How the chain brake works' },
+    { icon: '⚡', text: 'How ignition system works' },
+    { icon: '🛢️', text: 'Oil pump and lubrication' },
+    { icon: '🔬', text: 'Inspection checklist' },
+    { icon: '🧰', text: 'Required service tools' },
+    { icon: '📋', text: 'Annual service procedure' },
+  ]
+};
+
+function renderSymptoms() {
+  const grid = document.getElementById('symptom-grid');
+  const list = SYMPTOMS[currentMode] || SYMPTOMS.troubleshoot;
+  grid.innerHTML = list.map(s => `
+    <button class="symptom-btn" onclick="askSymptom('${esc(s.text)}')">
+      <span class="symptom-icon">${s.icon}</span>
+      ${esc(s.text)}
+    </button>`
+  ).join('');
+}
+
+function askSymptom(text) {
+  document.getElementById('q-input').value = text;
+  sendQuestion();
+}
+
+// ── Chat ───────────────────────────────────────────────────
+function renderWelcome() {
+  const area = document.getElementById('chat-area');
+  area.innerHTML = `
+    <div class="empty-chat" id="empty-state">
+      <div class="empty-icon">🛠️</div>
+      <div class="empty-text">Ready for ${esc(currentModel)}</div>
+      <div class="empty-sub">Tap a symptom or type your question.</div>
+    </div>`;
+}
+
+async function sendQuestion() {
+  const input = document.getElementById('q-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  autoResize(input);
+
+  // Remove empty state
+  const empty = document.getElementById('empty-state');
+  if (empty) empty.remove();
+
+  // Add user bubble
+  appendBubble('user', q);
+
+  // Show thinking
+  const thinkId = 'think-' + Date.now();
+  appendThinking(thinkId);
+
+  // Disable send
+  document.getElementById('send-btn').disabled = true;
+
+  // Build system prompt
+  const systemPrompt = buildSystemPrompt();
+
+  // Build message for API — include job context if present
+  let userMsg = q;
+  if (jobContext && chatHistory.length === 0) {
+    userMsg = `Context: I am working on a ${esc(jobContext.model || currentModel)} chainsaw` +
+      (jobContext.complaint ? `. The customer complaint is: ${jobContext.complaint}` : '') +
+      (jobContext.jobId ? `. Work Order: ${jobContext.jobId}` : '') +
+      `.\n\nQuestion: ${q}`;
+  }
+
+  // Add to history
+  chatHistory.push({ role: 'user', content: userMsg });
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: chatHistory
+      })
+    });
+
+    const data = await resp.json();
+    const answer = data.content?.[0]?.text || 'Sorry, I could not get a response. Try again.';
+
+    // Add to history
+    chatHistory.push({ role: 'assistant', content: answer });
+
+    // Remove thinking, show answer
+    document.getElementById(thinkId)?.remove();
+    appendBubble('ai', answer);
+
+  } catch (err) {
+    document.getElementById(thinkId)?.remove();
+    appendBubble('ai', '⚠️ Connection error. Check your internet and try again.');
+    chatHistory.pop(); // remove failed user message
+  }
+
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+function buildSystemPrompt() {
+  const modeInstructions = {
+    troubleshoot: `You are a STIHL service technician assistant helping diagnose faults. 
+Walk through troubleshooting step by step, like the STIHL service manual fault tables. 
+Ask one clarifying question at a time if needed. Reference specific checks and parts.
+For the MS 462, you have access to the full service manual troubleshooting trees (Sections 4.1–4.21).
+Use numbered steps. Be specific about what to check and what the result means.`,
+
+    howto: `You are a STIHL service technician assistant explaining repair procedures.
+Give clear step-by-step instructions. Include required tools and torque specs where relevant.
+Reference the correct service manual section when possible.
+For MS 462: mention STIHL special tools by number when they are required.
+Use numbered steps. Warn about common mistakes.`,
+
+    parts: `You are a STIHL parts lookup assistant for TAGRO authorized service center in Kerala/Tamil Nadu.
+The MS 462 India spare parts list (02/08/2023) is available to you.
+When a user asks for parts: give the part number, description, and MRP price in INR.
+Group parts by assembly section (Crankcase, Clutch, Carburetor, etc).
+If you are unsure of the exact price, say so and give the approximate range.
+Always mention the assembly section the part belongs to.`,
+
+    train: `You are a STIHL technical trainer helping service staff learn.
+Explain how components work, why failures happen, and how to prevent them.
+Use simple language suitable for Malayalam-speaking technicians who may be learning English technical terms.
+Include maintenance intervals, inspection points, and customer care tips.
+Make explanations practical — what the technician will actually see and feel.`
+  };
+
+  return `You are the TAGRO Tech Assistant — an AI service advisor for TAGRO, an authorized STIHL dealer in Kerala and Tamil Nadu, India with branches in Karavaloor, Ponkunnam, Nedumangad, Marthandam, Shencottai, Oyoor, and Sadanandapuram.
+
+Current machine being worked on: ${currentModel}
+Current mode: ${currentMode}
+
+${modeInstructions[currentMode] || modeInstructions.troubleshoot}
+
+General guidelines:
+- Be concise and practical. Staff are working on machines, not reading essays.
+- Use ₹ for prices (Indian Rupees).
+- If a question is outside your knowledge, say so clearly rather than guessing.
+- For safety-critical steps (chain brake, ignition), always mention safety precautions.
+- You can respond to simple greetings or questions in Malayalam if the user writes in Malayalam.
+- Keep responses under 300 words unless a detailed procedure genuinely requires more.`;
+}
+
+// ── DOM helpers ────────────────────────────────────────────
+function appendBubble(role, text) {
+  const area = document.getElementById('chat-area');
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ' + role;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if (role === 'ai') {
+    const content = document.createElement('div');
+    content.className = 'ai-content';
+    content.innerHTML = formatAIText(text);
+    bubble.appendChild(content);
+  } else {
+    bubble.textContent = text;
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  meta.textContent = role === 'user'
+    ? (s?.name || 'You') + ' · ' + timeNow()
+    : 'TAGRO Tech AI · ' + timeNow();
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(meta);
+  area.appendChild(wrap);
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function appendThinking(id) {
+  const area = document.getElementById('chat-area');
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ai';
+  wrap.id = id;
+  wrap.innerHTML = `
+    <div class="thinking">
+      <div class="dot-pulse">
+        <span></span><span></span><span></span>
+      </div>
+      Checking service manual…
+    </div>`;
+  area.appendChild(wrap);
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function formatAIText(text) {
+  // Convert markdown-ish formatting to HTML safely
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^(\d+\.\s)/gm, '<br>$1')
+    .replace(/^[-•]\s(.+)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)+/gs, m => '<ul>' + m + '</ul>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Input handling ─────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendQuestion();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── Init ───────────────────────────────────────────────────
+renderSymptoms();
+</script>
+</body>
+</html>
