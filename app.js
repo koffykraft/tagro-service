@@ -1,5 +1,5 @@
 // TAGRO Service — app.js
-// v3.0 full release: data, auth, API calls, Dropbox sync
+// Data, auth, and API calls
 // API keys never in browser — all calls go through Cloudflare Worker
 
 const API = 'https://tagro-api.icy-fire-d2ac.workers.dev';
@@ -126,16 +126,7 @@ function seed() {
 
 function customers() { return jget('tagro_customers', TAGRO.customers) }
 function jobs() { return jget(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', []) }
-
-// Save locally first, then sync only the changed job(s) to Dropbox through the Worker.
-// localStorage remains only an offline safety copy. Dropbox becomes the central record.
-function saveJobs(a) {
-  const key = isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs';
-  const before = jget(key, []);
-  jset(key, a);
-  syncChangedJobs(before, a).catch(() => {});
-}
-
+function saveJobs(a) { jset(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', a); syncJobs(a) }
 function po() { return jget(isDemo() ? 'tagro_demo_po' : 'tagro_po', []) }
 function savePo(a) { jset(isDemo() ? 'tagro_demo_po' : 'tagro_po', a) }
 function comments() { return jget('tagro_comments', []) }
@@ -317,7 +308,6 @@ async function syncNow() {
     return { ok: false, error: e.message };
   }
 }
-
 
 // AI fault diagnosis via Worker
 async function diagnose(model, complaint, observations) {
@@ -504,7 +494,7 @@ function initShell(active) {
   ).join('');
   document.body.insertBefore(nav, document.body.children[s?.demo ? 2 : 1]);
 
-  // Load KV config and branch jobs silently in background
+  // Load KV config and pull Dropbox jobs silently in background
   loadKVConfig().catch(() => {});
   setTimeout(() => { syncNow().catch(() => {}); }, 800);
 }

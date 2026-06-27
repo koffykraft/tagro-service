@@ -38,10 +38,6 @@
 .pill-tag { display:inline-flex; align-items:center; gap:4px; background:#f0f0f0; border-radius:99px; padding:5px 12px; margin:3px; font-size:13px; font-weight:700; }
 .pill-tag button { background:none; border:none; cursor:pointer; color:#aaa; font-size:14px; padding:0 0 0 4px; }
 </style>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#df6427">
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
 </head>
 <body>
 <div class="wrap" style="max-width:600px">
@@ -189,10 +185,8 @@
 
 <script src="app.js"></script>
 <script>
-// Config page — branch setup allowed without login
-// Other sections require manager/owner session
-const s = session(); // don't redirect if no session
-if (s) initShell('links'); // only show nav if logged in
+const s = requireLogin();
+initShell('links');
 
 // Only owner and managers can access config
 // (soft check — not a security boundary)
@@ -229,8 +223,6 @@ function saveBranch() {
   if (!selectedBranch) { toast('Select a branch'); return; }
   jset('tagro_device_branch', selectedBranch);
   toast('Branch set to ' + selectedBranch + ' — ' + TAGRO.branches[selectedBranch]);
-  // Redirect to login after short delay
-  setTimeout(() => location.href = 'login.html', 1200);
 }
 
 // ── Staff management ──────────────────────────────────────
