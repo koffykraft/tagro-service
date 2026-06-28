@@ -13,7 +13,8 @@
 .page-header{padding:14px 16px 8px;border-bottom:1px solid #f0f0f0;position:sticky;top:0;background:#fff;z-index:10}
 .page-title{font-size:20px;font-weight:900;color:#121212}
 .page-sub{font-size:12px;color:#aaa;margin-top:2px}
-.filter-row{display:flex;gap:8px;padding:12px 14px;overflow-x:auto}
+.filter-row{display:flex;gap:8px;padding:12px 14px;overflow-x:auto;scrollbar-width:none}
+.filter-row::-webkit-scrollbar{display:none}
 .filter-btn{background:#f5f5f5;border:none;border-radius:99px;padding:7px 14px;font-size:12px;font-weight:800;color:#555;white-space:nowrap;cursor:pointer}
 .filter-btn.active{background:#df6427;color:#fff}
 .count-badge{display:inline-block;background:rgba(0,0,0,.12);border-radius:99px;padding:1px 7px;font-size:10px;margin-left:4px}
@@ -34,9 +35,8 @@
 .field-label{font-size:10px;font-weight:900;color:#bbb;text-transform:uppercase;width:68px;flex-shrink:0;padding-top:2px}
 .field-val{font-size:13px;color:#333;flex:1;word-break:break-word}
 .field-val.missing{color:#ba3327;font-style:italic}
-.field-val.ok{color:#287a3e}
-.issues-list{background:#fff8f0;border-radius:10px;padding:10px 12px;margin-top:8px}
-.issue-item{font-size:12px;color:#9a6400;margin-bottom:4px;padding-left:12px;position:relative}
+.issues-list{background:#fff8f0;border-radius:10px;padding:8px 12px;margin-top:8px}
+.issue-item{font-size:11px;color:#9a6400;margin-bottom:3px;padding-left:14px;position:relative;line-height:1.4}
 .issue-item::before{content:'⚠';position:absolute;left:0;font-size:10px}
 .issue-item.hard{color:#ba3327}
 .issue-item.hard::before{content:'✖'}
@@ -46,34 +46,28 @@
 .btn-approve{background:#287a3e;color:#fff}
 .btn-reject{background:#f5f5f5;color:#ba3327}
 .btn-edit{background:#f5f5f5;color:#555}
-.confidence-bar{height:4px;background:#f0f0f0;border-radius:2px;margin:8px 0}
-.confidence-fill{height:100%;border-radius:2px;transition:width .3s}
-.conf-1{background:#ba3327;width:20%}
-.conf-2{background:#f59e0b;width:40%}
-.conf-3{background:#d97706;width:60%}
-.conf-4{background:#287a3e;width:80%}
-.conf-5{background:#287a3e;width:100%}
-.empty{text-align:center;padding:48px 20px;color:#bbb}
-.empty-icon{font-size:48px;margin-bottom:12px}
-.empty p{font-size:14px}
-.loading{text-align:center;padding:32px;color:#aaa;font-size:14px}
 .stats-bar{display:flex;gap:0;border-bottom:1px solid #f0f0f0}
-.stat-item{flex:1;text-align:center;padding:12px 8px}
-.stat-num{font-size:22px;font-weight:900;color:#121212}
-.stat-lbl{font-size:10px;text-transform:uppercase;color:#aaa;font-weight:800;letter-spacing:.5px}
+.stat-item{flex:1;text-align:center;padding:10px 4px}
+.stat-num{font-size:20px;font-weight:900;color:#121212}
+.stat-lbl{font-size:9px;text-transform:uppercase;color:#aaa;font-weight:800;letter-spacing:.5px;margin-top:1px}
 .stat-item.warn .stat-num{color:#f59e0b}
 .stat-item.err .stat-num{color:#ba3327}
 .stat-item.ok .stat-num{color:#287a3e}
+.empty{text-align:center;padding:48px 20px;color:#bbb}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.loading{text-align:center;padding:32px;color:#aaa;font-size:14px}
 .edit-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:flex-end}
 .edit-overlay.show{display:flex}
-.edit-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:80vh;overflow-y:auto;padding:20px}
-.edit-title{font-size:16px;font-weight:900;margin-bottom:16px}
+.edit-sheet{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding:20px 20px 40px}
+.edit-title{font-size:16px;font-weight:900;margin-bottom:16px;color:#121212}
 .edit-field{margin-bottom:14px}
 .edit-field label{display:block;font-size:11px;font-weight:900;color:#888;text-transform:uppercase;margin-bottom:4px}
-.edit-field input,.edit-field select{width:100%;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:14px;box-sizing:border-box}
+.edit-field input,.edit-field select{width:100%;padding:10px 12px;border:1.5px solid #e8e8e8;border-radius:10px;font-size:14px;box-sizing:border-box;-webkit-appearance:none}
 .edit-field input:focus,.edit-field select:focus{outline:none;border-color:#df6427}
 .edit-actions{display:flex;gap:10px;margin-top:16px}
-.back-btn{display:flex;align-items:center;gap:6px;padding:0 16px 14px;color:#aaa;font-size:13px;font-weight:800;cursor:pointer;text-decoration:none}
+.back-btn{display:flex;align-items:center;gap:6px;padding:12px 16px 4px;color:#aaa;font-size:13px;font-weight:800;cursor:pointer;text-decoration:none}
+.days-badge{display:inline-block;background:#fff1e9;color:#df6427;border-radius:6px;padding:2px 6px;font-size:10px;font-weight:900;margin-left:4px}
+.days-badge.old{background:#fde8e8;color:#ba3327}
 </style>
 </head>
 <body>
@@ -83,10 +77,9 @@
 
   <div class="page-header">
     <div class="page-title">📋 Review Queue</div>
-    <div class="page-sub" id="queue-sub">Loading staged records...</div>
+    <div class="page-sub" id="queue-sub">Loading...</div>
   </div>
 
-  <!-- Stats bar -->
   <div class="stats-bar" id="stats-bar" style="display:none">
     <div class="stat-item">
       <div class="stat-num" id="stat-total">0</div>
@@ -94,7 +87,7 @@
     </div>
     <div class="stat-item err">
       <div class="stat-num" id="stat-hard">0</div>
-      <div class="stat-lbl">Hard Issues</div>
+      <div class="stat-lbl">Hard</div>
     </div>
     <div class="stat-item warn">
       <div class="stat-num" id="stat-soft">0</div>
@@ -106,26 +99,24 @@
     </div>
   </div>
 
-  <!-- Branch filter -->
   <div class="filter-row" id="filter-row"></div>
 
-  <!-- Cards -->
   <div id="cards-container">
     <div class="loading">Loading records...</div>
   </div>
 
 </div>
 
-<!-- Edit sheet -->
+<!-- Edit overlay -->
 <div class="edit-overlay" id="edit-overlay">
   <div class="edit-sheet">
     <div class="edit-title">✏️ Edit Record</div>
     <input type="hidden" id="edit-id">
-    <div class="edit-field"><label>Customer Name</label><input type="text" id="edit-customer"></div>
-    <div class="edit-field"><label>Phone</label><input type="tel" id="edit-phone"></div>
-    <div class="edit-field"><label>Model</label><input type="text" id="edit-model"></div>
-    <div class="edit-field"><label>Serial Number</label><input type="text" id="edit-serial"></div>
-    <div class="edit-field"><label>Complaint</label><input type="text" id="edit-complaint"></div>
+    <div class="edit-field"><label>Customer Name</label><input type="text" id="edit-customer" autocomplete="off"></div>
+    <div class="edit-field"><label>Phone</label><input type="tel" id="edit-phone" autocomplete="off"></div>
+    <div class="edit-field"><label>Model</label><input type="text" id="edit-model" autocomplete="off"></div>
+    <div class="edit-field"><label>Serial Number</label><input type="text" id="edit-serial" autocomplete="off"></div>
+    <div class="edit-field"><label>Complaint</label><input type="text" id="edit-complaint" autocomplete="off" placeholder="Describe the fault..."></div>
     <div class="edit-field">
       <label>Status</label>
       <select id="edit-status">
@@ -139,102 +130,125 @@
       </select>
     </div>
     <div class="edit-actions">
-      <button class="btn btn-approve" onclick="saveEdit()">Save & Approve</button>
+      <button class="btn btn-approve" onclick="saveEdit()">✓ Save & Approve</button>
       <button class="btn btn-reject" onclick="closeEdit()">Cancel</button>
     </div>
   </div>
 </div>
 
 <script>
-const INGEST_WORKER = 'https://tagro-service-ingest.icy-fire-d2ac.workers.dev';
-const OWNER_TOKEN = localStorage.getItem('ownerToken') || 'tagro-owner-VE1UaG9tYXM5NjU2MzYxODQ2';
+const WORKER = 'https://tagro-service-ingest.icy-fire-d2ac.workers.dev';
+const TOKEN = localStorage.getItem('ownerToken') || 'tagro-owner-VE1UaG9tYXM5NjU2MzYxODQ2';
 
 let allRecords = [];
 let currentBranch = 'ALL';
+const today = new Date();
 
-async function loadStaging() {
+function daysSince(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return Math.floor((today - d) / 86400000);
+}
+
+function parseIssues(raw) {
+  if (!raw) return [];
+  try { const p = JSON.parse(raw); return Array.isArray(p) ? p : []; }
+  catch { return []; }
+}
+
+function parsedData(r) {
+  try { return JSON.parse(r.parsed_data || '{}'); }
+  catch { return {}; }
+}
+
+// Hard = only structured objects with severity:'hard'
+function hasHardIssue(issues) {
+  return issues.some(i => typeof i === 'object' && i !== null && i.severity === 'hard');
+}
+
+function hasSoftIssue(issues) {
+  return issues.length > 0 && !hasHardIssue(issues);
+}
+
+async function load() {
   try {
-    const res = await fetch(`${INGEST_WORKER}/staging?status=pending&limit=200`);
+    const res = await fetch(`${WORKER}/staging?status=pending&limit=200`);
     allRecords = await res.json();
     renderStats();
     renderFilters();
     renderCards();
-    document.getElementById('queue-sub').textContent = `${allRecords.length} records awaiting review`;
     document.getElementById('stats-bar').style.display = 'flex';
+    document.getElementById('queue-sub').textContent = `${allRecords.length} records awaiting review`;
   } catch(e) {
-    document.getElementById('cards-container').innerHTML = `<div class="empty"><div class="empty-icon">⚠️</div><p>Could not load records.<br>${e.message}</p></div>`;
+    document.getElementById('cards-container').innerHTML =
+      `<div class="empty"><div class="empty-icon">⚠️</div><p>Could not load.<br>${e.message}</p></div>`;
   }
 }
 
 function renderStats() {
-  const total = allRecords.length;
   let hard = 0, soft = 0, clean = 0;
   allRecords.forEach(r => {
     const issues = parseIssues(r.ai_issues);
-    const hasHard = issues.some(i => i.severity === 'hard' || (typeof i === 'string' && i.includes('missing')));
-    const hasSoft = issues.length > 0 && !hasHard;
-    if (hasHard) hard++;
-    else if (hasSoft) soft++;
+    if (hasHardIssue(issues)) hard++;
+    else if (issues.length > 0) soft++;
     else clean++;
   });
-  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-total').textContent = allRecords.length;
   document.getElementById('stat-hard').textContent = hard;
   document.getElementById('stat-soft').textContent = soft;
   document.getElementById('stat-clean').textContent = clean;
 }
 
 function renderFilters() {
-  const branches = ['ALL', ...new Set(allRecords.map(r => r.branch).filter(Boolean))].sort();
-  const row = document.getElementById('filter-row');
-  row.innerHTML = branches.map(b => {
+  const branches = ['ALL', ...new Set(allRecords.map(r => r.branch).filter(Boolean)).values()].sort();
+  document.getElementById('filter-row').innerHTML = branches.map(b => {
     const count = b === 'ALL' ? allRecords.length : allRecords.filter(r => r.branch === b).length;
     return `<button class="filter-btn ${b === currentBranch ? 'active' : ''}" onclick="setFilter('${b}')">${b}<span class="count-badge">${count}</span></button>`;
   }).join('');
 }
 
-function setFilter(branch) {
-  currentBranch = branch;
+function setFilter(b) {
+  currentBranch = b;
   renderFilters();
   renderCards();
-}
-
-function parseIssues(raw) {
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch { return []; }
-}
-
-function parsedData(r) {
-  try { return JSON.parse(r.parsed_data || '{}'); } catch { return {}; }
 }
 
 function renderCards() {
   const records = currentBranch === 'ALL' ? allRecords : allRecords.filter(r => r.branch === currentBranch);
   if (!records.length) {
-    document.getElementById('cards-container').innerHTML = `<div class="empty"><div class="empty-icon">✅</div><p>No pending records${currentBranch !== 'ALL' ? ' for ' + currentBranch : ''}.</p></div>`;
+    document.getElementById('cards-container').innerHTML =
+      `<div class="empty"><div class="empty-icon">✅</div><p>No pending records${currentBranch !== 'ALL' ? ' for '+currentBranch : ''}.</p></div>`;
     return;
   }
 
   document.getElementById('cards-container').innerHTML = records.map(r => {
     const p = parsedData(r);
     const issues = parseIssues(r.ai_issues);
-    const hasHard = issues.some(i => typeof i === 'object' && i.severity === 'hard');
+    const isHard = hasHardIssue(issues);
+    const isSoft = !isHard && issues.length > 0;
     const conf = r.ai_confidence || 1;
-    const cardClass = hasHard ? 'error' : issues.length > 0 ? 'flagged' : '';
-    const badgeClass = hasHard ? 'err' : issues.length > 0 ? 'warn' : 'ok';
-    const badgeIcon = hasHard ? '✖' : issues.length > 0 ? '⚠' : '✓';
+    const days = daysSince(p.job_date);
 
-    const issueHtml = issues.length ? `
+    const cardClass = isHard ? 'error' : isSoft ? 'flagged' : '';
+    const badgeClass = isHard ? 'err' : isSoft ? 'warn' : 'ok';
+    const badgeIcon = isHard ? '✖' : isSoft ? '⚠' : '✓';
+
+    const daysBadge = days !== null
+      ? `<span class="days-badge ${days > 14 ? 'old' : ''}">${days}d</span>`
+      : '';
+
+    // Only show structured soft issues (field-level) in summary
+    const structuredIssues = issues.filter(i => typeof i === 'object' && i !== null);
+    const issueHtml = structuredIssues.length ? `
       <div class="issues-list">
-        ${issues.slice(0,4).map(i => {
-          const msg = typeof i === 'object' ? i.msg : i;
-          const cls = (typeof i === 'object' && i.severity === 'hard') ? 'hard' : '';
-          return `<div class="issue-item ${cls}">${msg}</div>`;
-        }).join('')}
-        ${issues.length > 4 ? `<div class="issue-item" style="color:#aaa">+${issues.length-4} more</div>` : ''}
+        ${structuredIssues.map(i =>
+          `<div class="issue-item ${i.severity === 'hard' ? 'hard' : ''}">${i.msg}</div>`
+        ).join('')}
       </div>` : '';
+
+    const phone = p.customer_phone;
+    const complaint = p.complaint;
+    const serial = p.serial_no;
 
     return `
     <div class="card ${cardClass}" id="card-${r.id}">
@@ -242,25 +256,23 @@ function renderCards() {
         <div class="card-badge ${badgeClass}">${badgeIcon}</div>
         <div class="card-meta">
           <div class="card-title">${p.customer_name || 'Unknown Customer'}</div>
-          <div class="card-sub">${p.machine_model || '—'} ${p.serial_no ? '· S/N '+p.serial_no : '· No serial'}</div>
-          <div class="card-branch">${r.branch} · ${p.job_date || 'No date'} · ${r.source_file || ''}</div>
+          <div class="card-sub">${p.machine_model || '—'} · ${serial ? 'S/N '+serial : 'No serial'}${daysBadge}</div>
+          <div class="card-branch">${r.branch} · ${(p.job_date||'').split('T')[0].split(' ')[0] || 'No date'}</div>
         </div>
       </div>
       <div class="card-body">
         <div class="field-row">
           <span class="field-label">Phone</span>
-          <span class="field-val ${!p.customer_phone ? 'missing' : ''}">${p.customer_phone || 'Missing'}</span>
+          <span class="field-val ${!phone ? 'missing' : ''}">${phone || 'Missing'}</span>
         </div>
         <div class="field-row">
           <span class="field-label">Complaint</span>
-          <span class="field-val ${!p.complaint ? 'missing' : ''}">${p.complaint || 'Missing'}</span>
+          <span class="field-val ${!complaint ? 'missing' : ''}">${complaint || 'Missing'}</span>
         </div>
         <div class="field-row">
           <span class="field-label">Status</span>
           <span class="field-val">${p.work_status || '—'}</span>
         </div>
-        <div class="confidence-bar"><div class="confidence-fill conf-${conf}"></div></div>
-        <div style="font-size:10px;color:#bbb;font-weight:800">AI CONFIDENCE ${conf}/5</div>
         ${issueHtml}
       </div>
       <div class="card-actions">
@@ -274,12 +286,13 @@ function renderCards() {
 
 async function approveRecord(id) {
   const card = document.getElementById('card-'+id);
-  card.style.opacity = '0.5';
+  card.style.opacity = '0.4';
+  card.style.pointerEvents = 'none';
   try {
-    const res = await fetch(`${INGEST_WORKER}/ingest/approve/${id}`, {
+    const res = await fetch(`${WORKER}/ingest/approve/${id}`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','x-tagro-key': OWNER_TOKEN},
-      body: JSON.stringify({})
+      headers: {'Content-Type':'application/json','x-tagro-key': TOKEN},
+      body: '{}'
     });
     const data = await res.json();
     if (data.ok || data.job_id) {
@@ -290,23 +303,25 @@ async function approveRecord(id) {
       document.getElementById('queue-sub').textContent = `${allRecords.length} records awaiting review`;
     } else {
       card.style.opacity = '1';
+      card.style.pointerEvents = '';
       alert('Error: ' + JSON.stringify(data));
     }
   } catch(e) {
     card.style.opacity = '1';
+    card.style.pointerEvents = '';
     alert('Network error: ' + e.message);
   }
 }
 
 async function rejectRecord(id) {
-  if (!confirm('Reject this record? It will be removed from staging.')) return;
+  if (!confirm('Remove this record from the queue?')) return;
   const card = document.getElementById('card-'+id);
-  card.style.opacity = '0.5';
+  card.style.opacity = '0.4';
   try {
-    await fetch(`${INGEST_WORKER}/staging/reject/${id}`, {
+    await fetch(`${WORKER}/staging/reject/${id}`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','x-tagro-key': OWNER_TOKEN},
-      body: JSON.stringify({})
+      headers: {'Content-Type':'application/json','x-tagro-key': TOKEN},
+      body: '{}'
     });
     card.remove();
     allRecords = allRecords.filter(r => r.id !== id);
@@ -327,7 +342,8 @@ function editRecord(id) {
   document.getElementById('edit-model').value = p.machine_model || '';
   document.getElementById('edit-serial').value = p.serial_no || '';
   document.getElementById('edit-complaint').value = p.complaint || '';
-  document.getElementById('edit-status').value = p.work_status || 'In Shop';
+  const sel = document.getElementById('edit-status');
+  sel.value = p.work_status || 'In Shop';
   document.getElementById('edit-overlay').classList.add('show');
 }
 
@@ -342,16 +358,17 @@ async function saveEdit() {
     customer_phone: document.getElementById('edit-phone').value,
     machine_model: document.getElementById('edit-model').value,
     serial_no: document.getElementById('edit-serial').value || null,
-    complaint: document.getElementById('edit-complaint').value,
+    complaint: document.getElementById('edit-complaint').value || null,
     work_status: document.getElementById('edit-status').value
   };
   closeEdit();
   const card = document.getElementById('card-'+id);
-  card.style.opacity = '0.5';
+  card.style.opacity = '0.4';
+  card.style.pointerEvents = 'none';
   try {
-    const res = await fetch(`${INGEST_WORKER}/ingest/approve/${id}`, {
+    const res = await fetch(`${WORKER}/ingest/approve/${id}`, {
       method: 'POST',
-      headers: {'Content-Type':'application/json','x-tagro-key': OWNER_TOKEN},
+      headers: {'Content-Type':'application/json','x-tagro-key': TOKEN},
       body: JSON.stringify(edits)
     });
     const data = await res.json();
@@ -363,10 +380,12 @@ async function saveEdit() {
       document.getElementById('queue-sub').textContent = `${allRecords.length} records awaiting review`;
     } else {
       card.style.opacity = '1';
+      card.style.pointerEvents = '';
       alert('Error: ' + JSON.stringify(data));
     }
   } catch(e) {
     card.style.opacity = '1';
+    card.style.pointerEvents = '';
     alert('Network error: ' + e.message);
   }
 }
@@ -375,7 +394,7 @@ document.getElementById('edit-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeEdit();
 });
 
-loadStaging();
+load();
 </script>
 </body>
 </html>
