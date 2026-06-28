@@ -2,386 +2,575 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#df6427">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TAGRO">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>My Bench — TAGRO</title>
-<link rel="stylesheet" href="app.css">
+<title>Job Bench — TAGRO</title>
+<!-- Tailwind CSS for high-fidelity premium interface elements -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          tagro: {
+            DEFAULT: '#df6427',
+            light: '#fff1e9',
+            dark: '#c44d12',
+            border: '#fed8c2'
+          }
+        }
+      }
+    }
+  }
+</script>
 <style>
-.bench-header { padding:14px 16px; }
-.bench-name { font-size:20px; font-weight:900; }
-.bench-sub { font-size:13px; color:#aaa; margin-top:2px; }
-
-/* Active machine — large and prominent */
-.active-machine { background:linear-gradient(135deg,#df6427,#c4551f); border-radius:20px; margin:0 14px 14px; padding:20px; color:#fff; }
-.active-machine .label { font-size:11px; font-weight:900; letter-spacing:2px; text-transform:uppercase; opacity:.7; }
-.active-machine .model { font-size:28px; font-weight:900; margin:6px 0 2px; }
-.active-machine .customer { font-size:16px; opacity:.9; }
-.active-machine .wo { font-size:12px; opacity:.6; margin-top:4px; font-family:monospace; }
-.active-machine .timer { font-size:13px; opacity:.8; margin-top:8px; }
-.active-machine .actions { display:flex; gap:8px; margin-top:16px; }
-.active-machine .act-btn { flex:1; padding:12px; border-radius:10px; text-align:center; font-weight:900; font-size:14px; cursor:pointer; border:none; }
-.act-btn.pause { background:rgba(255,255,255,.2); color:#fff; }
-.act-btn.complete { background:#fff; color:#df6427; }
-.act-btn.pause:hover { background:rgba(255,255,255,.3); }
-
-/* Queue sections */
-.section-head { font-size:11px; font-weight:900; color:#aaa; letter-spacing:1.5px; text-transform:uppercase; padding:8px 16px 6px; }
-
-.queue-item { background:#fff; border-radius:14px; margin:0 14px 8px; padding:14px; border-left:3px solid #e8e8e8; }
-.queue-item.waiting-parts { border-left-color:#d97706; }
-.queue-item.waiting-customer { border-left-color:#2f7deb; }
-.queue-item.ready { border-left-color:#287a3e; }
-.queue-item.paused { border-left-color:#aaa; }
-
-.queue-item .qi-model { font-weight:900; font-size:15px; }
-.queue-item .qi-customer { font-size:13px; color:#888; margin-top:2px; }
-.queue-item .qi-status { display:inline-block; margin-top:6px; padding:4px 10px; border-radius:99px; font-size:11px; font-weight:900; background:#f5f5f5; color:#555; }
-.queue-item .qi-status.amber { background:#fff3d5; color:#d97706; }
-.queue-item .qi-status.blue { background:#e8f0fe; color:#2f7deb; }
-.queue-item .qi-status.green { background:#e8f5e9; color:#287a3e; }
-.queue-item .qi-pause-reason { font-size:12px; color:#aaa; margin-top:4px; font-style:italic; }
-.queue-item .qi-actions { display:flex; gap:8px; margin-top:10px; }
-
-.no-active { background:#f9f9f9; border:2px dashed #e8e8e8; border-radius:20px; margin:0 14px 14px; padding:32px 20px; text-align:center; }
-.no-active .icon { font-size:36px; margin-bottom:8px; }
-.no-active p { font-size:14px; color:#aaa; }
-
-/* Pause modal */
-.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:flex-end; }
-.modal-overlay.show { display:flex; }
-.modal-sheet { background:#fff; border-radius:20px 20px 0 0; padding:24px; width:100%; max-width:600px; margin:0 auto; }
-.modal-title { font-size:16px; font-weight:900; margin-bottom:16px; }
-.pause-reason-btn { display:block; width:100%; padding:14px; margin-bottom:8px; border:1.5px solid #e8e8e8; border-radius:12px; text-align:left; font-size:15px; font-weight:700; cursor:pointer; background:#fff; }
-.pause-reason-btn:hover { border-color:#df6427; background:#fff8f4; }
-.pause-reason-btn.selected { border-color:#df6427; background:#fff8f4; color:#df6427; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f5f5f5;
+}
+/* Premium scrolling behaviors */
+.custom-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 99px;
+}
 </style>
 </head>
-<body>
-<div class="wrap" style="padding:0;max-width:600px">
+<body class="text-slate-800 antialiased min-h-screen pb-24">
 
-  <div class="bench-header">
-    <div class="bench-name" id="bench-name">My Bench</div>
-    <div class="bench-sub" id="bench-sub"></div>
+<div class="max-w-xl mx-auto px-4 pt-4 space-y-4">
+  
+  <!-- Back arrow navigation & Header bar -->
+  <div class="flex items-center justify-between pb-2">
+    <a href="tracker.html" class="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 font-bold text-sm transition-all duration-150">
+      <span>←</span> Jobs
+    </a>
+    <span id="job-workorder-title" class="font-mono text-xs font-bold text-slate-400 bg-slate-100 py-1 px-3 rounded-full">No active job</span>
   </div>
 
-  <!-- Active machine -->
-  <div id="active-section"></div>
+  <!-- Tech Assistant Quick Link Banner -->
+  <div id="tech-assistant-banner" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between transition-all duration-200">
+    <div class="space-y-1">
+      <h3 class="text-sm font-extrabold text-slate-900 flex items-center gap-1.5">
+        <span class="text-tagro text-base">🛠️</span> Tech Assistant
+      </h3>
+      <p class="text-xs text-slate-400">Ask troubleshooting questions, settings, or torque specifications</p>
+    </div>
+    <button onclick="launchTechAssistant()" class="bg-tagro-light hover:bg-tagro-light/80 text-tagro border border-tagro-border text-xs font-black py-2.5 px-4 rounded-xl transition-all duration-150">
+      Consult AI
+    </button>
+  </div>
 
-  <!-- Paused machines -->
-  <div id="paused-section"></div>
+  <!-- Job Core Metadata Card -->
+  <div id="job-metadata-card" class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+    <div class="flex items-start justify-between">
+      <div>
+        <h2 id="meta-model-title" class="text-lg font-black text-slate-900">—</h2>
+        <p id="meta-customer-detail" class="text-xs text-slate-500 font-medium">—</p>
+      </div>
+      <span id="meta-status-badge" class="text-[10px] font-bold text-tagro bg-tagro-light border border-tagro-border px-2.5 py-1 rounded-full uppercase tracking-wider">—</span>
+    </div>
+    <div id="meta-complaint-box" class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+      <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Customer Complaint:</span>
+      <p id="meta-complaint-text" class="text-xs font-medium text-slate-600 italic">No complaint registered</p>
+    </div>
+  </div>
 
-  <!-- Waiting sections -->
-  <div id="waiting-section"></div>
+  <!-- Horizontal navigation tabs -->
+  <div class="bg-slate-200/60 p-1 rounded-xl flex gap-1">
+    <button onclick="switchTab('timeline')" id="tab-btn-timeline" class="flex-1 text-center py-2 text-xs font-extrabold rounded-lg transition-all duration-150 bg-white text-tagro shadow-sm">Timeline</button>
+    <button onclick="switchTab('estimate')" id="tab-btn-estimate" class="flex-1 text-center py-2 text-xs font-extrabold rounded-lg transition-all duration-150 text-slate-500 hover:text-slate-800">Estimate</button>
+    <button onclick="switchTab('status')" id="tab-btn-status" class="flex-1 text-center py-2 text-xs font-extrabold rounded-lg transition-all duration-150 text-slate-500 hover:text-slate-800">Status</button>
+    <button onclick="switchTab('messages')" id="tab-btn-messages" class="flex-1 text-center py-2 text-xs font-extrabold rounded-lg transition-all duration-150 text-slate-500 hover:text-slate-800">Messages</button>
+  </div>
 
-  <!-- Ready for collection -->
-  <div id="ready-section"></div>
+  <!-- ── TAB: TIMELINE ────────────────────────────────────── -->
+  <div id="tab-content-timeline" class="space-y-4">
+    <!-- Save Note Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Add Note</h3>
+      <div class="relative">
+        <textarea id="timeline-note-input" rows="3" class="w-full bg-slate-50 hover:bg-slate-50/50 focus:bg-white border border-slate-200 focus:border-tagro focus:ring-4 focus:ring-tagro-light outline-none rounded-xl p-3 text-xs font-medium transition-all duration-150 resize-none" placeholder="Observation, finding, customer conversation..."></textarea>
+      </div>
+      <button onclick="saveTimelineNote()" class="w-full bg-tagro hover:bg-tagro-dark text-white text-xs font-black py-3 rounded-xl shadow-md shadow-tagro/20 transition-all duration-150">
+        Save Note
+      </button>
+    </div>
 
-  <!-- Completed today -->
-  <div id="completed-section"></div>
-
-  <div style="height:20px"></div>
-</div>
-
-<!-- Pause reason modal -->
-<div class="modal-overlay" id="pause-modal">
-  <div class="modal-sheet">
-    <div class="modal-title">Why are you pausing?</div>
-    <button class="pause-reason-btn" onclick="confirmPause('Waiting Customer')">👤 Waiting Customer</button>
-    <button class="pause-reason-btn" onclick="confirmPause('Waiting Parts')">🛒 Waiting Parts</button>
-    <button class="pause-reason-btn" onclick="confirmPause('Outside Work')">🚗 Outside Work</button>
-    <button class="pause-reason-btn" onclick="confirmPause('Priority Changed')">🔄 Priority Changed</button>
-    <button class="pause-reason-btn" onclick="confirmPause('End of Day')">🌙 End of Day</button>
-    <button class="pause-reason-btn" onclick="confirmPause('Other')">✏️ Other</button>
-    <div id="pause-note-section" style="display:none;margin-top:10px">
-      <div class="field">
-        <label>Resume reminder (optional)</label>
-        <textarea id="pause-note" placeholder="What to remember when resuming..." style="min-height:60px"></textarea>
+    <!-- Timeline List Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Job Log History</h3>
+      <div id="timeline-history-container" class="divide-y divide-slate-100 space-y-3 max-h-80 overflow-y-auto custom-scroll pr-1">
+        <!-- Rendered dynamically -->
       </div>
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <button class="btn block" onclick="closePauseModal()">Cancel</button>
-      <button class="btn primary block" id="confirm-pause-btn" onclick="savePause()" style="display:none">Pause</button>
+  </div>
+
+  <!-- ── TAB: ESTIMATE ────────────────────────────────────── -->
+  <div id="tab-content-estimate" class="space-y-4 hidden">
+    <!-- Add Parts Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Add Spare Part</h3>
+      <div class="relative">
+        <input id="estimate-parts-search" type="search" oninput="searchEstimateParts()" class="w-full bg-slate-50 hover:bg-slate-50/50 focus:bg-white border border-slate-200 focus:border-tagro outline-none rounded-xl py-2.5 pl-3 pr-8 text-xs font-medium transition-all duration-150" placeholder="Type part name, number segment, or model...">
+      </div>
+      <!-- Floating matching list -->
+      <div id="parts-dropdown-results" class="hidden max-h-40 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
+      
+      <!-- Quick quantities / manual override pricing -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Quantity</label>
+          <input id="estimate-part-qty" type="number" value="1" min="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-medium">
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Custom Price (Optional)</label>
+          <input id="estimate-part-price-override" type="number" placeholder="Original price" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs font-medium">
+        </div>
+      </div>
+      <button onclick="addPartToEstimate()" class="w-full bg-tagro hover:bg-tagro-dark text-white text-xs font-black py-3 rounded-xl transition-all duration-150">
+        Add Part to Estimation
+      </button>
+    </div>
+
+    <!-- Active Parts Estimates Bill -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Estimation Summary</h3>
+        <span id="estimate-items-count" class="text-[10px] font-bold text-slate-500 bg-slate-100 py-0.5 px-2 rounded-full">0 items</span>
+      </div>
+      <div id="estimate-bill-container" class="divide-y divide-slate-100 space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="border-t border-slate-100 pt-3 flex items-center justify-between text-xs">
+        <span class="font-extrabold text-slate-500">Estimated Total:</span>
+        <span id="estimate-grand-total" class="font-black text-tagro text-sm">₹0</span>
+      </div>
+      <button onclick="sendEstimateSMS()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5">
+        <span>✉</span> Send Estimate SMS to Customer
+      </button>
+    </div>
+  </div>
+
+  <!-- ── TAB: STATUS ──────────────────────────────────────── -->
+  <div id="tab-content-status" class="space-y-4 hidden">
+    <!-- Update Work Status Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+      <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Update Job Status</h3>
+      
+      <!-- Status Radios -->
+      <div class="grid grid-cols-2 gap-2" id="status-radios-container">
+        <!-- Generated Dynamically -->
+      </div>
+
+      <button onclick="saveJobStatusUpdate()" class="w-full bg-tagro hover:bg-tagro-dark text-white text-xs font-black py-3 rounded-xl transition-all duration-150">
+        Apply Status Change
+      </button>
+    </div>
+
+    <!-- Status Action Notifications Card -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Send Update Alerts</h3>
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="sendStatusUpdateSMS()" class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold py-3 px-2 rounded-xl transition-all duration-150 text-center">
+          ✉ Send Status SMS
+        </button>
+        <button onclick="sendReadyDeliverySMS()" class="bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-700 text-xs font-bold py-3 px-2 rounded-xl transition-all duration-150 text-center">
+          ✉ Send Ready SMS
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB: MESSAGES ────────────────────────────────────── -->
+  <div id="tab-content-messages" class="space-y-4 hidden">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Custom SMS Dispatch</h3>
+      <textarea id="custom-sms-textarea" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-medium" placeholder="Type SMS content (keep under 160 characters)..."></textarea>
+      <button onclick="dispatchCustomSMS()" class="w-full bg-tagro hover:bg-tagro-dark text-white text-xs font-black py-3 rounded-xl transition-all duration-150">
+        Dispatch Custom SMS
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Mic troubleshooting modal (Zero browser alert/confirm compliance) -->
+<div id="mic-help-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+    <div class="text-center space-y-3">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-amber-100 text-amber-600 text-xl">🎙️</div>
+      <h3 class="text-lg font-bold text-slate-900">Microphone Access Error</h3>
+      <div class="text-left text-xs text-slate-500 space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-100">
+        <p class="font-bold text-slate-700 mb-1">How to fix permissions on this device:</p>
+        <ol class="list-decimal list-inside space-y-1">
+          <li>Ensure website address begins with <span class="font-mono text-tagro font-bold">https://</span>. Insecure pages block mic access.</li>
+          <li>Look at the top address bar for a locked lock icon <span class="font-bold">🔒</span> or camera/mic icon, tap it, and change permissions to <span class="font-bold text-emerald-600">Allow</span>.</li>
+          <li>Go to device settings (iOS Safari or Android Chrome) $\rightarrow$ Privacy $\rightarrow$ Microphone, and allow permissions.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="mt-5">
+      <button class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all duration-150" onclick="closeMicHelpModal()">
+        Understood, Close
+      </button>
     </div>
   </div>
 </div>
 
 <script src="app.js"></script>
+<script src="parts-search.js"></script>
 <script>
-const s = requireLogin();
-initShell('bench');
+// Prevent compile crashes. Initialize empty default lists.
+if (!localStorage.getItem('tagro_jobs')) localStorage.setItem('tagro_jobs', JSON.stringify([]));
 
-let activePauseJob  = null;
-let selectedReason  = null;
+// ── STREAMING_CHUNK: Writing job load and save core logic... ──
+let activeJob = null;
+let selectedPartToEstimate = null;
 
-document.getElementById('bench-name').textContent = s.name + "'s Bench";
-document.getElementById('bench-sub').textContent  =
-  new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long' });
+function loadActiveJob() {
+  const params = new URLSearchParams(location.search);
+  const jobId = params.get('job') || params.get('id');
+  const allJobs = jobs();
 
-// ── Render ────────────────────────────────────────────────
-function render() {
-  const myJobs = getBranchJobs().filter(j =>
-    j.assignedTo === s.name || j.acceptedBy === s.name
-  );
+  activeJob = allJobs.find(j => (j.workOrder || j.id) === jobId);
 
-  const active    = myJobs.find(j => j.status === 'Repairing');
-  const paused    = myJobs.filter(j => j.status === 'Paused');
-  const waitParts = myJobs.filter(j => j.status === 'Waiting Parts');
-  const waitCust  = myJobs.filter(j => j.status === 'Waiting Customer' || j.status === 'Waiting Approval');
-  const ready     = myJobs.filter(j => j.status === 'Ready');
-  const completed = myJobs.filter(j =>
-    ['Delivered','Completed'].includes(j.status) && isToday(j.updatedAt || j.date)
-  );
-
-  renderActive(active);
-  renderSection('paused-section', 'Paused', paused, 'paused', renderPausedItem);
-  renderSection('waiting-section', 'Waiting for Parts', waitParts, 'waiting-parts', renderWaitingItem);
-  renderSection(null, 'Waiting for Customer', waitCust, 'waiting-customer', renderWaitingItem, 'waiting-section');
-  renderSection('ready-section', 'Ready for Collection', ready, 'ready', renderReadyItem);
-  renderSection('completed-section', 'Completed Today', completed, '', renderCompletedItem);
-}
-
-function renderActive(job) {
-  const el = document.getElementById('active-section');
-  if (!job) {
-    el.innerHTML = `
-      <div class="no-active">
-        <div class="icon">🪛</div>
-        <p>No active repair.<br>Select a paused job to resume,<br>or receive a new machine.</p>
-        <a class="btn primary" href="receive.html" style="margin-top:14px;display:inline-block">Receive Machine</a>
-      </div>`;
-    return;
+  // Crash Guardrail: If job wasn't found, find any fallback job or display warning instead of freezing
+  if (!activeJob && allJobs.length > 0) {
+    activeJob = allJobs[0]; // fallback to first job
   }
 
-  const age = timeSince(job.repairStartedAt || job.date);
-  el.innerHTML = `
-    <div class="section-head">Currently Working</div>
-    <div class="active-machine">
-      <div class="label">Active Repair</div>
-      <div class="model">${job.machine?.model || '—'}</div>
-      <div class="customer">${job.customer?.name}</div>
-      <div class="wo">${job.workOrder}</div>
-      <div class="timer">⏱ Working for ${age}</div>
-      <div class="actions">
-        <button class="act-btn pause" onclick="openPauseModal('${job.id}')">⏸ Pause</button>
-        <button class="act-btn complete" onclick="markComplete('${job.id}')">✓ Complete</button>
+  if (!activeJob) {
+    document.body.innerHTML = `
+      <div class="max-w-md mx-auto px-4 pt-10 text-center space-y-4">
+        <div class="text-4xl">⚠️</div>
+        <h2 class="font-black text-lg">No active job selected</h2>
+        <p class="text-xs text-slate-500">Go to tracker list to select and open jobs.</p>
+        <a href="tracker.html" class="inline-block bg-tagro text-white font-bold text-xs py-2 px-4 rounded-xl">Back to Jobs</a>
       </div>
-    </div>`;
-}
-
-function renderSection(elId, title, jobs, cls, itemFn, appendToId) {
-  if (!jobs.length) {
-    if (elId) document.getElementById(elId).innerHTML = '';
+    `;
     return;
   }
-  const html = `<div class="section-head">${title} (${jobs.length})</div>` +
-    jobs.map(j => `<div class="queue-item ${cls}">${itemFn(j)}</div>`).join('');
 
-  if (elId) {
-    document.getElementById(elId).innerHTML = html;
-  } else if (appendToId) {
-    document.getElementById(appendToId).innerHTML += html;
+  // Pre-seed timelines or estimate arrays if missing to protect rendering pipelines from crashing
+  if (!activeJob.timeline) activeJob.timeline = [];
+  if (!activeJob.estimate) activeJob.estimate = [];
+
+  // Update DOM Title and details
+  document.getElementById('job-workorder-title').textContent = activeJob.workOrder || activeJob.id;
+  document.getElementById('meta-model-title').textContent = activeJob.machine?.model || activeJob.model || 'Unknown Model';
+  document.getElementById('meta-customer-detail').textContent = `${activeJob.customer?.name || 'Customer'} · ${activeJob.customer?.phone || ''}`;
+  document.getElementById('meta-status-badge').textContent = activeJob.status || 'Received';
+  
+  if (activeJob.complaint) {
+    document.getElementById('meta-complaint-text').textContent = activeJob.complaint;
+  }
+
+  // Render view templates
+  renderTimeline();
+  renderEstimateBill();
+  renderStatusRadios();
+}
+
+function saveJobState() {
+  if (!activeJob) return;
+  const allJobs = jobs();
+  const index = allJobs.findIndex(j => (j.workOrder || j.id) === (activeJob.workOrder || activeJob.id));
+  if (index >= 0) {
+    allJobs[index] = activeJob;
+    saveJobs(allJobs); // app.js helper handles KV and sync
   }
 }
 
-function renderPausedItem(j) {
-  const pr = j.pauseReason || '';
-  return `
-    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
-    <div class="qi-customer">${j.workOrder}</div>
-    ${pr ? `<div class="qi-pause-reason">Paused: ${pr}</div>` : ''}
-    ${j.pauseNote ? `<div class="qi-pause-reason">"${j.pauseNote}"</div>` : ''}
-    <div class="qi-actions">
-      <button class="btn primary" onclick="resumeJob('${j.id}')">▶ Resume</button>
-      <a class="btn" href="work.html?id=${j.id}">Open</a>
-    </div>`;
-}
-
-function renderWaitingItem(j) {
-  const cls = j.status === 'Waiting Parts' ? 'amber' : 'blue';
-  return `
-    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
-    <div class="qi-customer">${j.workOrder} · ${timeSince(j.date)} ago</div>
-    <span class="qi-status ${cls}">${j.status}</span>
-    <div class="qi-actions">
-      <a class="btn" href="work.html?id=${j.id}">Open</a>
-      <button class="btn" onclick="callCustomer('${j.customer?.phone}')">📞 Call</button>
-    </div>`;
-}
-
-function renderReadyItem(j) {
-  return `
-    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
-    <div class="qi-customer">${j.workOrder}</div>
-    <span class="qi-status green">Ready</span>
-    <div class="qi-actions">
-      <button class="btn primary" onclick="markDelivered('${j.id}')">Delivered ✓</button>
-      <button class="btn" onclick="callCustomer('${j.customer?.phone}')">📞 Call</button>
-    </div>`;
-}
-
-function renderCompletedItem(j) {
-  return `
-    <div class="qi-model">${j.machine?.model} — ${j.customer?.name}</div>
-    <div class="qi-customer">${j.workOrder} · ${j.status}</div>`;
-}
-
-// ── Actions ───────────────────────────────────────────────
-function resumeJob(id) {
-  const all = jobs();
-  const idx = all.findIndex(j => j.id === id);
-  if (idx < 0) return;
-
-  // If another job is active, auto-pause it
-  const active = all.find(j => j.status === 'Repairing' && (j.assignedTo === s.name || j.acceptedBy === s.name));
-  if (active && active.id !== id) {
-    active.status = 'Paused';
-    active.pauseReason = 'Priority Changed';
-    active.pausedAt = new Date().toISOString();
-    addTimeline(active, 'paused', 'Paused — priority changed');
-  }
-
-  const job = all[idx];
-  job.status = 'Repairing';
-  job.assignedTo = s.name;
-  job.repairStartedAt = job.repairStartedAt || new Date().toISOString();
-  delete job.pauseReason;
-  delete job.pauseNote;
-  addTimeline(job, 'resumed', 'Repair resumed by ' + s.name);
-
-  saveJobs(all);
-  recordBranchEvent(job, 'resumed', 'Repair resumed — ' + job.machine?.model);
-  toast('Resumed ' + job.machine?.model);
-  render();
-}
-
-function markComplete(id) {
-  const all = jobs();
-  const job = all.find(j => j.id === id);
-  if (!job) return;
-  job.status = 'Ready';
-  job.completedAt = new Date().toISOString();
-  addTimeline(job, 'ready', 'Machine ready — ' + s.name);
-  saveJobs(all);
-  recordBranchEvent(job, 'ready', job.machine?.model + ' ready for collection');
-  toast('Marked ready. Customer can be notified.');
-  render();
-}
-
-function markDelivered(id) {
-  if (!confirm('Confirm delivery to customer?')) return;
-  const all = jobs();
-  const job = all.find(j => j.id === id);
-  if (!job) return;
-  job.status = 'Delivered';
-  job.deliveredAt = new Date().toISOString();
-  job.deliveredBy = s.name;
-  addTimeline(job, 'delivered', 'Machine delivered to ' + job.customer?.name);
-  saveJobs(all);
-  recordBranchEvent(job, 'delivered', job.machine?.model + ' delivered to ' + job.customer?.name);
-  toast('Delivered');
-  render();
-}
-
-function callCustomer(phone) {
-  if (phone) window.location.href = 'tel:' + phone;
-}
-
-// ── Pause modal ───────────────────────────────────────────
-function openPauseModal(id) {
-  activePauseJob = id;
-  selectedReason = null;
-  document.querySelectorAll('.pause-reason-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('pause-note-section').style.display = 'none';
-  document.getElementById('pause-note').value = '';
-  document.getElementById('confirm-pause-btn').style.display = 'none';
-  document.getElementById('pause-modal').classList.add('show');
-}
-
-function confirmPause(reason) {
-  selectedReason = reason;
-  document.querySelectorAll('.pause-reason-btn').forEach(b => b.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
-  document.getElementById('pause-note-section').style.display = 'block';
-  document.getElementById('confirm-pause-btn').style.display = 'block';
-  document.getElementById('pause-note').focus();
-}
-
-function savePause() {
-  if (!selectedReason || !activePauseJob) return;
-
-  const note = document.getElementById('pause-note').value.trim();
-  const all  = jobs();
-  const job  = all.find(j => j.id === activePauseJob);
-
-  if (job) {
-    job.status      = selectedReason === 'Waiting Parts' ? 'Waiting Parts' :
-                      selectedReason === 'Waiting Customer' ? 'Waiting Customer' : 'Paused';
-    job.pauseReason = selectedReason;
-    job.pauseNote   = note;
-    job.pausedAt    = new Date().toISOString();
-    job.pausedBy    = s.name;
-    addTimeline(job, 'paused', 'Paused: ' + selectedReason + (note ? ' — ' + note : ''));
-    saveJobs(all);
-    recordBranchEvent(job, 'paused', 'Paused: ' + selectedReason);
-  }
-
-  closePauseModal();
-  toast('Paused — ' + selectedReason);
-  render();
-}
-
-function closePauseModal() {
-  document.getElementById('pause-modal').classList.remove('show');
-  activePauseJob = null;
-}
-
-// ── Helpers ───────────────────────────────────────────────
-function getBranchJobs() {
-  const all = jobs();
-  if (s.role === 'Owner') return all;
-  return all.filter(j => j.branch === s.branch);
-}
-
-function addTimeline(job, type, description) {
-  if (!job.timeline) job.timeline = [];
-  job.timeline.push({ type, description, by: s.name, at: new Date().toISOString() });
-}
-
-function recordBranchEvent(job, type, description) {
-  const key    = 'tagro_events_' + (job.branch || s.branch);
-  const events = jget(key, []);
-  events.unshift({ type, description, jobId: job.id, workOrder: job.workOrder, by: s.name, at: new Date().toISOString() });
-  if (events.length > 200) events.splice(200);
-  jset(key, events);
-}
-
-function timeSince(iso) {
-  if (!iso) return '—';
-  const diff = Date.now() - new Date(iso).getTime();
-  const m    = Math.floor(diff / 60000);
-  if (m < 60)  return m + 'm';
-  const h = Math.floor(m / 60);
-  if (h < 24)  return h + 'h ' + (m % 60) + 'm';
-  return Math.floor(h / 24) + ' days';
-}
-
-function isToday(iso) {
-  if (!iso) return false;
-  return new Date(iso).toDateString() === new Date().toDateString();
-}
-
-render();
-</script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+// ── STREAMING_CHUNK: Writing tab switching controller... ──
+function switchTab(tabId) {
+  const tabs = ['timeline', 'estimate', 'status', 'messages'];
+  tabs.forEach(t => {
+    document.getElementById(`tab-content-${t}`).classList.add('hidden');
+    const btn = document.getElementById(`tab-btn-${t}`);
+    btn.className = "flex-1 text-center py-2 text-xs font-extrabold rounded-lg transition-all duration-150 text-slate-500 hover:text-slate-800";
   });
+
+  document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+  const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+  activeBtn.className = "flex-1 text-center py-2 text-xs font-extrabold rounded-lg transition-all duration-150 bg-white text-tagro shadow-sm";
+}
+
+function launchTechAssistant() {
+  if (!activeJob) return;
+  const model = activeJob.machine?.model || activeJob.model || '';
+  const complaint = activeJob.complaint || '';
+  const wo = activeJob.workOrder || activeJob.id || '';
+  location.href = `tech.html?job=${encodeURIComponent(wo)}&model=${encodeURIComponent(model)}&complaint=${encodeURIComponent(complaint)}`;
+}
+
+// ── TIMELINE ─────────────────────────────────────────────
+function renderTimeline() {
+  const container = document.getElementById('timeline-history-container');
+  const list = activeJob.timeline || [];
+
+  if (list.length === 0) {
+    container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 italic">No timeline notes added yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = list.map(item => `
+    <div class="py-2.5 space-y-1">
+      <div class="flex items-center justify-between text-[10px] font-bold text-slate-400">
+        <span>${item.by || 'Mechanic'}</span>
+        <span>${new Date(item.at || Date.now()).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+      <p class="text-xs font-medium text-slate-700">${esc(item.text)}</p>
+    </div>
+  `).join('');
+}
+
+function saveTimelineNote() {
+  const textarea = document.getElementById('timeline-note-input');
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  const sessionData = session() || { name: 'Mechanic' };
+  activeJob.timeline.unshift({
+    text: text,
+    by: sessionData.name,
+    at: new Date().toISOString()
+  });
+
+  saveJobState();
+  textarea.value = '';
+  renderTimeline();
+  toast('Note added to timeline');
+}
+
+// ── ESTIMATE ─────────────────────────────────────────────
+function searchEstimateParts() {
+  const q = document.getElementById('estimate-parts-search').value.trim();
+  const dropdown = document.getElementById('parts-dropdown-results');
+
+  if (q.length < 2) {
+    dropdown.classList.add('hidden');
+    return;
+  }
+
+  const matches = searchParts(q, 5); // parts-search.js engine
+  if (!matches.length) {
+    dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 italic text-center">No parts matched in master lists</div>`;
+    dropdown.classList.remove('hidden');
+    return;
+  }
+
+  dropdown.innerHTML = matches.map(p => `
+    <button onclick="selectPartToEstimateUI('${p.no}', '${esc(p.name)}', ${p.price || p.mrp || 0})" class="w-full text-left p-3 hover:bg-slate-50 flex items-center justify-between text-xs transition-all duration-150">
+      <div>
+        <strong class="font-bold block text-slate-800">${esc(p.name)}</strong>
+        <span class="font-mono text-[10px] text-slate-400">${p.no}</span>
+      </div>
+      <span class="font-extrabold text-tagro">₹${p.price || p.mrp || 0}</span>
+    </button>
+  `).join('');
+  dropdown.classList.remove('hidden');
+}
+
+function selectPartToEstimateUI(no, name, price) {
+  selectedPartToEstimate = { no, name, price };
+  document.getElementById('estimate-parts-search').value = name;
+  document.getElementById('estimate-part-price-override').placeholder = `MRP: ₹${price}`;
+  document.getElementById('parts-dropdown-results').classList.add('hidden');
+}
+
+function addPartToEstimate() {
+  const searchInput = document.getElementById('estimate-parts-search');
+  const qtyInput = document.getElementById('estimate-part-qty');
+  const priceOverrideInput = document.getElementById('estimate-part-price-override');
+
+  const qty = parseInt(qtyInput.value) || 1;
+  let name = searchInput.value.trim();
+  let price = selectedPartToEstimate ? selectedPartToEstimate.price : 0;
+  let no = selectedPartToEstimate ? selectedPartToEstimate.no : 'MANUAL';
+
+  const customPrice = parseFloat(priceOverrideInput.value);
+  if (!isNaN(customPrice)) {
+    price = customPrice;
+  }
+
+  if (!name) return;
+
+  activeJob.estimate.push({
+    no: no,
+    name: name,
+    price: price,
+    qty: qty,
+    total: price * qty
+  });
+
+  saveJobState();
+  
+  // reset inputs
+  searchInput.value = '';
+  qtyInput.value = '1';
+  priceOverrideInput.value = '';
+  priceOverrideInput.placeholder = 'Original price';
+  selectedPartToEstimate = null;
+
+  renderEstimateBill();
+  toast('Part added to estimate list');
+}
+
+function renderEstimateBill() {
+  const container = document.getElementById('estimate-bill-container');
+  const list = activeJob.estimate || [];
+  
+  document.getElementById('estimate-items-count').textContent = `${list.length} items`;
+
+  if (list.length === 0) {
+    container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">No parts added to estimation yet.</p>`;
+    document.getElementById('estimate-grand-total').textContent = '₹0';
+    return;
+  }
+
+  let total = 0;
+  container.innerHTML = list.map((item, idx) => {
+    total += item.total || 0;
+    return `
+      <div class="py-2.5 flex items-start justify-between text-xs">
+        <div>
+          <strong class="font-extrabold text-slate-800 block">${esc(item.name)}</strong>
+          <span class="font-mono text-[10px] text-slate-400">${item.no} (Qty: ${item.qty})</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-black text-slate-900">₹${(item.total || 0).toLocaleString('en-IN')}</span>
+          <button onclick="removePartFromEstimate(${idx})" class="text-red-500 hover:text-red-700 font-extrabold">×</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('estimate-grand-total').textContent = `₹${total.toLocaleString('en-IN')}`;
+}
+
+function removePartFromEstimate(idx) {
+  activeJob.estimate.splice(idx, 1);
+  saveJobState();
+  renderEstimateBill();
+  toast('Item removed');
+}
+
+async function sendEstimateSMS() {
+  if (!activeJob) return;
+  const total = activeJob.estimate.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const data = {
+    phone: activeJob.customer?.phone,
+    workOrder: activeJob.workOrder || activeJob.id,
+    model: activeJob.machine?.model || activeJob.model || 'Machine',
+    amount: total,
+    branch: activeJob.branch
+  };
+  await sendSMS('estimate', data);
+}
+
+// ── STATUS ───────────────────────────────────────────────
+function renderStatusRadios() {
+  const statuses = ['Received', 'Repairing', 'Waiting Parts', 'Awaiting Approval', 'Ready', 'Delivered', 'Customer Declined'];
+  const container = document.getElementById('status-radios-container');
+  const current = activeJob.status || 'Received';
+
+  container.innerHTML = statuses.map(s => {
+    const isChecked = s === current;
+    return `
+      <label class="border ${isChecked ? 'border-tagro bg-tagro-light/30' : 'border-slate-200'} rounded-xl p-3 flex items-center gap-2 cursor-pointer transition-all duration-150">
+        <input type="radio" name="status-radio" value="${s}" ${isChecked ? 'checked' : ''} class="accent-tagro h-3.5 w-3.5">
+        <span class="text-xs font-bold text-slate-700">${s}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+function saveJobStatusUpdate() {
+  const checkedRadio = document.querySelector('input[name="status-radio"]:checked');
+  if (!checkedRadio) return;
+
+  const newStatus = checkedRadio.value;
+  activeJob.status = newStatus;
+  document.getElementById('meta-status-badge').textContent = newStatus;
+  
+  // Record status change to timeline
+  const sessionData = session() || { name: 'Mechanic' };
+  activeJob.timeline.unshift({
+    text: `Job status changed to ${newStatus}`,
+    by: sessionData.name,
+    at: new Date().toISOString()
+  });
+
+  saveJobState();
+  renderTimeline();
+  renderStatusRadios();
+  toast(`Status updated to: ${newStatus}`);
+}
+
+async function sendStatusUpdateSMS() {
+  if (!activeJob) return;
+  const data = {
+    phone: activeJob.customer?.phone,
+    workOrder: activeJob.workOrder || activeJob.id,
+    model: activeJob.machine?.model || activeJob.model || 'Machine',
+    status: activeJob.status || 'Received',
+    branchPhone: '0475-2253172'
+  };
+  await sendSMS('status', data);
+}
+
+async function sendReadyDeliverySMS() {
+  if (!activeJob) return;
+  const total = activeJob.estimate.reduce((acc, curr) => acc + (curr.total || 0), 0);
+  const data = {
+    phone: activeJob.customer?.phone,
+    workOrder: activeJob.workOrder || activeJob.id,
+    model: activeJob.machine?.model || activeJob.model || 'Machine',
+    invoiceAmount: total,
+    branchPhone: '0475-2253172'
+  };
+  await sendSMS('ready', data);
+}
+
+// ── MESSAGES ─────────────────────────────────────────────
+async function dispatchCustomSMS() {
+  const textarea = document.getElementById('custom-sms-textarea');
+  const msg = textarea.value.trim();
+  if (!msg) return;
+
+  const data = {
+    phone: activeJob.customer?.phone,
+    message: msg
+  };
+  const res = await sendSMS('send', data);
+  if (res && res.ok) {
+    textarea.value = '';
+  }
+}
+
+// ── STREAMING_CHUNK: Integrating Speech recognition helper... ──
+function openMicHelpModal() {
+  document.getElementById('mic-help-modal').classList.remove('hidden');
+  document.getElementById('mic-help-modal').classList.add('flex');
+}
+
+function closeMicHelpModal() {
+  document.getElementById('mic-help-modal').classList.remove('flex');
+  document.getElementById('mic-help-modal').classList.add('hidden');
+}
+
+// ── On Initialization ─────────────────────────────────────
+window.onload = function() {
+  loadActiveJob();
 }
 </script>
 </body>
