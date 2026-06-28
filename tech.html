@@ -161,27 +161,6 @@
 .dot-pulse span:nth-child(3) { animation-delay: .4s; }
 @keyframes pulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
 
-/* Parts result card */
-.parts-result {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 16px;
-  overflow: hidden;
-  margin-top: 8px;
-}
-.parts-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 10px 14px;
-  border-bottom: 1px solid #f5f5f5;
-  font-size: 13px;
-}
-.parts-row:last-child { border-bottom: none; }
-.parts-no { font-family: monospace; font-size: 11px; color: #aaa; }
-.parts-name { font-weight: 700; }
-.parts-mrp { font-weight: 900; color: #df6427; white-space: nowrap; margin-left: 12px; }
-
 /* Input area — fixed bottom */
 .input-area {
   position: sticky;
@@ -627,22 +606,17 @@ async function sendQuestion() {
   input.value = '';
   autoResize(input);
 
-  // Remove empty state
   const empty = document.getElementById('empty-state');
   if (empty) empty.remove();
 
-  // Add user bubble
   appendBubble('user', q);
   document.getElementById('clear-history-btn').style.display = 'inline-block';
 
-  // Show thinking
   const thinkId = 'think-' + Date.now();
   appendThinking(thinkId);
 
-  // Disable send
   document.getElementById('send-btn').disabled = true;
 
-  // Build message — include job context on first message
   let userMsg = q;
   if (jobContext && chatHistory.length === 0) {
     userMsg = `[Job context: ${jobContext.model || currentModel}` +
@@ -650,7 +624,6 @@ async function sendQuestion() {
       (jobContext.jobId ? `, WO: ${jobContext.jobId}` : '') + `]\n\n${q}`;
   }
 
-  // Add to history
   chatHistory.push({ role: 'user', content: userMsg });
 
   try {
@@ -661,7 +634,7 @@ async function sendQuestion() {
         model:      currentModel,
         mode:       currentMode,
         question:   userMsg,
-        history:    chatHistory.slice(-10), // last 10 turns for context
+        history:    chatHistory.slice(-10),
         jobContext: jobContext || null
       })
     });
@@ -669,14 +642,11 @@ async function sendQuestion() {
     const data = await resp.json();
     const answer = data.ok ? data.answer : ('Error: ' + (data.error || 'Unknown error'));
 
-    // Add to history
     chatHistory.push({ role: 'assistant', content: answer });
 
-    // Remove thinking, show answer
     document.getElementById(thinkId)?.remove();
     appendBubble('ai', answer);
 
-    // Speak response if checkbox is active
     if (data.ok && document.getElementById('voice-readout-toggle').checked) {
       speakAloudResponse(data.answer);
     }
@@ -684,7 +654,7 @@ async function sendQuestion() {
   } catch (err) {
     document.getElementById(thinkId)?.remove();
     appendBubble('ai', '⚠️ Connection error. Check your internet and try again.');
-    chatHistory.pop(); // remove failed user message
+    chatHistory.pop();
   }
 
   document.getElementById('send-btn').disabled = false;
@@ -738,7 +708,6 @@ function appendThinking(id) {
 }
 
 function formatAIText(text) {
-  // Convert markdown-ish formatting to HTML safely
   return text
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -782,8 +751,8 @@ function toggleBenchSpeech() {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
   };
 
-  speechRecognizer.onerror = () => {
-    toast('Speech recognition error');
+  speechRecognizer.onerror = (e) => {
+    toast(`Speech error: ${e.error || 'Blocked'}`);
     cleanupSpeech();
   };
 
@@ -812,7 +781,6 @@ function speakAloudResponse(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
 
-  // Strip Markdown markers
   const clean = text
     .replace(/\*\*/g, '')
     .replace(/`/g, '')
