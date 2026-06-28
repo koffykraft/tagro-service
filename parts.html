@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -9,122 +9,201 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TAGRO">
 <link rel="apple-touch-icon" href="icon-192.png">
-<title>Parts Master</title>
-<link rel="stylesheet" href="app.css">
+<title>Parts Master — TAGRO</title>
+<!-- Tailwind CSS for high-premium design framework integration -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- SheetJS library for parsing uploaded excel spreadsheet tables -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          tagro: {
+            DEFAULT: '#df6427',
+            light: '#fff1e9',
+            dark: '#c44d12',
+            border: '#fed8c2'
+          }
+        }
+      }
+    }
+  }
+</script>
 <style>
-.mono { font-family: 'Courier New', monospace; font-size: 12px; color: #555; }
-.sep  { color: #ccc; margin: 0 4px; }
-.muted { color: #999; font-size: 12px; }
-.suggest-row { display:block;width:100%;border:0;background:#fff;
-  text-align:left;padding:12px 14px;border-bottom:1px solid #f0f0f0;
-  cursor:pointer; }
-.suggest-row:hover { background:#fff8f4; }
-.suggest-main { font-size:15px;font-weight:700;margin-bottom:4px; }
-.suggest-sub  { font-size:12px;color:#666;display:flex;align-items:center;gap:4px;flex-wrap:wrap; }
-.suggest-empty { padding:14px;font-size:13px;color:#999;text-align:center; }
-.part-item { background:#fff;border:1px solid #e8e8e8;border-radius:12px;
-  padding:12px 14px;margin-bottom:10px; }
-.part-title { font-weight:900;font-size:15px;margin-bottom:4px; }
-.part-no    { font-family:'Courier New',monospace;font-size:11px;
-  color:#888;margin-bottom:6px; }
-.part-meta  { font-size:12px;color:#666;display:flex;gap:10px;flex-wrap:wrap; }
-.needs-update { border-left:3px solid #d97706; }
-.upload-zone { border:2px dashed #ddd;border-radius:14px;padding:28px 20px;
-  text-align:center;background:#fafafa;cursor:pointer;transition:.2s; }
-.upload-zone:hover { border-color:#df6427;background:#fff8f4; }
-.upload-zone input { display:none; }
-.stats-row { display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap; }
-.stat-chip { background:#f5f5f5;border-radius:99px;padding:6px 14px;
-  font-size:12px;font-weight:800;color:#555; }
-.stat-chip.orange { background:#fff1e9;color:#df6427; }
-.stat-chip.green  { background:#e8f5e9;color:#287a3e; }
-.stat-chip.amber  { background:#fff3d5;color:#d97706; }
-.filter-row { display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap; }
-.filter-btn { border:1px solid #ddd;background:#fff;border-radius:99px;
-  padding:7px 14px;font-size:12px;font-weight:800;color:#666;cursor:pointer; }
-.filter-btn.on { background:#df6427;border-color:#df6427;color:#fff; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f9fafb;
+}
+/* Custom CSS extensions for scrolling and smooth styling transitions */
+.custom-scroll::-webkit-scrollbar {
+  height: 5px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 99px;
+}
 </style>
 </head>
-<body>
-<div class="wrap">
+<body class="text-slate-800 antialiased min-h-screen pb-24">
 
-  <!-- Upload card -->
-  <div class="card">
-    <div class="head">Parts Master</div>
-    <div class="body">
-      <div id="upload-stats" class="stats-row"></div>
-      <label class="upload-zone" id="upload-zone">
-        <input type="file" id="file-input" accept=".xlsx,.xls">
-        <div style="font-size:32px;margin-bottom:8px">📋</div>
-        <div style="font-weight:900;font-size:15px;margin-bottom:4px">Upload Parts Master Excel</div>
-        <div class="small">Download template → fill → upload here</div>
-        <div class="small" style="margin-top:8px;color:#df6427">TAGRO_Parts_Master_Template.xlsx</div>
-      </label>
-      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
-        <a class="btn primary" id="dl-template" href="#" onclick="downloadTemplate()">
-          ⬇ Download Template
-        </a>
-        <button class="btn" onclick="clearParts()">Clear All Parts</button>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+
+  <!-- Upload Spreadsheet & Master Actions Card -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6 transition-all duration-300">
+    <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
+      <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+        <span class="text-tagro text-xl">▰</span> Parts Master Database
+      </h2>
+      <div id="upload-stats" class="flex flex-wrap gap-2">
+        <!-- Loaded dynamically from LocalStorage KV -->
       </div>
+    </div>
+
+    <!-- Active Dropzone Container -->
+    <div 
+      id="drop-zone"
+      class="border-2 border-dashed border-slate-200 hover:border-tagro hover:bg-tagro-light/30 rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 group relative"
+      onclick="document.getElementById('file-input').click()"
+    >
+      <input type="file" id="file-input" class="hidden" accept=".xlsx,.xls">
+      <div class="text-4xl mb-3 transform group-hover:scale-110 transition-transform duration-200">📋</div>
+      <p class="font-bold text-sm text-slate-800 mb-1">Click to browse or drag & drop parts spreadsheet here</p>
+      <p class="text-xs text-slate-500">Supports STIHL Prices_June 2026 and master catalog listings (.xlsx, .xls)</p>
+      <div class="mt-4 inline-flex items-center gap-1.5 text-xs text-tagro font-bold bg-tagro-light py-1 px-3 rounded-full border border-tagro-border">
+        Template Source: TAGRO_Parts_Master_Template.xlsx
+      </div>
+    </div>
+
+    <div class="mt-5 flex flex-wrap gap-3 items-center justify-between">
+      <button 
+        id="dl-template" 
+        class="inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold py-2.5 px-4 rounded-xl transition-all duration-150"
+        onclick="downloadTemplate()"
+      >
+        <span>⬇</span> Download Template Spreadsheet
+      </button>
+      <button 
+        class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 text-xs font-bold py-2.5 px-4 rounded-xl transition-all duration-150"
+        onclick="openClearConfirmModal()"
+      >
+        Clear All Local Parts
+      </button>
     </div>
   </div>
 
-  <!-- Search card -->
-  <div class="card">
-    <div class="head">Search Parts</div>
-    <div class="body">
-      <div class="field">
-        <input id="search-input" placeholder="Type name or part number — e.g. 36RSC or 36210001640"
-               oninput="liveSearch()" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <!-- Realtime Smart Search Card -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
+    <h3 class="text-sm font-extrabold text-slate-400 uppercase tracking-wider mb-3">Live Part Lookup</h3>
+    <div class="relative">
+      <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+        <svg class="h-5 width-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       </div>
-      <div id="search-results" class="suggest hide" style="margin-top:-6px"></div>
+      <input 
+        id="search-input" 
+        type="search"
+        class="w-full bg-slate-50 hover:bg-slate-50/50 focus:bg-white border border-slate-200 focus:border-tagro focus:ring-4 focus:ring-tagro-light outline-none rounded-xl py-3 pl-10 pr-4 text-sm font-medium transition-all duration-150"
+        placeholder="Type part name, number segment, or stihl-code (e.g., 'spark plug', '00004007000')"
+        oninput="liveSearch()" 
+        autocorrect="off" 
+        autocapitalize="off" 
+        spellcheck="false"
+      >
     </div>
+    <div id="search-results" class="hidden mt-3 max-h-60 overflow-y-auto divide-y divide-slate-100 border border-slate-100 rounded-xl"></div>
   </div>
 
-  <!-- Filter + list -->
-  <div class="filter-row" id="filter-row"></div>
-  <div id="parts-list"></div>
+  <!-- Filter Strip custom horizontal scroll -->
+  <div class="flex items-center gap-2 overflow-x-auto custom-scroll pb-2" id="filter-row">
+    <!-- Populated dynamically by JS -->
+  </div>
 
+  <!-- Parts Catalog List Grid -->
+  <div id="parts-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Cards render here -->
+  </div>
+
+</div>
+
+<!-- Custom Tailwind Confirmation Modal (Zero browser alert/confirm bypass) -->
+<div id="confirm-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-100 animate-in fade-in zoom-in duration-200">
+    <div class="text-center">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 text-red-600 text-xl mb-4">⚠️</div>
+      <h3 class="text-lg font-bold text-slate-900 mb-2">Clear Parts Database?</h3>
+      <p class="text-sm text-slate-500 mb-6">Are you sure you want to delete all parts cache from this device? Custom catalog sync configurations will be lost.</p>
+    </div>
+    <div class="flex gap-3">
+      <button 
+        class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold py-3 px-4 rounded-xl transition-all duration-150"
+        onclick="closeClearConfirmModal()"
+      >
+        Cancel
+      </button>
+      <button 
+        class="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-bold py-3 px-4 rounded-xl transition-all duration-150"
+        onclick="executeClearParts()"
+      >
+        Yes, Clear Cache
+      </button>
+    </div>
+  </div>
 </div>
 
 <script src="app.js"></script>
 <script src="parts-search.js"></script>
 <script>
-let s = requireLogin();
-initShell('links');
+const s = requireLogin();
+initShell('links'); // Map highlight to sidebar references
 
 let currentFilter = 'ALL';
 let currentParts  = [];
 
-// ── On load ───────────────────────────────────────────────
+// ── On Page Load ──────────────────────────────────────────
 function init() {
   renderStats();
   renderFilters();
   renderList(partsData().filter(p => p.active === 'Y').slice(0, 40));
+  setupDragAndDrop();
 }
 
-// ── Stats bar ─────────────────────────────────────────────
+// ── Render Stats Panel ────────────────────────────────────
 function renderStats() {
   const all    = partsData();
   const active = all.filter(p => p.active === 'Y').length;
   const upd    = all.filter(p => p.needsUpdate).length;
   const updated = localStorage.getItem('tagro_parts_updated');
 
-  document.getElementById('upload-stats').innerHTML = all.length === 0
-    ? '<span class="stat-chip">No parts loaded yet</span>'
-    : `<span class="stat-chip orange">${all.length} total</span>
-       <span class="stat-chip green">${active} active</span>
-       ${upd ? `<span class="stat-chip amber">${upd} need price update</span>` : ''}
-       ${updated ? `<span class="stat-chip">Updated ${new Date(updated).toLocaleDateString('en-IN')}</span>` : ''}`;
+  let statsHtml = '';
+  if (all.length === 0) {
+    statsHtml = '<span class="text-xs font-bold text-slate-400 bg-slate-100 py-1 px-3 rounded-full">No active catalog data loaded</span>';
+  } else {
+    statsHtml = `
+      <span class="text-xs font-bold text-tagro bg-tagro-light py-1 px-3 rounded-full border border-tagro-border">${all.length} Total</span>
+      <span class="text-xs font-bold text-emerald-700 bg-emerald-50 py-1 px-3 rounded-full border border-emerald-100">${active} Active</span>
+      ${upd ? `<span class="text-xs font-bold text-amber-700 bg-amber-50 py-1 px-3 rounded-full border border-amber-100">${upd} Requires Verification</span>` : ''}
+    `;
+  }
+  document.getElementById('upload-stats').innerHTML = statsHtml;
 }
 
-// ── Filters ───────────────────────────────────────────────
+// ── Render Dynamic Filters ────────────────────────────────
 function renderFilters() {
   const groups = ['ALL', 'Spare parts', 'Accessories', 'Machines', 'Needs update'];
-  document.getElementById('filter-row').innerHTML = groups.map(g =>
-    `<button class="filter-btn ${currentFilter===g?'on':''}" onclick="setFilter('${g}')">${g}</button>`
-  ).join('');
+  document.getElementById('filter-row').innerHTML = groups.map(g => {
+    const isOn = currentFilter === g;
+    return `
+      <button 
+        class="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-full border transition-all duration-150 ${
+          isOn 
+            ? 'bg-tagro border-tagro text-white shadow-sm shadow-tagro/25' 
+            : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+        }" 
+        onclick="setFilter('${g}')"
+      >${g}</button>
+    `;
+  }).join('');
 }
 
 function setFilter(g) {
@@ -137,100 +216,162 @@ function setFilter(g) {
   renderList(filtered.slice(0, 60));
 }
 
-// ── List ──────────────────────────────────────────────────
+// ── Render Card Listing Grid ──────────────────────────────
 function renderList(parts) {
   currentParts = parts;
+  const listContainer = document.getElementById('parts-list');
+  
   if (!parts.length) {
-    document.getElementById('parts-list').innerHTML =
-      '<div class="card"><div class="body small">No parts to show. Upload the parts master to get started.</div></div>';
+    listContainer.className = 'block w-full';
+    listContainer.innerHTML = `
+      <div class="bg-white border border-slate-100 rounded-2xl p-10 text-center">
+        <div class="text-3xl mb-2">📁</div>
+        <p class="font-bold text-slate-800">No matching parts inside locally verified database</p>
+        <p class="text-xs text-slate-500 mt-1">Upload the June 2026 Parts spreadsheet template above to integrate list values.</p>
+      </div>
+    `;
     return;
   }
 
-  document.getElementById('parts-list').innerHTML = parts.map((p, i) => `
-    <div class="part-item ${p.needsUpdate ? 'needs-update' : ''}">
-      <div class="part-title">${p.name}
-        ${p.active === 'N' ? '<span class="badge red">Inactive</span>' : ''}
-        ${p.needsUpdate ? '<span class="badge amber">Price TBD</span>' : ''}
+  listContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+  listContainer.innerHTML = parts.map((p) => {
+    const formattedPrice = p.price ? `₹${Number(p.price).toLocaleString('en-IN')}` : 'Price TBD';
+    const formattedMRP = p.mrp ? `₹${Number(p.mrp).toLocaleString('en-IN')}` : 'MRP TBD';
+    return `
+      <div class="bg-white border ${p.needsUpdate ? 'border-amber-300 bg-amber-50/10' : 'border-slate-100'} rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col justify-between">
+        <div>
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <h4 class="font-extrabold text-sm text-slate-900 leading-snug">${esc(p.name)}</h4>
+            <div class="flex flex-col gap-1 items-end shrink-0">
+              ${p.active === 'N' ? '<span class="text-[10px] font-bold text-red-700 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full">Inactive</span>' : ''}
+              ${p.needsUpdate ? '<span class="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">TBD</span>' : ''}
+            </div>
+          </div>
+          <div class="font-mono text-xs text-slate-400 mb-3">${esc(p.no || '—')}</div>
+        </div>
+        
+        <div class="border-t border-slate-50 pt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div class="flex items-baseline gap-1.5">
+            <span class="font-black text-tagro text-sm">${formattedPrice}</span>
+            <span class="text-slate-400">|</span>
+            <span class="text-slate-500 font-semibold">MRP: ${formattedMRP}</span>
+          </div>
+          <div class="flex items-center gap-1.5 text-slate-400">
+            ${p.gst ? `<span class="bg-slate-100 font-bold px-2 py-0.5 rounded text-[10px] text-slate-600">GST ${p.gst}%</span>` : ''}
+            ${p.unit ? `<span>${esc(p.unit)}</span>` : ''}
+          </div>
+        </div>
+        
+        ${p.stihlName && !p.needsUpdate ? `
+          <div class="bg-slate-50/50 border-t border-slate-100 pt-2.5 mt-2.5 text-[11px] text-slate-500">
+            <span class="font-bold text-slate-400">STIHL Spec:</span> ${esc(p.stihlName)}
+          </div>
+        ` : ''}
       </div>
-      <div class="part-no">${p.no || '—'}</div>
-      <div class="part-meta">
-        ${p.price ? `<span>₹${Number(p.price).toLocaleString('en-IN')}</span>` : '<span>Price TBD</span>'}
-        ${p.mrp ? `<span class="muted">MRP ₹${Number(p.mrp).toLocaleString('en-IN')}</span>` : ''}
-        ${p.gst ? `<span>GST ${p.gst}%</span>` : ''}
-        ${p.unit ? `<span>${p.unit}</span>` : ''}
-        ${p.modelGroup ? `<span class="muted">${p.modelGroup}</span>` : ''}
-        ${p.group ? `<span class="muted">${p.group}</span>` : ''}
-      </div>
-      ${p.stihlName && !p.needsUpdate ? `<div class="small" style="margin-top:6px;color:#aaa">STIHL: ${p.stihlName}</div>` : ''}
-    </div>`
-  ).join('');
+    `;
+  }).join('');
 }
 
-// ── Live search ───────────────────────────────────────────
+// ── Live Search Engine Matching ───────────────────────────
 function liveSearch() {
   const q = document.getElementById('search-input').value.trim();
-  const res = document.getElementById('search-results');
-
   if (q.length < 2) {
-    res.classList.add('hide');
     renderList(partsData().filter(p => p.active === 'Y').slice(0, 40));
     return;
   }
 
-  const results = searchParts(q, 12);
+  // Matches robust normalised exact lookup indexes from parts-search.js
+  const results = searchParts(q, 16);
   renderList(results);
-  res.classList.add('hide'); // hide floating dropdown, show inline
 }
 
-// ── File upload ───────────────────────────────────────────
+// ── STREAMING_CHUNK: Configuring Excel file uploader... ──
+function setupDragAndDrop() {
+  const dropZone = document.getElementById('drop-zone');
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-tagro', 'bg-tagro-light/50');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-tagro', 'bg-tagro-light/50');
+    }, false);
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    if (files.length) {
+      handleIncomingExcel(files[0]);
+    }
+  });
+}
+
 document.getElementById('file-input').addEventListener('change', function(e) {
   const file = e.target.files[0];
-  if (!file) return;
+  if (file) handleIncomingExcel(file);
+  e.target.value = ''; // Reset standard handler
+});
 
+function handleIncomingExcel(file) {
   const reader = new FileReader();
   reader.onload = function(ev) {
     try {
       const wb = XLSX.read(ev.target.result, { type: 'binary' });
 
-      // Find the PARTS DATA sheet
+      // Identify corresponding parts spreadsheet arrays
       const sheetName = wb.SheetNames.find(n =>
         n.toUpperCase().includes('PARTS') || n.toUpperCase().includes('DATA')
       ) || wb.SheetNames[0];
 
       const ws = wb.Sheets[sheetName];
-      // startRow = 2 (header), read from row 3
       const rows = XLSX.utils.sheet_to_json(ws, {
         defval: '',
-        range: 1, // skip first title row, use row 2 as header
+        range: 1, // utilize second row as headers
       });
 
-      const count = importPartsFromExcel(rows);
-      toast(`${count} parts loaded`);
+      // UPGRADE: Integrate new prices seamlessly while safeguarding 2022 customizations!
+      const status = updatePricesFromExcel(rows);
+      toast(`Successfully Merged: ${status.updated} prices updated, ${status.appended} appended!`);
+      
       renderStats();
       renderFilters();
       renderList(partsData().filter(p => p.active === 'Y').slice(0, 40));
     } catch(err) {
-      toast('Error reading file: ' + err.message);
+      toast('Error decoding excel spreadsheet: ' + err.message);
     }
   };
   reader.readAsBinaryString(file);
-  e.target.value = ''; // reset so same file can be re-uploaded
-});
+}
 
-// ── Download template ─────────────────────────────────────
+// ── Download Template Pipeline ────────────────────────────
 function downloadTemplate() {
-  // Point to the template in your repo
   window.open('https://raw.githubusercontent.com/koffykraft/tagro-service/main/TAGRO_Parts_Master_Template.xlsx');
 }
 
-// ── Clear ─────────────────────────────────────────────────
-function clearParts() {
-  if (!confirm('Clear all parts data from this device?')) return;
+// ── Confirm Modal Execution (Strictly no alert/confirm alerts) ──
+function openClearConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('hidden');
+  document.getElementById('confirm-modal').classList.add('flex');
+}
+
+function closeClearConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('flex');
+  document.getElementById('confirm-modal').classList.add('hidden');
+}
+
+function executeClearParts() {
   localStorage.removeItem('tagro_parts_data');
   localStorage.removeItem('tagro_parts_updated');
+  closeClearConfirmModal();
   renderStats();
   renderList([]);
-  toast('Parts cleared');
+  toast('Verification database cleared.');
 }
 
 init();
