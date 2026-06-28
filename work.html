@@ -80,6 +80,69 @@
 .sms-icon { font-size:20px; }
 .sms-label { font-weight:800; font-size:14px; }
 .sms-sub { font-size:12px; color:#aaa; }
+/* ── Voice Helper ── */
+.voice-fab {
+  position:fixed; bottom:24px; right:20px; z-index:300;
+  width:58px; height:58px; border-radius:50%;
+  background:#df6427; border:none; cursor:pointer;
+  box-shadow:0 4px 16px rgba(223,100,39,.45);
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; transition:transform .15s, box-shadow .15s;
+}
+.voice-fab:active { transform:scale(.93); }
+.voice-fab.listening {
+  background:#ba3327;
+  animation:pulse-ring 1.2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow:0 0 0 0 rgba(186,51,39,.55); }
+  70%  { box-shadow:0 0 0 14px rgba(186,51,39,0); }
+  100% { box-shadow:0 0 0 0 rgba(186,51,39,0); }
+}
+.voice-overlay {
+  display:none; position:fixed; inset:0; z-index:400;
+  background:rgba(0,0,0,.55); align-items:flex-end; justify-content:center;
+}
+.voice-overlay.show { display:flex; }
+.voice-sheet {
+  background:#fff; border-radius:24px 24px 0 0;
+  width:100%; max-width:640px; padding:20px 20px 36px;
+  max-height:88vh; overflow-y:auto;
+}
+.voice-mode-row {
+  display:flex; gap:6px; margin-bottom:16px;
+  overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
+}
+.voice-mode-row::-webkit-scrollbar { display:none; }
+.vmode-btn {
+  flex:none; padding:7px 14px; border-radius:99px; border:1.5px solid #e8e8e8;
+  font-size:12px; font-weight:800; cursor:pointer; background:#fff; white-space:nowrap;
+}
+.vmode-btn.active { background:#df6427; color:#fff; border-color:#df6427; }
+.voice-transcript {
+  min-height:64px; background:#f7f7f7; border-radius:14px;
+  padding:14px; font-size:15px; line-height:1.55; color:#222; margin-bottom:12px;
+}
+.voice-transcript.empty { color:#bbb; font-style:italic; }
+.voice-listening-indicator {
+  display:none; align-items:center; gap:6px;
+  font-size:12px; font-weight:800; color:#ba3327; margin-bottom:8px;
+}
+.voice-listening-indicator.show { display:flex; }
+.vli-dot { width:8px; height:8px; border-radius:50%; background:#ba3327;
+  animation:vblink .7s ease-in-out infinite alternate; }
+@keyframes vblink { from{opacity:1} to{opacity:.2} }
+.voice-ai-result {
+  background:#fff8f4; border:1.5px solid #f0d8c8; border-radius:14px;
+  padding:14px; margin-bottom:12px; display:none;
+}
+.voice-ai-result.show { display:block; }
+.vai-label { font-size:11px; font-weight:800; color:#df6427; margin-bottom:6px; letter-spacing:.05em; }
+.vai-item { font-size:13px; margin:4px 0; line-height:1.5; }
+.vai-item strong { font-weight:800; }
+.voice-action-row { display:flex; gap:8px; flex-wrap:wrap; }
+.voice-action-row .btn { flex:1; min-width:0; }
+
 </style>
 </head>
 <body>
@@ -1181,8 +1244,393 @@ function formatTime(iso) {
          d.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
 }
 
+// ══════════════════════════════════════════════════════════
+// VOICE HELPER
+// ══════════════════════════════════════════════════════════
+const VOICE_HINTS = {
+  complaint:   'Describe the customer complaint and what you see on the machine.',
+  parts:       'Name the parts you are using or replacing — e.g. "piston ring, crank bearing, gasket".',
+  observation: 'Speak your finding — condition, measurements, test result.',
+  lookup:      'Say a part description — e.g. "MS 460 clutch drum" — and I will find the part number.',
+};
+
+const VOICE_APPLY_LABELS = {
+  complaint:   'Save as Complaint',
+  parts:       'Add to Estimate',
+  observation: 'Add to Timeline',
+  lookup:      'Search Parts',
+};
+
+let voiceMode      = 'complaint';
+let voiceRecognition = null;
+let voiceListening = false;
+let voiceTranscript = '';
+let voiceAiData    = null;
+
+function openVoiceHelper() {
+  document.getElementById('voice-overlay').classList.add('show');
+  setVoiceMode(voiceMode);
+}
+
+function closeVoiceHelper(e) {
+  if (e && e.target !== document.getElementById('voice-overlay')) return;
+  stopListening();
+  document.getElementById('voice-overlay').classList.remove('show');
+}
+
+function setVoiceMode(mode) {
+  voiceMode = mode;
+  document.querySelectorAll('.vmode-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('vmode-' + mode).classList.add('active');
+  document.getElementById('voice-hint').textContent = VOICE_HINTS[mode];
+  document.getElementById('voice-apply-btn').textContent = VOICE_APPLY_LABELS[mode];
+  resetVoicePanel();
+}
+
+function resetVoicePanel() {
+  voiceTranscript = '';
+  voiceAiData = null;
+  const t = document.getElementById('voice-transcript');
+  t.textContent = 'Tap the mic and speak…';
+  t.classList.add('empty');
+  document.getElementById('voice-ai-result').classList.remove('show');
+  document.getElementById('voice-actions').style.display = 'none';
+}
+
+// ── Speech Recognition ────────────────────────────────────
+function toggleListening() {
+  if (voiceListening) { stopListening(); return; }
+  startListening();
+}
+
+function startListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    toast('Speech not supported on this browser. Try Chrome.');
+    return;
+  }
+  if (voiceRecognition) voiceRecognition.abort();
+
+  voiceRecognition = new SR();
+  voiceRecognition.lang = 'en-IN';
+  voiceRecognition.continuous = true;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.maxAlternatives = 1;
+
+  voiceRecognition.onstart = () => {
+    voiceListening = true;
+    document.getElementById('voice-mic-btn').style.background = '#ba3327';
+    document.getElementById('voice-mic-label').textContent = 'TAP TO STOP';
+    document.getElementById('vli').classList.add('show');
+    document.getElementById('voice-fab').classList.add('listening');
+  };
+
+  voiceRecognition.onresult = (e) => {
+    let interim = '';
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    voiceTranscript += final;
+    const t = document.getElementById('voice-transcript');
+    t.textContent = (voiceTranscript + interim).trim() || 'Speak now…';
+    t.classList.remove('empty');
+  };
+
+  voiceRecognition.onerror = (e) => {
+    if (e.error !== 'no-speech') toast('Mic error: ' + e.error);
+    stopListening();
+  };
+
+  voiceRecognition.onend = () => {
+    voiceListening = false;
+    document.getElementById('voice-mic-btn').style.background = '#df6427';
+    document.getElementById('voice-mic-label').textContent = 'TAP TO SPEAK';
+    document.getElementById('vli').classList.remove('show');
+    document.getElementById('voice-fab').classList.remove('listening');
+    if (voiceTranscript.trim().length > 3) analyzeVoiceInput();
+  };
+
+  voiceRecognition.start();
+}
+
+function stopListening() {
+  if (voiceRecognition) voiceRecognition.stop();
+}
+
+// ── AI Analysis ───────────────────────────────────────────
+async function analyzeVoiceInput() {
+  const text = voiceTranscript.trim();
+  if (!text) return;
+
+  const resultBox = document.getElementById('voice-ai-result');
+  const content   = document.getElementById('vai-content');
+  resultBox.classList.add('show');
+  content.innerHTML = '<div style="color:#aaa;font-size:13px">Analysing…</div>';
+  document.getElementById('voice-actions').style.display = 'none';
+
+  const model    = job.machine?.model || '';
+  const branch   = job.branch || '';
+
+  const prompts = {
+    complaint: `You are a STIHL service advisor. A mechanic spoke this about a ${model} machine:
+"${text}"
+Return JSON with:
+- complaint: clean 1-sentence complaint summary
+- observations: array of specific technical findings (max 4, each under 8 words)
+- urgency: "urgent" | "normal" | "no_rush"
+- suggested_parts: array of part names likely needed (from speech, max 4)
+Only JSON, no other text.`,
+
+    parts: `A mechanic at a STIHL workshop said: "${text}"
+Machine model: ${model}
+Return JSON with:
+- parts: array of objects, each with: name (string), qty (integer, default 1), note (string or null)
+- search_terms: array of short strings to look up in parts database
+Only JSON, no other text.`,
+
+    observation: `A mechanic said: "${text}"
+Return JSON with:
+- note: clean professional 1-sentence observation for the job timeline
+- severity: "info" | "warning" | "critical"
+- action_needed: short string or null
+Only JSON, no other text.`,
+
+    lookup: `A mechanic wants to find a STIHL part. They said: "${text}"
+Machine model: ${model}
+Return JSON with:
+- search_query: best 2-4 word search string for the parts database
+- part_description: clear plain name of the part
+- likely_models: array of model names this part might fit
+Only JSON, no other text.`,
+  };
+
+  try {
+    const cfg = await getConfig();
+    const res = await fetch(cfg.apiBase + '/tech', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model,
+        branch,
+        query: text,
+        mode: 'voice_' + voiceMode,
+        prompt_override: prompts[voiceMode],
+      })
+    });
+
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const raw = await res.json();
+    // tech endpoint returns { reply } — parse JSON from reply text
+    let data;
+    try {
+      const cleaned = (raw.reply || '{}').replace(/```json|```/g, '').trim();
+      data = JSON.parse(cleaned);
+    } catch(e) {
+      data = { _raw: raw.reply };
+    }
+    voiceAiData = data;
+    renderVoiceResult(data);
+  } catch(err) {
+    content.innerHTML = `<div class="vai-item" style="color:#ba3327">Could not analyse — check connection.<br><small>${err.message}</small></div>`;
+    // Still allow manual apply
+    document.getElementById('voice-actions').style.display = 'flex';
+    document.getElementById('voice-apply-btn').textContent = 'Apply as Text';
+    voiceAiData = null;
+  }
+}
+
+function renderVoiceResult(data) {
+  const content = document.getElementById('vai-content');
+  let html = '';
+
+  if (voiceMode === 'complaint') {
+    if (data.complaint)
+      html += `<div class="vai-item"><strong>Complaint:</strong> ${esc(data.complaint)}</div>`;
+    if (data.observations?.length)
+      html += `<div class="vai-item"><strong>Findings:</strong> ${data.observations.map(o => esc(o)).join(' · ')}</div>`;
+    if (data.urgency && data.urgency !== 'normal')
+      html += `<div class="vai-item"><strong>Urgency:</strong> ${esc(data.urgency)}</div>`;
+    if (data.suggested_parts?.length)
+      html += `<div class="vai-item" style="color:#888"><strong>Likely parts:</strong> ${data.suggested_parts.map(p => esc(p)).join(', ')}</div>`;
+  }
+  else if (voiceMode === 'parts') {
+    if (data.parts?.length) {
+      html += data.parts.map(p =>
+        `<div class="vai-item">• <strong>${esc(p.name)}</strong> × ${p.qty || 1}${p.note ? ' <span style="color:#aaa">— '+esc(p.note)+'</span>' : ''}</div>`
+      ).join('');
+    }
+    if (data.search_terms?.length)
+      html += `<div class="vai-item" style="color:#888;margin-top:6px">Will search: ${data.search_terms.map(t => esc(t)).join(', ')}</div>`;
+  }
+  else if (voiceMode === 'observation') {
+    if (data.note)
+      html += `<div class="vai-item"><strong>Note:</strong> ${esc(data.note)}</div>`;
+    if (data.action_needed)
+      html += `<div class="vai-item" style="color:#d97706"><strong>Action:</strong> ${esc(data.action_needed)}</div>`;
+  }
+  else if (voiceMode === 'lookup') {
+    if (data.part_description)
+      html += `<div class="vai-item"><strong>Part:</strong> ${esc(data.part_description)}</div>`;
+    if (data.search_query)
+      html += `<div class="vai-item" style="color:#888">Search query: "${esc(data.search_query)}"</div>`;
+  }
+
+  if (!html) html = `<div class="vai-item" style="color:#aaa">Transcript: "${esc(voiceTranscript)}"</div>`;
+  content.innerHTML = html;
+  document.getElementById('voice-actions').style.display = 'flex';
+}
+
+// ── Apply voice result ────────────────────────────────────
+function voiceApply() {
+  const data = voiceAiData;
+  const text = voiceTranscript.trim();
+
+  if (voiceMode === 'complaint') {
+    const complaint = data?.complaint || text;
+    job.complaint = complaint;
+    if (data?.urgency) job.urgency = data.urgency;
+    addTimeline('inspection', 'Complaint recorded: ' + complaint);
+    if (data?.observations?.length)
+      data.observations.forEach(o => addTimeline('note', o));
+    saveJob();
+    renderHeader();
+    renderTimeline();
+    toast('Complaint saved');
+    // Switch to timeline tab to show result
+    document.querySelector('.tab-btn').click();
+    closeVoiceHelper({target: document.getElementById('voice-overlay')});
+  }
+
+  else if (voiceMode === 'parts') {
+    const parts = data?.parts || [];
+    if (parts.length) {
+      // Search and add each part
+      let added = 0;
+      parts.forEach(p => {
+        const results = typeof searchParts === 'function'
+          ? searchParts(p.name, 8)
+          : [];
+        if (results.length) {
+          const best = results[0];
+          if (!job.estimate) job.estimate = { lines: [] };
+          const existing = job.estimate.lines.find(l => l.no === (best.no || best.id));
+          if (existing) {
+            existing.qty = (existing.qty || 1) + (p.qty || 1);
+          } else {
+            job.estimate.lines.push({
+              type:'part', id:best.no||best.id, no:best.no||best.id,
+              name:best.name, qty:p.qty||1,
+              unitPrice:best.price||0, price:(best.price||0)*(p.qty||1),
+            });
+          }
+          added++;
+        }
+      });
+      addTimeline('estimate', `Voice: ${added} part(s) added`);
+      saveJob();
+      renderEstimate();
+      // Switch to estimate tab
+      document.querySelectorAll('.tab-btn')[1].click();
+      toast(added + ' part(s) added to estimate');
+    } else {
+      // Fallback — put search terms into the parts search box
+      const q = data?.search_terms?.[0] || text;
+      document.getElementById('parts-search').value = q;
+      document.querySelectorAll('.tab-btn')[1].click();
+      searchPartsLive();
+      toast('Search pre-filled — tap a result to add');
+    }
+    closeVoiceHelper({target: document.getElementById('voice-overlay')});
+  }
+
+  else if (voiceMode === 'observation') {
+    const note = data?.note || text;
+    addTimeline('note', note);
+    saveJob();
+    renderTimeline();
+    document.querySelector('.tab-btn').click();
+    toast('Observation added to timeline');
+    closeVoiceHelper({target: document.getElementById('voice-overlay')});
+  }
+
+  else if (voiceMode === 'lookup') {
+    const q = data?.search_query || text;
+    document.getElementById('parts-search').value = q;
+    document.querySelectorAll('.tab-btn')[1].click();
+    searchPartsLive();
+    toast('Searching: ' + q);
+    closeVoiceHelper({target: document.getElementById('voice-overlay')});
+  }
+}
+
+function voiceDiscard() {
+  resetVoicePanel();
+}
+// ══════════════════════════════════════════════════════════
+
 loadJob();
 </script>
+<!-- ── Voice Helper FAB ── -->
+<button class="voice-fab" id="voice-fab" onclick="openVoiceHelper()" title="Voice Helper">🎙️</button>
+
+<!-- ── Voice Helper Sheet ── -->
+<div class="voice-overlay" id="voice-overlay" onclick="closeVoiceHelper(event)">
+  <div class="voice-sheet" onclick="event.stopPropagation()">
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-size:17px;font-weight:900">🎙️ Voice Helper</div>
+      <button onclick="closeVoiceHelper()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#aaa">×</button>
+    </div>
+
+    <!-- Mode selector -->
+    <div class="voice-mode-row">
+      <button class="vmode-btn active" id="vmode-complaint"  onclick="setVoiceMode('complaint')">🔍 Complaint</button>
+      <button class="vmode-btn"        id="vmode-parts"      onclick="setVoiceMode('parts')">🔩 Parts Used</button>
+      <button class="vmode-btn"        id="vmode-observation"onclick="setVoiceMode('observation')">📌 Observation</button>
+      <button class="vmode-btn"        id="vmode-lookup"     onclick="setVoiceMode('lookup')">🔎 Part Lookup</button>
+    </div>
+
+    <!-- Mode hint -->
+    <div id="voice-hint" style="font-size:12px;color:#aaa;margin-bottom:10px">
+      Describe the customer's complaint and what you observed on the machine.
+    </div>
+
+    <!-- Listening indicator -->
+    <div class="voice-listening-indicator" id="vli">
+      <div class="vli-dot"></div>
+      <span>Listening…</span>
+    </div>
+
+    <!-- Live transcript -->
+    <div class="voice-transcript empty" id="voice-transcript">Tap the mic and speak…</div>
+
+    <!-- Mic button -->
+    <div style="text-align:center;margin-bottom:14px">
+      <button id="voice-mic-btn" onclick="toggleListening()"
+        style="width:64px;height:64px;border-radius:50%;border:none;background:#df6427;
+               color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 14px rgba(223,100,39,.4)">
+        🎙️
+      </button>
+      <div id="voice-mic-label" style="font-size:11px;color:#aaa;margin-top:6px;font-weight:800">TAP TO SPEAK</div>
+    </div>
+
+    <!-- AI result panel -->
+    <div class="voice-ai-result" id="voice-ai-result">
+      <div class="vai-label">AI ANALYSIS</div>
+      <div id="vai-content"></div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="voice-action-row" id="voice-actions" style="display:none">
+      <button class="btn" onclick="voiceDiscard()">Discard</button>
+      <button class="btn primary" id="voice-apply-btn" onclick="voiceApply()">Apply</button>
+    </div>
+
+  </div>
+</div>
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
