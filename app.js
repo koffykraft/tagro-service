@@ -68,10 +68,6 @@ function esc(s) {
     .replace(/'/g, '&#39;');
 }
 
-// ── SESSION ───────────────────────────────────────────────
-
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-
 function session() { return jget('tagro_session', null) }
 function setSession(s) { jset('tagro_session', { ...s, loginAt: s.loginAt || new Date().toISOString() }) }
 function logout() { localStorage.removeItem('tagro_session'); location.href = 'login.html' }
@@ -81,7 +77,7 @@ function requireLogin() {
   if (!s) { location.href = 'login.html'; return null; }
   if (!s.demo && s.loginAt) {
     const age = Date.now() - new Date(s.loginAt).getTime();
-    if (age > SESSION_TTL_MS) {
+    if (age > 12 * 60 * 60 * 1000) {
       localStorage.removeItem('tagro_session');
       location.href = 'login.html?expired=1';
       return null;
@@ -560,6 +556,7 @@ function initShell(active) {
     ['bench.html','Bench','bench'],
     ['tracker.html','Jobs','jobs'],
     ['tech.html','Tech','tech'],
+    ['catalog.html','Catalog','catalog'], // FULLY WIRED: catalog.html tab link added to active tabs shell!
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];
