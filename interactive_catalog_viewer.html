@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Interactive Catalog — TAGRO</title>
+<!-- Tailwind CSS for modern premium dashboard styling -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          tagro: {
+            DEFAULT: '#df6427',
+            light: '#fff1e9',
+            dark: '#c44d12',
+            border: '#fed8c2'
+          }
+        }
+      }
+    }
+  }
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+}
+/* Premium scrollbar behavior */
+.custom-scroll::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+/* Smooth Transitions */
+.zoom-transition {
+  transition: transform 0.15s ease-out;
+}
+</style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col pb-16">
+
+<div class="bg-white border-b border-slate-200 sticky top-0 z-50 px-4 py-3 shadow-sm">
+  <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <!-- Back to Active Job indicator (shown dynamically if url has job context) -->
+      <button onclick="goBackToActiveJob()" id="editor-back-btn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold px-3 py-2 rounded-xl transition-all duration-150 flex items-center gap-1">
+        ← Exit
+      </button>
+      <span class="text-tagro text-2xl font-black tracking-wider flex items-center gap-1.5">
+        <span class="text-xl">🛠️</span> TAGRO
+      </span>
+      <span class="h-5 w-[1.5px] bg-slate-200"></span>
+      <h1 class="text-sm font-extrabold text-slate-500 uppercase tracking-widest">Interactive Bench Catalog</h1>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Active Job context header -->
+      <span id="active-wo-header" class="text-xs font-bold text-slate-400 bg-slate-50 py-1 px-3.5 rounded-full border">Context: Independent Browser</span>
+      <span class="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Connected to R2 Storage
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Main Workbench Grid Container -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 w-full">
+
+  <!-- Left Column: Schematic, Visual Hotspots, and Navigation -->
+  <div class="lg:col-span-7 flex flex-col gap-4">
+    <!-- Model & Assembly Selector Panel -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
+      <div class="flex flex-wrap gap-4 items-center justify-between">
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Equipment Model</label>
+          <select id="model-select" onchange="changeModel(this.value)" class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-tagro cursor-pointer">
+            <option value="MS250">STIHL MS 250 (Chainsaw)</option>
+            <option value="MS461">STIHL MS 461 (Chainsaw)</option>
+            <option value="FS120">STIHL FS 120 (Brushcutter)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-wider block mb-1">Assembly Section</label>
+          <select id="section-select" onchange="changeSection(this.value)" class="bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:border-tagro cursor-pointer">
+            <option value="Engine">Engine (Page 2)</option>
+            <option value="Housing">Motor housing (Page 4)</option>
+            <option value="Pump">Oil pump (Page 6)</option>
+            <option value="Clutch">Clutch (Page 8)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schematic View Box with R2 Image Integration -->
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col relative min-h-[420px] lg:h-[580px]">
+      <div class="bg-slate-50 border-b border-slate-100 px-4 py-2.5 flex items-center justify-between">
+        <span class="text-xs font-extrabold text-slate-500 uppercase flex items-center gap-1.5">
+          <span>🎨</span> R2 Schematic Diagram — <span id="schematic-page-label">Page 2</span>
+        </span>
+        <div class="flex items-center gap-1.5">
+          <button onclick="zoomSchematic(0.1)" class="bg-white hover:bg-slate-100 border border-slate-200 p-1.5 rounded-lg text-xs font-black" title="Zoom In">+</button>
+          <button onclick="zoomSchematic(-0.1)" class="bg-white hover:bg-slate-100 border border-slate-200 p-1.5 rounded-lg text-xs font-black" title="Zoom Out">-</button>
+          <button onclick="resetZoom()" class="bg-white hover:bg-slate-100 border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">Reset</button>
+        </div>
+      </div>
+
+      <!-- Canvas/Container holding Schematic diagram pulled from R2 public bucket -->
+      <div class="flex-1 overflow-hidden relative bg-slate-100 cursor-grab active:cursor-grabbing flex items-center justify-center select-none" id="schematic-drag-container">
+        <!-- Interactive schematic representation mimicking stihl/{model_key}/pages/p{page_no}.png -->
+        <div id="schematic-viewport" class="zoom-transition origin-center relative">
+          <!-- Fallback diagram representation styled to replicate STIHL manual layout -->
+          <img id="schematic-img" src="https://placehold.co/600x600/f1f5f9/df6427?text=STIHL+MS250+Engine+Schematic" alt="Schematic Diagram" class="max-h-[500px] w-auto pointer-events-none rounded-lg shadow-sm border border-slate-200">
+          
+          <!-- Highlight overlays acting as parts hotspot bubbles -->
+          <div id="hotspots-container" class="absolute inset-0 pointer-events-none">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+      <div class="p-3 bg-slate-50/50 border-t border-slate-100 text-[10px] text-slate-400 flex items-center justify-between">
+        <span>☝️ Drag/pinch to pan or pinch to zoom. Click part numbers to match list.</span>
+        <span class="font-mono text-[9px] bg-slate-100 py-0.5 px-2 rounded-full border" id="r2-path-display">Path: stihl/MS250/pages/p2.png</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: Interactive Parts Index Table -->
+  <div class="lg:col-span-5 flex flex-col gap-4">
+    <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col min-h-[500px] lg:h-[684px] overflow-hidden">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div>
+          <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Structural Parts Index</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5" id="source-file-label">Source: Stihl MS_Parts 2024.xlsx</p>
+        </div>
+        <span id="section-part-count" class="text-[10px] font-black text-tagro bg-tagro-light border border-tagro-border py-0.5 px-2.5 rounded-full">0 parts loaded</span>
+      </div>
+
+      <!-- Quick Section Parts Lookup Search Bar -->
+      <div class="mb-3 relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <input 
+          id="parts-search-field"
+          type="search" 
+          oninput="filterSectionParts(this.value)"
+          class="w-full bg-slate-50 hover:bg-slate-50/50 focus:bg-white border border-slate-200 focus:border-tagro outline-none rounded-xl py-2 pl-9 pr-3 text-xs font-semibold transition-all duration-150"
+          placeholder="Filter parts in this section..."
+        >
+      </div>
+
+      <!-- Parts Listing Container -->
+      <div class="flex-1 overflow-y-auto custom-scroll pr-1 divide-y divide-slate-100" id="parts-list-tbody">
+        <!-- Rows populated dynamically -->
+      </div>
+
+      <!-- Demo Integration Actions Block -->
+      <div class="border-t border-slate-100 pt-4 mt-4 space-y-3 shrink-0">
+        <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center justify-between">
+          <div>
+            <span class="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Estimated Price Specs</span>
+            <span class="text-xs font-bold text-slate-700">Combined Bench Estimate</span>
+          </div>
+          <div class="text-right">
+            <span class="text-[10px] text-slate-400 block line-through">MRP: ₹2,100</span>
+            <span class="text-xs font-black text-tagro" id="estimation-draft-total">₹0</span>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="addSelectedToEstimate()" class="bg-tagro hover:bg-tagro-dark text-white text-xs font-black py-3 rounded-xl transition-all duration-150 flex items-center justify-center gap-1.5 shadow-sm shadow-tagro/25">
+            <span>⚙️</span> Add to Estimate
+          </button>
+          <button onclick="raisePurchaseOrder()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-black py-3 rounded-xl transition-all duration-150">
+            ✉ Raise PO Line
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Context explanation helper footer -->
+<div class="max-w-7xl mx-auto px-4 sm:px-6 pb-12">
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+    <h3 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">How to link R2 Schematics with database records</h3>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-500">
+      <div class="space-y-1.5">
+        <strong class="font-extrabold text-slate-700 block">1. The Image Layer (R2 Public Bucket)</strong>
+        <p class="leading-relaxed">All schematic diagram page images are converted to binary PNG fragments and saved directly into the R2 bucket. Your app accesses them directly at:</p>
+        <code class="block bg-slate-50 p-2 rounded-lg text-[10px] font-mono border">https://manuals.tagro.in/stihl/{model_key}/pages/p{page_no}.png</code>
+      </div>
+      <div class="space-y-1.5">
+        <strong class="font-extrabold text-slate-700 block">2. The Text Mapping Layer (Cloudflare KV)</strong>
+        <p class="leading-relaxed">The python uploader parses spreadsheet columns to match parts metadata to specific positions. When the app loads, it queries KV to overlay interactive bounding boxes over R2 image coordinates.</p>
+      </div>
+      <div class="space-y-1.5">
+        <strong class="font-extrabold text-slate-700 block">3. Live India June 2026 Prices (Cloudflare KV)</strong>
+        <p class="leading-relaxed">Part numbers are automatically normalized to remove formatting discrepancies and search-matched against the master price index in KV to append the most current, verified Indian Rupee price matrix.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script src="parts-search.js"></script>
+<script>
+// Prevent compile crashes. Initialize empty default lists.
+if (!localStorage.getItem('tagro_parts_data')) localStorage.setItem('tagro_parts_data', JSON.stringify([]));
+
+// ── STREAMING_CHUNK: Loading interactive mock database parsed from MS 250.xlsx... ──
+const MOCK_CATALOG = {
+  MS250: {
+    sourceFile: "Stihl MS_Parts 2024.xlsx",
+    sections: {
+      Engine: {
+        pageNo: 2,
+        r2Path: "stihl/MS250/pages/p2.png",
+        parts: [
+          { ref: "1", no: "1123 020 1209", name: "Cylinder with piston Ø 42.5 mm", qty: 1, price: 1850, mrp: 2450, gst: 18, hsn: "8467", coordinate: { x: 55, y: 250 } },
+          { ref: "4", no: "1123 030 2016", name: "Piston 42.5 mm", qty: 1, price: 680, mrp: 950, gst: 18, hsn: "8467", coordinate: { x: 380, y: 520 } },
+          { ref: "5", no: "1123 034 3006", name: "Piston ring Ø 42.5x1.2 mm", qty: 2, price: 140, mrp: 220, gst: 18, hsn: "8467", coordinate: { x: 380, y: 380 } },
+          { ref: "6", no: "4119 034 1500", name: "Piston pin 10x6.5x28", qty: 1, price: 85, mrp: 120, gst: 18, hsn: "8467", coordinate: { x: 550, y: 380 } },
+          { ref: "8", no: "0000 988 5211", name: "Connector", qty: 1, price: 110, mrp: 160, gst: 18, hsn: "8467", coordinate: { x: 480, y: 300 } },
+          { ref: "10", no: "1123 030 0408", name: "Crankshaft", qty: 1, price: 1120, mrp: 1560, gst: 18, hsn: "8467", coordinate: { x: 550, y: 700 } },
+          { ref: "11", no: "9503 003 0340", name: "Grooved ball bearing 6202", qty: 2, price: 180, mrp: 260, gst: 18, hsn: "8467", coordinate: { x: 210, y: 680 } },
+          { ref: "12", no: "9638 003 1581", name: "Oil seal 15x25x5", qty: 2, price: 120, mrp: 190, gst: 18, hsn: "8467", coordinate: { x: 120, y: 650 } }
+        ]
+      },
+      Housing: {
+        pageNo: 4,
+        r2Path: "stihl/MS250/pages/p4.png",
+        parts: [
+          { ref: "1", no: "1123 020 3033", name: "Engine housing", qty: 1, price: 2950, mrp: 4100, gst: 18, hsn: "8467", coordinate: { x: 670, y: 410 } },
+          { ref: "3", no: "1128 640 9100", name: "Valve", qty: 1, price: 85, mrp: 130, gst: 18, hsn: "8467", coordinate: { x: 710, y: 550 } },
+          { ref: "8", no: "1123 790 9900", name: "Annular buffer", qty: 3, price: 180, mrp: 280, gst: 18, hsn: "8467", coordinate: { x: 360, y: 380 } },
+          { ref: "18", no: "0000 350 0537", name: "Oil filler cap", qty: 1, price: 140, mrp: 210, gst: 18, hsn: "8467", coordinate: { x: 200, y: 130 } },
+          { ref: "20", no: "0000 350 0533", name: "Filler cap", qty: 1, price: 145, mrp: 220, gst: 18, hsn: "8467", coordinate: { x: 100, y: 410 } },
+          { ref: "23", no: "0000 350 3500", name: "Pickup body", qty: 1, price: 240, mrp: 350, gst: 18, hsn: "8467", coordinate: { x: 240, y: 900 } }
+        ]
+      },
+      Pump: {
+        pageNo: 6,
+        r2Path: "stihl/MS250/pages/p6.png",
+        parts: [
+          { ref: "1", no: "1123 647 9400", name: "Hose", qty: 1, price: 110, mrp: 160, gst: 18, hsn: "8467", coordinate: { x: 710, y: 730 } },
+          { ref: "2", no: "1123 640 3800", name: "Pickup body", qty: 1, price: 240, mrp: 350, gst: 18, hsn: "8467", coordinate: { x: 590, y: 620 } },
+          { ref: "3", no: "1123 640 3200", name: "Oil pump 0.55", qty: 1, price: 480, mrp: 680, gst: 18, hsn: "8467", coordinate: { x: 800, y: 640 } }
+        ]
+      },
+      Clutch: {
+        pageNo: 8,
+        r2Path: "stihl/MS250/pages/p8.png",
+        parts: [
+          { ref: "1", no: "1123 640 2000", name: "MS250 Clutch Drum", qty: 1, price: 480, mrp: 680, gst: 18, hsn: "8467", coordinate: { x: 700, y: 460 } },
+          { ref: "5", no: "1121 162 1001", name: "Cover washer", qty: 1, price: 45, mrp: 65, gst: 18, hsn: "8467", coordinate: { x: 440, y: 310 } },
+          { ref: "2", no: "1129 162 0800", name: "Clutch shoe", qty: 3, price: 160, mrp: 240, gst: 18, hsn: "8467", coordinate: { x: 590, y: 410 } }
+        ]
+      }
+    }
+  },
+  MS461: {
+    sourceFile: "Stihl MS_Parts 2024.xlsx",
+    sections: {
+      Engine: {
+        pageNo: 2,
+        r2Path: "stihl/MS461/pages/p2.png",
+        parts: [
+          { ref: "1", no: "1128 020 1221", name: "Cylinder with piston Ø 52 mm", qty: 1, price: 5400, mrp: 7800, gst: 18, hsn: "8467", coordinate: { x: 50, y: 250 } },
+          { ref: "10", no: "1128 030 0406", name: "Crankshaft", qty: 1, price: 3450, mrp: 4950, gst: 18, hsn: "8467", coordinate: { x: 600, y: 680 } }
+        ]
+      }
+    }
+  }
+};
+
+// ── State Variables ───────────────────────────────────────
+let activeModel = "MS250";
+let activeSection = "Engine";
+let activeJobId = "";
+let zoomScale = 1.0;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let selectedParts = [];
+
+// ── STREAMING_CHUNK: Initializing view controllers & bindings... ──
+window.onload = function() {
+  parseUrlContext();
+  setupZoomPanDrag();
+};
+
+function parseUrlContext() {
+  const params = new URLSearchParams(location.search);
+  activeJobId = params.get('job') || '';
+  const modelParam = params.get('model') || '';
+
+  if (activeJobId) {
+    document.getElementById('active-wo-header').textContent = `Active Job: ${activeJobId}`;
+  } else {
+    document.getElementById('editor-back-btn').style.display = 'none';
+  }
+
+  // Pre-select correct model if supplied from URL
+  if (modelParam && MOCK_CATALOG[modelParam.toUpperCase()]) {
+    activeModel = modelParam.toUpperCase();
+    document.getElementById('model-select').value = activeModel;
+  }
+
+  loadSection();
+}
+
+function goBackToActiveJob() {
+  if (activeJobId) {
+    location.href = `bench.html?job=${encodeURIComponent(activeJobId)}`;
+  } else {
+    location.href = `tracker.html`;
+  }
+}
+
+function changeModel(val) {
+  activeModel = val;
+  const sectionSelect = document.getElementById('section-select');
+  const availableSections = Object.keys(MOCK_CATALOG[val].sections);
+  
+  sectionSelect.innerHTML = availableSections.map(s => {
+    const page = MOCK_CATALOG[val].sections[s].pageNo;
+    return `<option value="${s}">${s} (Page ${page})</option>`;
+  }).join('');
+  
+  activeSection = availableSections[0];
+  loadSection();
+}
+
+function changeSection(val) {
+  activeSection = val;
+  loadSection();
+}
+
+// ── STREAMING_CHUNK: Fetching structures, dynamic June 2026 pricing integration, & R2 loading... ──
+function loadSection() {
+  const modelData = MOCK_CATALOG[activeModel];
+  if (!modelData) return;
+  
+  const sectionData = modelData.sections[activeSection];
+  if (!sectionData) return;
+  
+  // Set labels
+  document.getElementById('source-file-label').textContent = `Source: ${modelData.sourceFile}`;
+  document.getElementById('schematic-page-label').textContent = `Page ${sectionData.pageNo}`;
+  document.getElementById('r2-path-display').textContent = `Path: ${sectionData.r2Path}`;
+  document.getElementById('section-part-count').textContent = `${sectionData.parts.length} parts loaded`;
+  
+  // Dynamic schematic placeholder mapping
+  const imgEl = document.getElementById('schematic-img');
+  imgEl.src = `https://placehold.co/600x600/f1f5f9/df6427?text=${activeModel}+${activeSection}+Schematic+Page+${sectionData.pageNo}`;
+  
+  // UPGRADE: Intercept schematic structures and override on-the-fly with June 2026 verified prices!
+  const masterParts = typeof partsData === 'function' ? partsData() : [];
+  const indexMap = {};
+  masterParts.forEach(mp => {
+    if (mp.no) indexMap[norm(mp.no, false)] = mp;
+  });
+
+  const processedParts = sectionData.parts.map(p => {
+    const normNo = typeof norm === 'function' ? norm(p.no, false) : p.no.replace(/[^A-Za-z0-9]/g, '').toLowerCase();
+    const liveMatch = indexMap[normNo];
+    if (liveMatch) {
+      return {
+        ...p,
+        price: liveMatch.price || p.price,
+        mrp: liveMatch.mrp || p.mrp,
+        name: liveMatch.name || p.name, // Keep custom description if updated in sheets
+        gst: liveMatch.gst || p.gst,
+        hsn: liveMatch.hsn || p.hsn
+      };
+    }
+    return p;
+  });
+
+  resetZoom();
+  renderPartsTable(processedParts);
+  renderSchematicHotspots(processedParts);
+}
+
+function renderPartsTable(parts) {
+  const tbody = document.getElementById('parts-list-tbody');
+  
+  if (!parts.length) {
+    tbody.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 italic">No parts mapped to this diagram section</div>`;
+    return;
+  }
+  
+  tbody.innerHTML = parts.map((p, idx) => {
+    const isSelected = selectedParts.some(sp => sp.no === p.no);
+    return `
+      <div 
+        id="parts-row-${idx}" 
+        onclick="togglePartSelection(${idx}, ${JSON.stringify(p).replace(/"/g, '&quot;')})"
+        class="py-3 px-2 flex items-start justify-between cursor-pointer rounded-xl transition-all duration-150 ${isSelected ? 'bg-tagro-light/60 border border-tagro-border' : 'hover:bg-slate-50 border border-transparent'}"
+      >
+        <div class="flex items-start gap-2.5">
+          <span class="inline-flex items-center justify-center h-5 w-5 rounded-full bg-slate-100 text-[10px] font-black text-slate-500 shrink-0 border mt-0.5" id="ref-bubble-${p.ref}">
+            ${p.ref}
+          </span>
+          <div>
+            <strong class="text-xs font-bold text-slate-800 block">${esc(p.name)}</strong>
+            <span class="font-mono text-[10px] text-slate-400">${p.no} (Qty: ${p.qty})</span>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <span class="text-xs font-extrabold text-tagro block">₹${p.price.toLocaleString('en-IN')}</span>
+          <span class="text-[9px] text-slate-400 font-bold block">MRP ₹${p.mrp.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ── STREAMING_CHUNK: Plotting interactive manual coordinate hotspot overlays... ──
+function renderSchematicHotspots(parts) {
+  const container = document.getElementById('hotspots-container');
+  container.innerHTML = "";
+  
+  parts.forEach((p, idx) => {
+    if (!p.coordinate) return;
+    
+    const div = document.createElement('div');
+    div.style.left = `${p.coordinate.x / 10}%`;
+    div.style.top = `${p.coordinate.y / 10}%`;
+    div.className = "absolute pointer-events-auto cursor-pointer transform -translate-x-1/2 -translate-y-1/2";
+    
+    const isSelected = selectedParts.some(sp => sp.no === p.no);
+    
+    div.innerHTML = `
+      <button 
+        onclick="event.stopPropagation(); togglePartSelection(${idx}, ${JSON.stringify(p).replace(/"/g, '&quot;')})"
+        class="h-6 w-6 rounded-full border-2 ${isSelected ? 'bg-tagro border-white text-white shadow-md shadow-tagro/50 scale-110' : 'bg-white border-tagro text-tagro hover:bg-tagro hover:text-white'} text-[10px] font-black transition-all duration-150 flex items-center justify-center"
+      >
+        ${p.ref}
+      </button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ── STREAMING_CHUNK: Managing coordinate Selection Engine... ──
+function togglePartSelection(idx, partData) {
+  const existingIdx = selectedParts.findIndex(sp => sp.no === partData.no);
+  if (existingIdx >= 0) {
+    selectedParts.splice(existingIdx, 1);
+  } else {
+    selectedParts.push(partData);
+  }
+  
+  // Recalculate totals
+  const total = selectedParts.reduce((acc, p) => acc + p.price, 0);
+  document.getElementById('estimation-draft-total').textContent = `₹${total.toLocaleString('en-IN')}`;
+  
+  // Reload schematic context to update layout
+  const modelData = MOCK_CATALOG[activeModel];
+  const sectionData = modelData.sections[activeSection];
+  
+  // Rerender lists
+  loadSection();
+  
+  // Scroll to targeted parts row gracefully
+  const row = document.getElementById(`parts-row-${idx}`);
+  if (row) row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── STREAMING_CHUNK: Configuring Zoom, Pan & Drag Touch listeners... ──
+function setupZoomPanDrag() {
+  const dragContainer = document.getElementById('schematic-drag-container');
+  
+  dragContainer.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+  });
+  
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    updateViewportTransform();
+  });
+  
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+  });
+  
+  // Touch alternatives for mobile tablets (responsive design criteria compliance)
+  dragContainer.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      isDragging = true;
+      startX = e.touches[0].clientX - panX;
+      startY = e.touches[0].clientY - panY;
+    }
+  });
+  
+  dragContainer.addEventListener('touchmove', (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    panX = e.touches[0].clientX - startX;
+    panY = e.touches[0].clientY - startY;
+    updateViewportTransform();
+  });
+  
+  dragContainer.addEventListener('touchend', () => {
+    isDragging = false;
+  });
+}
+
+function zoomSchematic(amount) {
+  zoomScale = Math.max(0.5, Math.min(3.0, zoomScale + amount));
+  updateViewportTransform();
+}
+
+function resetZoom() {
+  zoomScale = 1.0;
+  panX = 0;
+  panY = 0;
+  updateViewportTransform();
+}
+
+function updateViewportTransform() {
+  const viewport = document.getElementById('schematic-viewport');
+  viewport.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomScale})`;
+}
+
+// ── STREAMING_CHUNK: Integrating with LocalStorage parts-search... ──
+function addSelectedToEstimate() {
+  if (selectedParts.length === 0) {
+    toast("No parts selected! Tap coordinate bubbles or table rows to select.");
+    return;
+  }
+  
+  // Link and insert directly into local localStorage estimation matrix
+  const jobs = jget('tagro_jobs', []);
+  const activeJob = jobs.find(j => (j.workOrder || j.id) === activeJobId) || jobs[0];
+
+  if (activeJob) {
+    if (!activeJob.estimate) activeJob.estimate = [];
+    
+    selectedParts.forEach(p => {
+      activeJob.estimate.push({
+        no: p.no,
+        name: p.name,
+        price: p.price,
+        qty: 1,
+        total: p.price
+      });
+    });
+    
+    localStorage.setItem('tagro_jobs', JSON.stringify(jobs));
+    toast(`Successfully appended ${selectedParts.length} parts to Work Order: ${activeJob.workOrder || activeJob.id}`);
+    
+    // Redirect back to bench with success status
+    setTimeout(() => {
+      goBackToActiveJob();
+    }, 1200);
+  } else {
+    toast(`Simulated: Saved ${selectedParts.length} parts locally to draft.`);
+  }
+  
+  selectedParts = [];
+  document.getElementById('estimation-draft-total').textContent = "₹0";
+  loadSection();
+}
+
+function raisePurchaseOrder() {
+  if (selectedParts.length === 0) {
+    toast("No parts selected to order.");
+    return;
+  }
+  
+  const currentPO = jget('tagro_po', []);
+  selectedParts.forEach(p => {
+    const line = partToPOLine({ no: p.no, name: p.name, price: p.price, gst: p.gst, hsn: p.hsn, needsUpdate: false }, p.qty, activeJobId || "WO-PO-MERGE", "KVR");
+    currentPO.push(line);
+  });
+  
+  localStorage.setItem('tagro_po', JSON.stringify(currentPO));
+  toast(`Purchase order lines generated for ${selectedParts.length} parts!`);
+  
+  selectedParts = [];
+  document.getElementById('estimation-draft-total').textContent = "₹0";
+  loadSection();
+}
+</script>
+</body>
+</html>
