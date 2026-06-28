@@ -58,8 +58,6 @@ function jget(k, d) { try { return JSON.parse(localStorage.getItem(k) || JSON.st
 function jset(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
 
 // ── XSS SANITIZER ─────────────────────────────────────────
-// Always use esc() when injecting user data into innerHTML
-
 function esc(s) {
   if (s == null) return '';
   return String(s)
@@ -81,7 +79,6 @@ function isDemo() { let s = session(); return s && s.demo }
 function requireLogin() {
   let s = session();
   if (!s) { location.href = 'login.html'; return null; }
-  // Check 12-hour expiry (demo sessions exempt)
   if (!s.demo && s.loginAt) {
     const age = Date.now() - new Date(s.loginAt).getTime();
     if (age > SESSION_TTL_MS) {
@@ -165,7 +162,6 @@ function wo(branch) {
 
 // ── API CALLS via Cloudflare Worker ──────────────────────
 
-// Send SMS via Worker (API key stays on server)
 async function sendSMS(type, data) {
   if (isDemo()) { toast('Demo: SMS would be sent to ' + data.phone); return; }
   try {
@@ -183,12 +179,10 @@ async function sendSMS(type, data) {
   }
 }
 
-// Sync jobs to Dropbox via Worker
 async function syncJobs(jobsArr) {
   if (isDemo()) return;
   let s = session();
   if (!s || !s.branch) return;
-  // Send only the last changed job — Worker does UPSERT by workOrder
   const job = jobsArr[jobsArr.length - 1];
   if (!job) return;
   try {
@@ -199,7 +193,6 @@ async function syncJobs(jobsArr) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
-      // Queue for retry
       const q = jget('tagro_pending_sync', []);
       q.push({ job, branch: s.branch, failedAt: new Date().toISOString(), reason: data.error || 'sync failed' });
       jset('tagro_pending_sync', q);
@@ -211,7 +204,6 @@ async function syncJobs(jobsArr) {
   }
 }
 
-// Pull jobs from Dropbox and merge with local on page load
 async function pullJobsFromDropbox() {
   if (isDemo()) return;
   let s = session();
@@ -221,7 +213,6 @@ async function pullJobsFromDropbox() {
     if (!res.ok) return;
     const data = await res.json();
     if (!data.ok || !Array.isArray(data.jobs) || !data.jobs.length) return;
-    // Merge: timestamp wins — most recent version of each job kept
     const local = jget('tagro_jobs', []);
     const map = {};
     [...data.jobs, ...local].forEach(j => {
@@ -235,12 +226,10 @@ async function pullJobsFromDropbox() {
     });
     const merged = Object.values(map);
     jset('tagro_jobs', merged);
-    // Also flush pending queue
     flushPendingSync().catch(() => {});
   } catch {}
 }
 
-// Retry any jobs that failed to sync
 async function flushPendingSync() {
   if (isDemo()) return;
   let s = session();
@@ -262,7 +251,6 @@ async function flushPendingSync() {
   jset('tagro_pending_sync', remaining);
 }
 
-// AI fault diagnosis via Worker
 async function diagnose(model, complaint, observations) {
   try {
     const res = await fetch(`${API}/ai/diagnose`, {
@@ -275,7 +263,6 @@ async function diagnose(model, complaint, observations) {
   } catch { return null; }
 }
 
-// Scan paper form via Worker
 async function scanForm(imageBase64, mediaType) {
   try {
     const res = await fetch(`${API}/ai/scan-form`, {
@@ -289,10 +276,6 @@ async function scanForm(imageBase64, mediaType) {
 }
 
 // ── CACHE-FIRST KV CONFIG LOADER ──────────────────────────
-// Loads staff, models, parts from Worker KV
-// Cache-first: uses localStorage until server version changes
-// Called silently on every page load after login
-
 const CACHE_KEYS = {
   staff:          'tagro_kv_staff',
   models:         'tagro_kv_models',
@@ -316,7 +299,6 @@ async function loadKVConfig() {
     const name     = s?.name || null;
     const cached   = getCachedVersions();
 
-    // Build query — tell server what versions we have
     const params = new URLSearchParams();
     if (branch && branch !== 'ALL') params.set('branch', branch);
     if (name) params.set('name', name);
@@ -331,37 +313,30 @@ async function loadKVConfig() {
 
     const newVersions = { ...cached };
 
-    // Update staff if server sent new version
     if (data.staff?.length) {
       jset(CACHE_KEYS.staff, data.staff);
       newVersions.staff = data.versions?.staff || cached.staff;
     }
 
-    // Update models if server sent new version
     if (data.models?.length) {
       jset(CACHE_KEYS.models, data.models);
       newVersions.models = data.versions?.models || cached.models;
     }
 
-    // Update parts if server sent new version (large payload)
     if (data.parts?.length) {
       jset(CACHE_KEYS.parts, data.parts);
       newVersions.parts = data.versions?.parts || cached.parts;
     }
 
-    // Update personal model banner
     if (data.personalModels !== undefined) {
       jset(CACHE_KEYS.personalModels + '_' + (name || ''), data.personalModels);
     }
 
     setCachedVersions(newVersions);
 
-  } catch(e) {
-    // Silent fail — cached data still works
-  }
+  } catch(e) {}
 }
 
-// Accessors — always use cache, load is background
 function kvStaff()  { return jget(CACHE_KEYS.staff, null); }
 function kvModels() { return jget(CACHE_KEYS.models, null); }
 function kvParts()  { return jget(CACHE_KEYS.parts, null); }
@@ -390,7 +365,7 @@ function getBranchModels(branch) {
   if (kv) return kv.filter(m => !branch || m.branches.includes(branch));
   return [];
 }
-// ── DEVICE ID ─────────────────────────────────────────────
+
 function getDeviceId() {
   let id = localStorage.getItem('tagro_device_id');
   if (!id) {
@@ -416,9 +391,8 @@ let voiceRecognition = null;
 
 function initializeUniversalVoice() {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return; // Voice assist skipped gracefully if unsupported
+  if (!SpeechRecognition) return;
 
-  // Global styles for floating bubble & panel
   const styles = `
     .voice-fab {
       position: fixed; bottom: 85px; right: 20px; width: 56px; height: 56px;
@@ -452,7 +426,6 @@ function initializeUniversalVoice() {
   styleEl.innerHTML = styles;
   document.head.appendChild(styleEl);
 
-  // Inject UI Components
   const container = document.createElement('div');
   container.innerHTML = `
     <button class="voice-fab" id="v-fab" title="Hands-free Assistant">
@@ -480,9 +453,8 @@ function initializeUniversalVoice() {
   voiceRecognition = new SpeechRecognition();
   voiceRecognition.continuous = false;
   voiceRecognition.interimResults = false;
-  voiceRecognition.lang = 'en-IN'; // Standard Indian English Dialect
+  voiceRecognition.lang = 'en-IN';
 
-  // Recognition events
   voiceRecognition.onstart = () => {
     fab.classList.add('listening');
     panel.style.display = 'flex';
@@ -494,7 +466,7 @@ function initializeUniversalVoice() {
   voiceRecognition.onerror = (e) => {
     fab.classList.remove('listening');
     waves.style.display = 'none';
-    status.textContent = "Sorry, I couldn't understand that. Tap the mic and try again.";
+    status.textContent = `Speech error: ${e.error || 'Blocked by browser security. Ensure page is HTTPS.'}`;
   };
 
   voiceRecognition.onend = () => {
@@ -506,7 +478,6 @@ function initializeUniversalVoice() {
     const speechToText = event.results[0][0].transcript;
     status.innerHTML = `<strong>You:</strong> "${speechToText}"<br><br><span style="color:#df6427;">Consulting database catalogs...</span>`;
     
-    // Call AI assist
     try {
       const activeModel = localStorage.getItem('tagro_active_voice_model') || 'MS 462';
       const response = await fetch(`${API}/ai/tech-assist`, {
@@ -534,7 +505,11 @@ function initializeUniversalVoice() {
     if (fab.classList.contains('listening')) {
       voiceRecognition.stop();
     } else {
-      voiceRecognition.start();
+      try {
+        voiceRecognition.start();
+      } catch (err) {
+        toast("Microphone blocked. Ensure site is HTTPS and has mic permissions enabled.");
+      }
     }
   };
 
@@ -548,7 +523,6 @@ function speakAloud(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   
-  // Clean markdown out of Speech context
   const cleanText = text
     .replace(/\*\*/g, '')
     .replace(/`/g, '')
@@ -589,7 +563,6 @@ function initShell(active) {
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];
-  // Owner gets Staff Admin
   if (s?.role === 'Owner') tabs.push(['staff-admin.html','Staff','admin']);
 
   nav.innerHTML = tabs.map(t =>
@@ -597,11 +570,9 @@ function initShell(active) {
   ).join('');
   document.body.insertBefore(nav, document.body.children[s?.demo ? 2 : 1]);
 
-  // Load KV config and pull Dropbox jobs silently in background
   loadKVConfig().catch(() => {});
   setTimeout(() => { pullJobsFromDropbox().catch(() => {}); }, 1000);
 
-  // Initialize universal hands-free assistant automatically on shell render
   initializeUniversalVoice();
 }
 
