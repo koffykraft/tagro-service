@@ -400,9 +400,6 @@ function getDeviceId() {
   return id;
 }
 
-
-
-
 function toast(m) {
   let t = document.querySelector('.toast') || document.body.appendChild(
     Object.assign(document.createElement('div'), { className: 'toast' })
@@ -413,6 +410,159 @@ function toast(m) {
 }
 
 function today() { return new Date().toISOString().slice(0, 10) }
+
+// ── UNIVERSAL VOICE HELPER ENGINE ────────────────────────────────────────────
+let voiceRecognition = null;
+
+function initializeUniversalVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) return; // Voice assist skipped gracefully if unsupported
+
+  // Global styles for floating bubble & panel
+  const styles = `
+    .voice-fab {
+      position: fixed; bottom: 85px; right: 20px; width: 56px; height: 56px;
+      border-radius: 50%; background: #df6427; color: #fff; display: flex;
+      align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      cursor: pointer; z-index: 9999; border: none; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .voice-fab:active { transform: scale(0.9); }
+    .voice-fab.listening {
+      background: #287a3e; animation: pulseVoice 1.4s infinite;
+    }
+    .voice-panel {
+      position: fixed; bottom: 155px; right: 20px; width: 320px;
+      background: #fff; border-radius: 16px; border: 1.5px solid #eee;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15); display: none; flex-direction: column;
+      z-index: 9998; overflow: hidden; font-family: -apple-system, sans-serif;
+    }
+    .voice-panel-header {
+      background: #fdf6f2; padding: 12px 16px; border-bottom: 1px solid #eee;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .voice-panel-body { padding: 16px; max-height: 200px; overflow-y: auto; font-size: 13px; line-height: 1.5; color: #333; }
+    .voice-waves { display: flex; gap: 4px; align-items: center; justify-content: center; height: 24px; }
+    .voice-waves span { width: 4px; height: 10px; background: #df6427; border-radius: 2px; animation: wave 0.8s infinite ease-in-out; }
+    .voice-waves span:nth-child(2) { animation-delay: 0.2s; }
+    .voice-waves span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes wave { 0%, 100% { height: 8px; } 50% { height: 24px; } }
+    @keyframes pulseVoice { 0% { box-shadow: 0 0 0 0 rgba(40,122,62, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(40,122,62, 0); } 100% { box-shadow: 0 0 0 0 rgba(40,122,62, 0); } }
+  `;
+  const styleEl = document.createElement('style');
+  styleEl.innerHTML = styles;
+  document.head.appendChild(styleEl);
+
+  // Inject UI Components
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <button class="voice-fab" id="v-fab" title="Hands-free Assistant">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+    </button>
+    <div class="voice-panel" id="v-panel">
+      <div class="voice-panel-header">
+        <strong style="color:#df6427; font-size:14px;">TAGRO Voice Bench Assist</strong>
+        <button id="v-panel-close" style="background:none; border:none; font-size:16px; cursor:pointer; color:#999;">×</button>
+      </div>
+      <div class="voice-panel-body" id="v-status">Tap the Mic to ask about parts, manuals, or repair estimates hands-free.</div>
+      <div class="voice-waves" id="v-waves" style="display:none; padding-bottom:12px;">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  const fab = document.getElementById('v-fab');
+  const panel = document.getElementById('v-panel');
+  const status = document.getElementById('v-status');
+  const waves = document.getElementById('v-waves');
+  const close = document.getElementById('v-panel-close');
+
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = false;
+  voiceRecognition.lang = 'en-IN'; // Standard Indian English Dialect
+
+  // Recognition events
+  voiceRecognition.onstart = () => {
+    fab.classList.add('listening');
+    panel.style.display = 'flex';
+    status.innerHTML = `<span style="color:#287a3e; font-weight:700;">Listening for your query...</span><br><em style="color:#999; font-size:11px;">e.g., "Troubleshoot MS462 chain brake" or "MRP of spark plug"</em>`;
+    waves.style.display = 'flex';
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+
+  voiceRecognition.onerror = (e) => {
+    fab.classList.remove('listening');
+    waves.style.display = 'none';
+    status.textContent = "Sorry, I couldn't understand that. Tap the mic and try again.";
+  };
+
+  voiceRecognition.onend = () => {
+    fab.classList.remove('listening');
+    waves.style.display = 'none';
+  };
+
+  voiceRecognition.onresult = async (event) => {
+    const speechToText = event.results[0][0].transcript;
+    status.innerHTML = `<strong>You:</strong> "${speechToText}"<br><br><span style="color:#df6427;">Consulting database catalogs...</span>`;
+    
+    // Call AI assist
+    try {
+      const activeModel = localStorage.getItem('tagro_active_voice_model') || 'MS 462';
+      const response = await fetch(`${API}/ai/tech-assist`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: activeModel,
+          mode: 'troubleshoot',
+          question: speechToText
+        })
+      });
+      const data = await response.json();
+      if (data.ok) {
+        status.innerHTML = `<strong>Answer:</strong><br>${data.answer.replace(/\n/g, '<br>')}`;
+        speakAloud(data.answer);
+      } else {
+        status.textContent = "Could not find technical guidance for that query.";
+      }
+    } catch {
+      status.textContent = "Connection issue. Failed to connect to server database.";
+    }
+  };
+
+  fab.onclick = () => {
+    if (fab.classList.contains('listening')) {
+      voiceRecognition.stop();
+    } else {
+      voiceRecognition.start();
+    }
+  };
+
+  close.onclick = () => {
+    panel.style.display = 'none';
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+}
+
+function speakAloud(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  
+  // Clean markdown out of Speech context
+  const cleanText = text
+    .replace(/\*\*/g, '')
+    .replace(/`/g, '')
+    .replace(/PROBLEM:/gi, 'Problem statement:')
+    .replace(/CAUSE:/gi, 'Likely cause:')
+    .replace(/CHECK:/gi, 'Check procedure:')
+    .replace(/FIX:/gi, 'Repair action:');
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  utterance.lang = 'en-IN';
+  window.speechSynthesis.speak(utterance);
+}
 
 function initShell(active) {
   seed();
@@ -450,6 +600,9 @@ function initShell(active) {
   // Load KV config and pull Dropbox jobs silently in background
   loadKVConfig().catch(() => {});
   setTimeout(() => { pullJobsFromDropbox().catch(() => {}); }, 1000);
+
+  // Initialize universal hands-free assistant automatically on shell render
+  initializeUniversalVoice();
 }
 
 seed();
