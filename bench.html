@@ -116,6 +116,17 @@ body {
 
   <!-- ── TAB: ESTIMATE ────────────────────────────────────── -->
   <div id="tab-content-estimate" class="space-y-4 hidden">
+    <!-- Visual Catalog Quick Entry Callout -->
+    <div class="bg-tagro-light/40 border border-tagro-border rounded-2xl p-4 flex items-center justify-between transition-all duration-150 hover:bg-tagro-light/60">
+      <div class="space-y-0.5 pr-2">
+        <h4 class="text-xs font-extrabold text-slate-800 uppercase tracking-wide">Visual Schematic Lookup</h4>
+        <p class="text-[11px] text-slate-500">Pick spare parts visually using high-resolution R2 manuals and diagrams</p>
+      </div>
+      <button onclick="launchVisualCatalog()" class="bg-tagro hover:bg-tagro-dark text-white text-xs font-black py-2.5 px-4 rounded-xl shrink-0 transition-all duration-150 flex items-center gap-1.5 shadow-sm shadow-tagro/20">
+        <span>🎨</span> Open Catalog
+      </button>
+    </div>
+
     <!-- Add Parts Card -->
     <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-3">
       <h3 class="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Add Spare Part</h3>
@@ -232,10 +243,11 @@ body {
 // Prevent compile crashes. Initialize empty default lists.
 if (!localStorage.getItem('tagro_jobs')) localStorage.setItem('tagro_jobs', JSON.stringify([]));
 
-// ── STREAMING_CHUNK: Writing job load and save core logic... ──
+// ── State Variables ───────────────────────────────────────
 let activeJob = null;
 let selectedPartToEstimate = null;
 
+// ── STREAMING_CHUNK: Loading job load and save core logic... ──
 function loadActiveJob() {
   const params = new URLSearchParams(location.search);
   const jobId = params.get('job') || params.get('id');
@@ -310,6 +322,16 @@ function launchTechAssistant() {
   const complaint = activeJob.complaint || '';
   const wo = activeJob.workOrder || activeJob.id || '';
   location.href = `tech.html?job=${encodeURIComponent(wo)}&model=${encodeURIComponent(model)}&complaint=${encodeURIComponent(complaint)}`;
+}
+
+// ── STREAMING_CHUNK: Visual Schematic routing integration ─────────────────
+function launchVisualCatalog() {
+  if (!activeJob) return;
+  const model = activeJob.machine?.model || activeJob.model || 'MS250';
+  const wo = activeJob.workOrder || activeJob.id || '';
+  // Normalize model key (e.g. MS 250 -> MS250) for uploader-R2 matches
+  const modelKey = model.replace(/\s+/g, '').toUpperCase();
+  location.href = `catalog.html?job=${encodeURIComponent(wo)}&model=${encodeURIComponent(modelKey)}`;
 }
 
 // ── TIMELINE ─────────────────────────────────────────────
