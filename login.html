@@ -87,7 +87,7 @@ body { background:#f0f0f0; display:flex; align-items:center; justify-content:cen
 
       <div class="divider" id="otp-divider" style="display:none">or</div>
 
-      <button class="btn-otp" id="btn-get-pin" style="display:none" onclick="requestOTP()" hidden>
+      <button class="btn-otp" id="btn-get-pin" style="display:none" onclick="requestOTP()">
         Get PIN via SMS
       </button>
     </div>
@@ -313,8 +313,7 @@ async function doLogin() {
   const stored = jget(key, null);
 
   if (!stored) {
-    // No PIN yet — go straight to set PIN (OTP bypassed for trial period)
-    showStep('step-set-pin');
+    document.getElementById('pin-error').textContent = 'No PIN set. Use Get PIN via SMS.';
     return;
   }
 
