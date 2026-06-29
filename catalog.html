@@ -60,31 +60,51 @@
 
 <script>
     function renderCatalog() {
-        const rawData = localStorage.getItem('tagro_parts_data');
-        if (!rawData) return;
+    const rawData = localStorage.getItem('tagro_parts_data');
+    if (!rawData) return;
+    
+    const data = JSON.parse(rawData);
+    const body = document.getElementById('catalog-body');
+    
+    body.innerHTML = data.map(p => {
+        // Use p.name (your custom name) if available, otherwise use p.stihlName
+        const displayName = p.name && p.name.trim() !== "" ? p.name : (p.stihlName || 'Unknown Part');
         
-        const data = JSON.parse(rawData);
-        const body = document.getElementById('catalog-body');
+        // Check if this part has a corresponding PDF/Diagram based on your log
+        const hasDiagram = p.modelGroup ? true : false; // Or add logic to check against your model_keys
         
-        body.innerHTML = data.map(p => `
+        return `
             <tr>
                 <td style="font-family:monospace; font-weight:600;">${p.no || '-'}</td>
                 <td>
-                    <div style="font-weight:500;">${p.name || 'Unknown'}</div>
-                    <div style="font-size:12px; color:var(--text-muted);">${p.group || ''}</div>
+                    <div style="font-weight:500;">${displayName}</div>
+                    <div style="font-size:12px; color:var(--text-muted);">${p.group || 'General'}</div>
                 </td>
                 <td style="font-weight:600;">${p.mrp ? '₹' + p.mrp : '-'}</td>
+                <td>
+                    ${hasDiagram ? `<button onclick="viewDiagram('${p.no}')" style="cursor:pointer; border:none; background:var(--primary); color:white; padding:4px 8px; border-radius:4px; font-size:11px;">View</button>` : '-'}
+                </td>
             </tr>
-        `).join('');
-    }
+        `;
+    }).join('');
+}
 
     function filterParts() {
-        const query = document.getElementById('search').value.toLowerCase();
-        const rows = document.querySelectorAll('#catalog-body tr');
-        rows.forEach(row => {
-            row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
-        });
-    }
+    const query = document.getElementById('search').value.toLowerCase();
+    // Split the query into an array of words (e.g., "clutch 460" -> ["clutch", "460"])
+    const keywords = query.split(' ').filter(word => word.length > 0);
+    
+    const rows = document.querySelectorAll('#catalog-body tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        
+        // Every keyword must be present in the row text for it to be visible
+        const matchesAll = keywords.every(word => text.includes(word));
+        
+        row.style.display = matchesAll ? '' : 'none';
+    });
+}
 
     document.addEventListener('DOMContentLoaded', renderCatalog);
 </script>
