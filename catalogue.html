@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Foliage of Buna — Coffee Leaf Knowledge & Practices</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --dark: #1a1a1a;
+            --slate: #2d3436;
+            --gray: #636e72;
+            --light-gray: #b2bec3;
+            --cream: #f8f9fa;
+            --accent: #5f4a42;
+            --subtle: #d4c5c0;
+            --section-1: #8B6F47;
+            --section-2: #5f4a42;
+            --section-3: #2c3e50;
+            --section-4: #27ae60;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--cream);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        /* HEADER / NAVIGATION */
+        header {
+            background: white;
+            border-bottom: 1px solid var(--subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: var(--accent);
+            text-decoration: none;
+            letter-spacing: -0.5px;
+        }
+        
+        .nav {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+        
+        .nav a {
+            text-decoration: none;
+            color: var(--gray);
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .nav a:hover {
+            color: var(--accent);
+        }
+        
+        /* MAIN CONTAINER */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 30px;
+        }
+        
+        /* HERO SECTION */
+        .hero {
+            text-align: center;
+            margin-bottom: 100px;
+            border-bottom: 2px solid var(--subtle);
+            padding-bottom: 60px;
+        }
+        
+        .hero h1 {
+            font-size: 3.2em;
+            font-weight: 300;
+            letter-spacing: -1px;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .hero .subtitle {
+            font-size: 1.2em;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 30px;
+        }
+        
+        .hero p {
+            font-size: 1em;
+            color: var(--gray);
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto 20px;
+        }
+        
+        .hero-meta {
+            font-size: 0.9em;
+            color: var(--light-gray);
+            font-style: italic;
+        }
+        
+        /* SECTION STRUCTURE */
+        .section {
+            margin-bottom: 80px;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--subtle);
+        }
+        
+        .section-icon {
+            display: none;
+        }
+        
+        .section-header h2 {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0;
+        }
+        
+        /* GRID LAYOUTS */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transform: translateY(-4px);
+        }
+        
+        .card h3 {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--dark);
+        }
+        
+        .card p {
+            font-size: 0.95em;
+            color: var(--gray);
+            line-height: 1.6;
+            flex-grow: 1;
+            margin-bottom: 15px;
+        }
+        
+        .card-meta {
+            font-size: 0.85em;
+            color: var(--light-gray);
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+        
+        .card-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--cream);
+            border-radius: 3px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        /* SECTION COLOR VARIANTS */
+        .section-1 .section-icon {
+            background: rgba(139, 111, 71, 0.1);
+            color: var(--section-1);
+        }
+        
+        .section-1 .card {
+            border-left-color: var(--section-1);
+        }
+        
+        .section-2 .section-icon {
+            background: rgba(95, 74, 66, 0.1);
+            color: var(--section-2);
+        }
+        
+        .section-2 .card {
+            border-left-color: var(--section-2);
+        }
+        
+        .section-3 .section-icon {
+            background: rgba(44, 62, 80, 0.1);
+            color: var(--section-3);
+        }
+        
+        .section-3 .card {
+            border-left-color: var(--section-3);
+        }
+        
+        .section-4 .section-icon {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--section-4);
+        }
+        
+        .section-4 .card {
+            border-left-color: var(--section-4);
+        }
+        
+        /* CALLOUT */
+        .callout {
+            background: #f5f0ed;
+            border-left: 4px solid var(--accent);
+            padding: 25px;
+            border-radius: 6px;
+            margin: 40px 0;
+        }
+        
+        .callout strong {
+            color: var(--accent);
+        }
+        
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--subtle);
+            padding: 50px 30px;
+            margin-top: 100px;
+            background: white;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+        
+        .footer-section h4 {
+            font-size: 1em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .footer-section ul {
+            list-style: none;
+        }
+        
+        .footer-section li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-section a {
+            text-decoration: none;
+            color: var(--gray);
+            font-size: 0.9em;
+            transition: color 0.3s ease;
+        }
+        
+        .footer-section a:hover {
+            color: var(--accent);
+        }
+        
+        .footer-credit {
+            grid-column: 1 / -1;
+            border-top: 1px solid var(--subtle);
+            padding-top: 30px;
+            text-align: center;
+            font-size: 0.9em;
+            color: var(--light-gray);
+        }
+        
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+            }
+            
+            .hero h1 {
+                font-size: 2.2em;
+            }
+            
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- HEADER -->
+    <header>
+        <div class="header-container">
+            <a href="index.html" class="logo">BUNA COFFEE LEAF LIBRARY</a>
+            <nav class="nav">
+                <a href="index.html">Begin Here</a>
+                <a href="#start">Foundation</a>
+                <a href="#reference-layer">Reference</a>
+                <a href="#traditional">Traditions</a>
+                <a href="#guides">Guides</a>
+                <a href="#citane">Research</a>
+                <a href="#tools">Tools</a>
+                <a href="#culinary">Culinary</a>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- MAIN CONTENT -->
+    <div class="container">
+        
+        <!-- HERO -->
+        <section class="hero">
+            <h1>Buna Coffee Leaf Library</h1>
+            <div class="subtitle">A Catalogue of Traditions, Reference, and Research</div>
+            <p>The full library: documented traditions, sensory and chemical reference material, and the Citane research papers &mdash; framework, manual, and experimental workbook. For a gentler starting point, visit <a href="index.html">Begin With a Cup</a>. Coffee professional? <a href="#for-professionals" style="color: var(--accent);">Go directly to the professional section &rarr;</a></p>
+            <div class="hero-meta">
+                <p>KoffyKraft, Thumpassery Estate &middot; Karavaloor, Kollam, Kerala</p>
+                <p>Drawing on documented traditions, peer-reviewed research, and Citane's own trials &mdash; see the Foundation page's Evidence Discipline for how each is treated</p>
+            </div>
+        </section>
+        
+        <!-- FOR COFFEE PROFESSIONALS -->
+        <section class="section" id="for-professionals" style="background: #f7f2e8; border: 1px solid #e0d8c8; margin-bottom: 40px; padding: 32px 40px;">
+            <div class="section-header" style="border-bottom: 1px solid #e0d8c8; padding-bottom: 16px; margin-bottom: 24px;">
+                <h2 style="margin: 0;">For Coffee Professionals</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 24px; font-size: 10.5pt;">Roaster, barista, producer, researcher, cooperative — direct routes to what matters most.</p>
+            <div class="card-grid">
+                <a href="sensory-landscape-of-coffee-leaf.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>Cup Profile</h3>
+                    <p>Sensory descriptors, aroma compounds, fermented vs non-fermented differences, and brewing parameters from published research. Start here if you want to know what it tastes like.</p>
+                    <div class="card-meta"><span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Sensory Reference</span></div>
+                </a>
+                <a href="citane-reactive-landscape.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>Chemistry &amp; Research</h3>
+                    <p>Paper I — The Reactive Landscape. The chemical framework for coffee leaf: compound families, processing pathways, and how the leaf responds to intervention. All claims cited to published research.</p>
+                    <div class="card-meta"><span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Peer-reviewed basis</span></div>
+                </a>
+                <a href="citane-processing-manual.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>Processing</h3>
+                    <p>Paper II — From Leaf to Cup. Harvest, withering, drying, storage, and brewing protocols. Field observations from Thumpassery Estate, Arabica Chandragiri, rubber shade, 130m altitude.</p>
+                    <div class="card-meta"><span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Processing</span></div>
+                </a>
+                <a href="the-foliage-of-buna.html#evidence" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>Evidence Discipline</h3>
+                    <p>How this library separates published research, traditional practice, and Citane adaptation. Every claim is labelled by source type. Nothing is overclaimed.</p>
+                    <div class="card-meta"><span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Methodology</span></div>
+                </a>
+            </div>
+            <p style="margin-top: 24px; font-family: 'Segoe UI', Helvetica, sans-serif; font-size: 9pt; color: #8a7c5e;">Producer, roaster, or researcher wanting to work with Buna? <a href="mailto:hello@koffykraft.com" style="color: #8a7c5e;">Get in touch &rarr;</a></p>
+        </section>
+
+        <!-- SECTION 1: REFERENCE LIBRARY -->
+        <section class="section section-1" id="reference">
+            <div class="section-header">
+                <h2>Sources Across the Library</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">The library draws on three broad kinds of source, each handled differently &mdash; see the Foundation page's Evidence Discipline for how.</p>
+            <div class="card-grid">
+                <div class="card">
+                    <h3>Peer-Reviewed Research</h3>
+                    <p>Published studies on coffee leaf chemistry, processing, and sensory profiles, cited throughout the Foundation page, Reference, and Research papers.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Cited Throughout</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Documented Traditions</h3>
+                    <p>Field studies and household documentation of Engere, Kuti, Chemo, and Kawa Daun &mdash; referenced as observation, not instruction.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Traditions</span>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Citane Research &amp; Trials</h3>
+                    <p>KoffyKraft's own framework (Papers I&ndash;III) and processing trials &mdash; presented as observation and hypothesis, not as validated findings.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Application</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- SECTION 2: START HERE -->
+        <section class="section section-2" id="start">
+            <div class="section-header">
+                
+                <h2>Start Here</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">The Foundation page: what coffee leaf is, how this library approaches evidence, and how to navigate the traditions, reference, research, and application pages below.</p>
+            <div class="card-grid">
+                <a href="the-foliage-of-buna.html" class="card">
+                    <h3>The Foliage of Buna</h3>
+                    <p>History, ethnobotany, and cultural context for coffee leaf &mdash; and how this library distinguishes evidence, interpretation, observation, and speculation. Start here before exploring the rest of the library.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Foundation</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- SECTION 3: REFERENCE -->
+        <section class="section section-3" id="reference-layer">
+            <div class="section-header">
+                
+                <h2>Reference</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">Sensory and chemical reference material &mdash; what coffee leaf actually smells and tastes like, and what published research has found about why.</p>
+            <div class="card-grid">
+                <a href="sensory-landscape-of-coffee-leaf.html" class="card">
+                    <h3>The Sensory Landscape of Coffee Leaf</h3>
+                    <p>How fermented and non-fermented coffee leaf differ in aroma, taste, and mouthfeel, and the documented compounds behind those differences &mdash; with a careful look at what the underlying research does and doesn't show.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Reference</span>
+                        <span class="card-tag">Sensory</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- SECTION 4: TRADITIONAL PREPARATIONS -->
+        <section class="section section-4" id="traditional">
+            <div class="section-header">
+                
+                <h2>Traditional Preparations</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">Documented household and community preparations from Ethiopia and Indonesia &mdash; presented as observation, per the Foundation page's Evidence Discipline, not as instruction or proof of effect.</p>
+            <div class="card-grid">
+                <a href="engere-intro.html" class="card">
+                    <h3>Engere</h3>
+                    <p>A milk-based coffee leaf beverage from Gofa Zone, South Ethiopia. Documented across 385 households. Three preparation types, ten spice ingredients, and a safety record that surprised researchers.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Ethiopia</span>
+                        <span class="card-tag">4 pages</span>
+                    </div>
+                </a>
+                <a href="chemo-intro.html" class="card">
+                    <h3>Chemo</h3>
+                    <p>A roasted coffee leaf brew from Tepi Town, Southwestern Ethiopia. Always spiced, always served with food, always social. Fire is the defining step. Documented across 64 households.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Ethiopia</span>
+                        <span class="card-tag">5 pages</span>
+                    </div>
+                </a>
+                <a href="kuti-intro.html" class="card">
+                    <h3>Kuti</h3>
+                    <p>A coffee leaf brew from the walled city of Harar made from fallen yellowed leaves. Almost no caffeine. Part of a whole-plant coffee culture embedded in Harari household life and women's land ownership.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Ethiopia</span>
+                        <span class="card-tag">4 pages</span>
+                    </div>
+                </a>
+                <a href="kawa-daun-intro.html" class="card">
+                    <h3>Kawa Daun</h3>
+                    <p>A smoked coffee leaf brew from the Minangkabau highlands of West Sumatra. Leaves smoked over cinnamon wood, brewed long and dark. A tradition that survived Dutch colonial prohibition.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Indonesia</span>
+                        <span class="card-tag">Coming</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- SECTION 5: PRACTICAL GUIDES -->
+        <section class="section section-1" id="guides">
+            <div class="section-header">
+                
+                <h2>Recipes & Mechanics</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">Full preparation guides for each tradition — ingredients, step-by-step instructions, serving scaler, equipment notes, and quality checks.</p>
+                        <div class="card-grid">
+                <a href="engere-recipe.html" class="card">
+                    <h3>Engere — Recipes & Mechanics</h3>
+                    <p>Simple, Sweetened, Spiced Single Pot, and Spiced Double Pot. Serving scaler, milk guide, quality checks, and serving rules.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Engere</span>
+                    </div>
+                </a>
+                <a href="chemo-recipe.html" class="card">
+                    <h3>Chemo — Recipes & Mechanics</h3>
+                    <p>Roasted, Lightly Heated, and Fresh-Majang methods. Full spice quantities, step-by-step instructions, and quality guidance.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Chemo</span>
+                    </div>
+                </a>
+                <a href="kuti-recipe.html" class="card">
+                    <h3>Kuti — Recipes & Mechanics</h3>
+                    <p>Kouttee Plain, Boiled Traditional, Pan-Roasted, and Kuti Shai. Includes the fallen leaf preparation guide and caffeine note.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Kuti</span>
+                    </div>
+                </a>
+                <a href="kawa-daun-recipe.html" class="card">
+                    <h3>Kawa Daun — Recipes & Mechanics</h3>
+                    <p>Coming when the Kawa Daun pages are complete.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Kawa Daun</span>
+                        <span class="card-tag">Coming</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- SECTION 6: CITANE EXPERIMENTAL -->
+        <section class="section section-2" id="citane">
+            <div class="section-header">
+                
+                <h2>Research &amp; Application</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">The Citane research papers &mdash; framework, manual, and experimental workbook &mdash; plus DIY processing notes from Thumpassery Estate.</p>
+            <div class="card-grid">
+                <a href="citane-terrain-map.html" class="card">
+                    <h3>Terrain Map — Plant to Sip</h3>
+                    <p>A spatial map of every influence on the leaf from field to cup. Tap any node to understand it. Drag to reposition. Built for scouting, not procedure — designed for fuzz rather than fixed structure.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Exploration</span>
+                        <span class="card-tag">Spatial</span>
+                    </div>
+                </a>
+                <a href="citane-process-compass.html" class="card">
+                    <h3>The Process Compass</h3>
+                    <p>A stage-by-stage field guide from harvest to final moisture reduction. Eight stages with decision tables, pitfall warnings, enzyme reference, and QC checkpoints. For someone who wants to read and understand without selecting or configuring anything.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Field Guide</span>
+                        <span class="card-tag">Process</span>
+                    </div>
+                </a>
+                <a href="citane-reactive-landscape.html" class="card">
+                    <h3>Paper I &mdash; The Reactive Landscape</h3>
+                    <p>The framework: reservoirs, activation events, energy systems, process domains, and emergent states. What may be happening chemically inside the leaf, and why it matters.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Research</span>
+                        <span class="card-tag">Framework</span>
+                    </div>
+                </a>
+                <a href="citane-processing-manual.html" class="card">
+                    <h3>Paper II &mdash; From Leaf to Cup</h3>
+                    <p>The manual: seven core processing pathways, toolbox, batch sheet, and troubleshooting &mdash; an observation framework, not a recipe framework.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Research</span>
+                        <span class="card-tag">Manual</span>
+                    </div>
+                </a>
+                <a href="citane-processing-protocols.html" class="card">
+                    <h3>Paper III &mdash; Experimental Pathways</h3>
+                    <p>The workbook: a broader catalogue of pathways, sensory directions, and aging protocols, structured for comparison and recording rather than guaranteed outcomes.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Research</span>
+                        <span class="card-tag">Workbook</span>
+                    </div>
+                </a>
+            </div>
+            <h3 style="font-size: 11pt; font-weight: normal; color: var(--gray); margin: 28px 0 16px; font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 0.9px; font-size: 8pt;">Field Notes — Practitioner observations, not research papers</h3>
+            <div class="card-grid">
+                <a href="citane-hack-grill-wilted-leaves.html" class="card" style="border-left: 2px dashed #e0d8c8;">
+                    <h3>Citane Hack: Grill-Wilted Leaves</h3>
+                    <p>Using a sandwich grill to wilt fresh leaves — one practitioner's note on a quick wilting setup. See Paper II for the framework this fits into.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Field Note</span>
+                    </div>
+                </a>
+                <a href="citane-hack-gas-flame-roasted-leaf.html" class="card" style="border-left: 2px dashed #e0d8c8;">
+                    <h3>Citane Hack: Gas-Flame Roasted Leaf</h3>
+                    <p>Direct-flame roasting adapted for home equipment — one practitioner's note. See Paper II, Pathway 5, for the framework this fits into.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Field Note</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+        
+        <!-- TOOLS SECTION -->
+        <section id="tools">
+            <div class="section-header">
+                <h2>Interactive Tools</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">Explore the CLT flavour landscape interactively — map descriptors to processes, build a pathway, or generate a theoretical route with the Epsilon Board.</p>
+            <div class="card-grid">
+                <a href="clt-flavour-wheel.html" class="card">
+                    <h3>CLT Flavour Landscape</h3>
+                    <p>Nine flavour territories arranged by relationship. Tap to see aligned and opposing descriptors, chemical drivers, and process connections. Drag to reposition within the landscape.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Sensory</span>
+                        <span class="card-tag">Interactive</span>
+                    </div>
+                </a>
+                <a href="citane-logic-board.html" class="card">
+                    <h3>Flavour Logic Board</h3>
+                    <p>Select a descriptor, leaf, process, or brew method. The board activates compatible pathways and generates a research-grounded output with steps and pitfall warnings.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Interactive</span>
+                        <span class="card-tag">Research</span>
+                    </div>
+                </a>
+                <a href="citane-epsilon-board.html" class="card" style="border-left: 3px solid #4a6a9a;">
+                    <h3>ε Epsilon Board</h3>
+                    <p>Theoretical territory. Generate a speculative flavour pathway extending beyond documented research — grounded in CLT chemistry, clearly labelled as not validated.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#e8edf5;color:#4a6a9a;">Theoretical</span>
+                        <span class="card-tag" style="background:#e8edf5;color:#4a6a9a;">AI-Generated</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- SENSORY SCHOOL SECTION -->
+        <section id="sensory-school" style="margin-top: 40px;">
+            <div class="section-header">
+                <h2>The Sensory School</h2>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">A guided sensory education — beginning with daily life, moving through the experience of Buna, building vocabulary, and arriving at the chemistry. No prior knowledge required. No correct answers.</p>
+            <div class="card-grid">
+                <a href="buna-sensory-school.html" class="card" style="border-left: 3px solid #8b6f47;">
+                    <h3>The Buna Sensory School</h3>
+                    <p>Entry point for the school — introduces the four layers and the companion voice. Begin here if you are new to the school.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8b6f47;">Door Six</span>
+                        <span class="card-tag">Entry</span>
+                    </div>
+                </a>
+                <a href="sensory-already.html" class="card">
+                    <h3>You Already Sense</h3>
+                    <p>Ten observations from ordinary daily life — green, cooling, bitterness, sweetness, astringency, umami, aroma, temperature, finish, expectation. Each one a bridge to something in Buna. No Buna on this page.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Before You Begin</span>
+                    </div>
+                </a>
+                <a href="sensory-encounter.html" class="card">
+                    <h3>Layer One — The Encounter</h3>
+                    <p>What you notice in the cup before you have words for it. Described in plain observation language — what arrives, where it goes, what temperature does to it.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Sensory</span>
+                        <span class="card-tag">Layer One</span>
+                    </div>
+                </a>
+                <a href="sensory-language.html" class="card">
+                    <h3>Layer Two — The Language</h3>
+                    <p>The vocabulary specific to Buna — green, refreshing, floral, sweet, bitter, astringent, woody. Where each sensation registers in the mouth and how to distinguish them.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Vocabulary</span>
+                        <span class="card-tag">Layer Two</span>
+                    </div>
+                </a>
+                <a href="sensory-chemistry.html" class="card">
+                    <h3>Layer Three — The Chemistry</h3>
+                    <p>Compound portraits — β-ionone, hexanal, nonadienal, mangiferin, GABA, PPO, and others. Each begins with the experience, not the formula.</p>
+                    <div class="card-meta">
+                        <span class="card-tag">Chemistry</span>
+                        <span class="card-tag">Layer Three</span>
+                    </div>
+                </a>
+                <a href="sensory-companion.html" class="card" style="border-left: 3px solid #3d5a3e;">
+                    <h3>The Companion</h3>
+                    <p>A guided walk through sensory territory — driven entirely by choices, no typing required. The companion reads where you've been and offers what's adjacent. A pull page for anyone curious about flavour, taste, and what they already sense.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#eef3ee;color:#3d5a3e;">Interactive</span>
+                        <span class="card-tag" style="background:#eef3ee;color:#3d5a3e;">AI Companion</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- BUNA CULINARY -->
+        <section id="culinary" style="margin-top: 40px;">
+            <div class="section-header">
+                <h2>Buna Culinary</h2>
+                <span class="section-num" style="color: #8a7c5e;">Door Seven</span>
+            </div>
+            <p style="color: var(--gray); margin-bottom: 30px;">Coffee leaf as a culinary ingredient — what it does when salt, fat, acid, and heat are applied, alone and in combination. New territory. No established reference exists. These pages are offered as foundational theory and working preparations for testing and collaborative development.</p>
+            <div class="card-grid">
+                <a href="buna-culinary.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>The Leaf at the Table</h3>
+                    <p>The governing frame for Buna as a culinary ingredient. Three modes — extraction, whole leaf, transformative additive — and six elements. For anyone who thinks in a kitchen before they cook in it.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Door Seven</span>
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Page 1</span>
+                    </div>
+                </a>
+                <a href="buna-culinary-elements.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>The Leaf and the Elements — Theory</h3>
+                    <p>What happens to the whole leaf under salt, fat, acid, and heat — alone and in combination. Sensory outcomes mapped across taste, aroma, texture, mouthfeel, and aftertaste. Clearly marked as theory with no published culinary reference. Offered for testing.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Door Seven</span>
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Page 2</span>
+                        <span class="card-tag" style="background:#f0ebe0;color:#8a7c5e;">Theory</span>
+                    </div>
+                </a>
+                <a href="buna-culinary-preparations.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>The Preparations</h3>
+                    <p>Seventeen foundational preparations from simple infusion through the Kerala table pathway, roasted leaf, and comparative tasting sets. Quantities, ratios, and tasting notes. Designed to be repeatable and built upon.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Door Seven</span>
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Page 3</span>
+                    </div>
+                </a>
+                <a href="buna-culinary-concepts.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>Concepts — Eight Methods, One Leaf</h3>
+                    <p>How food cultures absorb new ingredients — and what that logic offers for Buna. Eight universal cooking concepts, each with a traditional reference, a note on how it has been absorbed across cultures, and the question it opens for the cook with Buna on their counter.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Door Seven</span>
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Page 4</span>
+                        <span class="card-tag" style="background:#f0ebe0;color:#8a7c5e;">Concepts</span>
+                    </div>
+                </a>
+                <a href="buna-in-kerala.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>Buna in Kerala — A Concept Canvas</h3>
+                    <p>Eight positions at the Kerala table — rice, kanji, kappa, the rasam position, the moru position, kanji vellum, the sadya, the morning cup. Each described on its own terms. Then one question: if Buna were here, what would it need to be?</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Door Seven</span>
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Page 5</span>
+                        <span class="card-tag" style="background:#f0ebe0;color:#8a7c5e;">Concepts</span>
+                    </div>
+                </a>
+                <a href="buna-culinary-school.html" class="card" style="border-left: 3px solid #8a7c5e;">
+                    <h3>The Kitchen Companion</h3>
+                    <p>An AI thinking partner for cooks exploring what Buna can do. Bring your own kitchen tradition. The companion finds where the leaf connects to what you already know and already make. A conversation, not a lesson.</p>
+                    <div class="card-meta">
+                        <span class="card-tag" style="background:#f7f2e8;color:#8a7c5e;">Door Seven</span>
+                        <span class="card-tag" style="background:#eef3ee;color:#3d5a3e;">AI Companion</span>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <!-- CALLOUT -->
+        <div class="callout">
+            <strong>How to use this site:</strong> New to coffee leaf? Visit <a href="index.html">Begin With a Cup</a> first. "Foundation" for context and how this library handles evidence. "Traditional Preparations" for documented household and community practices. "Practical Guides" for step-by-step versions. "Reference" for sensory and chemical detail. "Research &amp; Application" for the Citane papers. "Sensory School" to learn how to sense Buna from daily life upwards. "Buna Culinary" to explore the leaf as a kitchen ingredient — new territory, offered for testing.
+        </div>
+        
+    </div>
+    
+    <!-- FOOTER -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Navigation</h4>
+                <ul>
+                    <li><a href="index.html">Begin With a Cup</a></li>
+                    <li><a href="#start">Foundation</a></li>
+                    <li><a href="#reference-layer">Reference</a></li>
+                    <li><a href="#traditional">Traditional Preparations</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Guides &amp; Research</h4>
+                <ul>
+                    <li><a href="#guides">Practical Guides</a></li>
+                    <li><a href="#citane">Research &amp; Application</a></li>
+                    <li><a href="#sensory-school">Sensory School</a></li>
+                    <li><a href="#culinary">Buna Culinary</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>About</h4>
+                <ul>
+                    <li><a href="the-foliage-of-buna.html#evidence">How We Treat Evidence</a></li>
+                    <li>KoffyKraft, Thumpassery Estate</li>
+                    <li>Karavaloor, Kollam, Kerala</li>
+                </ul>
+            </div>
+            <div class="footer-credit">
+                <p><strong>Buna Coffee Leaf Library</strong> &mdash; A Catalogue of Traditions, Reference, and Research</p>
+                <p>KoffyKraft, Thumpassery Estate &middot; Karavaloor, Kollam, Kerala</p>
+                <p style="margin-top: 15px; font-size: 0.85em;">Drawing on documented traditions, peer-reviewed research, and Citane's own trials &mdash; see the Foundation page's Evidence Discipline for how each is treated.</p>
+            </div>
+        </div>
+    </footer>
+    
+</body>
+</html>
