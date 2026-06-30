@@ -155,7 +155,7 @@ body {
 <script src="parts-search.js"></script>
 <script>
 const s = requireLogin();
-initShell('links'); // Map highlight to sidebar references
+initShell('catalog');
 
 let currentFilter = 'ALL';
 let currentParts  = [];
@@ -319,6 +319,8 @@ document.getElementById('file-input').addEventListener('change', function(e) {
 });
 
 function handleIncomingExcel(file) {
+  if (!file || !/\.(xlsx|xls)$/i.test(file.name)) { toast('Choose an Excel .xlsx or .xls file'); return; }
+  if (typeof XLSX === 'undefined') { toast('Excel reader unavailable. Connect once, reload, then try again.'); return; }
   const reader = new FileReader();
   reader.onload = function(ev) {
     try {
@@ -351,7 +353,13 @@ function handleIncomingExcel(file) {
 
 // ── Download Template Pipeline ────────────────────────────
 function downloadTemplate() {
-  window.open('https://raw.githubusercontent.com/koffykraft/tagro-service/main/TAGRO_Parts_Master_Template.xlsx');
+  const a = document.createElement('a');
+  a.href = 'TAGRO Parts Master Template.xlsx';
+  a.download = 'TAGRO Parts Master Template.xlsx';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  toast('Template download started');
 }
 
 // ── Confirm Modal Execution (Strictly no alert/confirm alerts) ──
@@ -369,9 +377,12 @@ function executeClearParts() {
   localStorage.removeItem('tagro_parts_data');
   localStorage.removeItem('tagro_parts_updated');
   closeClearConfirmModal();
+  currentFilter = 'ALL';
+  document.getElementById('search-input').value = '';
   renderStats();
+  renderFilters();
   renderList([]);
-  toast('Verification database cleared.');
+  toast('Local parts cache cleared. Reload to sync it again.');
 }
 
 init();
@@ -379,7 +390,7 @@ init();
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
 </script>

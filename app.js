@@ -187,43 +187,52 @@ async function syncJobs(jobsArr, touchedId) {
     const res = await fetch(`${API}/dropbox/save-job`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ branch: s.branch, job })
+      body: JSON.stringify({ branch: job.branch || s.branch, job })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) {
       const q = jget('tagro_pending_sync', []);
-      q.push({ job, branch: s.branch, failedAt: new Date().toISOString(), reason: data.error || 'sync failed' });
+      q.push({ job, branch: job.branch || s.branch, failedAt: new Date().toISOString(), reason: data.error || 'sync failed' });
       jset('tagro_pending_sync', q);
     }
   } catch(e) {
     const q = jget('tagro_pending_sync', []);
-    q.push({ job, branch: s.branch, failedAt: new Date().toISOString(), reason: e.message });
+    q.push({ job, branch: job.branch || s.branch, failedAt: new Date().toISOString(), reason: e.message });
     jset('tagro_pending_sync', q);
   }
 }
 
 async function pullJobsFromDropbox() {
   if (isDemo()) return;
-  let s = session();
+  const s = session();
   if (!s || !s.branch) return;
+  const branchCodes = (s.role === 'Owner' || s.branch === 'ALL')
+    ? Object.keys(TAGRO.branches)
+    : [s.branch];
   try {
-    const res = await fetch(`${API}/dropbox/jobs?branch=${encodeURIComponent(s.branch)}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data.ok || !Array.isArray(data.jobs) || !data.jobs.length) return;
+    const responses = await Promise.all(branchCodes.map(async branch => {
+      try {
+        const res = await fetch(`${API}/dropbox/jobs?branch=${encodeURIComponent(branch)}`);
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.ok && Array.isArray(data.jobs) ? data.jobs : [];
+      } catch { return []; }
+    }));
+    const remote = responses.flat();
+    if (!remote.length) { flushPendingSync().catch(() => {}); return; }
     const local = jget('tagro_jobs', []);
     const map = {};
-    [...data.jobs, ...local].forEach(j => {
-      const wo = j.workOrder || j.id || '';
-      if (!wo) return;
-      const existing = map[wo];
-      if (!existing) { map[wo] = j; return; }
-      const ta = Date.parse(existing.updatedAt || existing.savedAt || 0) || 0;
-      const tb = Date.parse(j.updatedAt || j.savedAt || 0) || 0;
-      map[wo] = tb > ta ? j : existing;
+    [...remote, ...local].forEach(j => {
+      const key = (j.branch || '') + '|' + (j.workOrder || j.id || '');
+      if (!key.endsWith('|')) {
+        const existing = map[key];
+        if (!existing) { map[key] = j; return; }
+        const ta = Date.parse(existing.updatedAt || existing.savedAt || 0) || 0;
+        const tb = Date.parse(j.updatedAt || j.savedAt || 0) || 0;
+        map[key] = tb > ta ? j : existing;
+      }
     });
-    const merged = Object.values(map);
-    jset('tagro_jobs', merged);
+    jset('tagro_jobs', Object.values(map));
     flushPendingSync().catch(() => {});
   } catch {}
 }
@@ -557,6 +566,7 @@ function initShell(active) {
       <h2 style="margin-top:0">${esc(s?.name) || ''}</h2>
       <p class="sub">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'All Branches' : esc(s?.branch) || ''}</p>
       <a class="btn block" href="home.html" style="margin-top:14px">Home</a>
+      ${s?.role === 'Owner' || s?.role === 'Manager' ? '<a class="btn block" href="config.html" style="margin-top:10px">Device Setup & Settings</a>' : ''}
       <button class="btn block" style="margin-top:10px" onclick="closeUserMenu()">Cancel</button>
       <button class="btn red block" style="margin-top:10px" onclick="confirmLogout()">Logout</button>
     </div>`;
@@ -576,6 +586,7 @@ function initShell(active) {
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];
+  if (s?.role === 'Owner' || s?.role === 'Manager') tabs.push(['config.html','Setup','setup']);
   if (s?.role === 'Owner') tabs.push(['staff-admin.html','Staff','admin']);
 
   nav.innerHTML = tabs.map(t =>

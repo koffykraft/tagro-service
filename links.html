@@ -67,7 +67,7 @@ document.getElementById('contacts').innerHTML = Object.entries(TAGRO.branches).m
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
 </script>

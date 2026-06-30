@@ -2,142 +2,84 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#df6427">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="TAGRO">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Receive Machine — TAGRO</title>
 <link rel="stylesheet" href="app.css">
 <style>
-.step-indicator { display:flex; align-items:center; padding:12px 16px; gap:0; }
-.step-dot { width:28px; height:28px; border-radius:50%; border:2px solid #e8e8e8; background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:900; color:#aaa; flex-shrink:0; }
-.step-dot.active { background:#df6427; border-color:#df6427; color:#fff; }
-.step-dot.done { background:#287a3e; border-color:#287a3e; color:#fff; }
-.step-line { flex:1; height:2px; background:#e8e8e8; }
-.step-line.done { background:#287a3e; }
-.step-card { display:none; }
-.step-card.active { display:block; }
-.search-big { width:100%; padding:16px; font-size:18px; border:2px solid #e8e8e8; border-radius:14px; font-family:inherit; outline:none; transition:border-color .2s; }
-.search-big:focus { border-color:#df6427; }
-.customer-result { background:#fff; border:1.5px solid #e8e8e8; border-radius:14px; padding:14px; margin-bottom:8px; cursor:pointer; transition:all .15s; }
-.customer-result:hover { border-color:#df6427; background:#fff8f4; }
-.customer-result.selected { border-color:#df6427; background:#fff8f4; box-shadow:0 0 0 3px rgba(223,100,39,.1); }
-.customer-name { font-weight:900; font-size:16px; }
-.customer-meta { font-size:13px; color:#888; margin-top:3px; }
-.customer-history { font-size:12px; color:#df6427; margin-top:4px; font-weight:700; }
-.btn-new-customer { width:100%; padding:16px; border:2px dashed #df6427; background:transparent; border-radius:14px; font-size:16px; font-weight:900; color:#df6427; cursor:pointer; margin-top:8px; }
-.machine-pill { display:inline-flex; flex-direction:column; align-items:center; padding:12px 16px; border:1.5px solid #e8e8e8; border-radius:12px; cursor:pointer; margin:4px; background:#fff; min-width:80px; }
-.machine-pill.selected { border-color:#df6427; background:#fff8f4; }
-.m-model { font-weight:900; font-size:14px; }
-.m-serial { font-size:11px; color:#aaa; }
-.complaint-pill { display:inline-block; padding:10px 16px; border:1.5px solid #e8e8e8; border-radius:99px; cursor:pointer; margin:4px; background:#fff; font-weight:700; font-size:14px; }
-.complaint-pill.selected { background:#df6427; border-color:#df6427; color:#fff; }
-.urgency-row { display:flex; gap:8px; margin-bottom:12px; }
-.urgency-btn { flex:1; padding:12px; border:1.5px solid #e8e8e8; border-radius:10px; text-align:center; cursor:pointer; background:#fff; font-weight:800; font-size:13px; }
-.urgency-btn.selected { border-color:#df6427; background:#fff8f4; color:#df6427; }
-.confirm-label { font-size:11px; color:#aaa; font-weight:900; text-transform:uppercase; letter-spacing:.5px; }
-.confirm-value { font-size:14px; font-weight:800; color:#121212; margin-top:2px; }
+.receive-wrap{padding:0;max-width:620px}.receive-top{padding:12px 14px 0}.step-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}.step-meta a{min-height:44px;display:flex;align-items:center;font-weight:900;color:#777;text-decoration:none}.step-indicator{display:flex;align-items:center;padding:8px 4px}.step-dot{width:30px;height:30px;border-radius:50%;border:2px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#999;flex:none}.step-dot.active{background:#df6427;border-color:#df6427;color:#fff}.step-dot.done{background:#287a3e;border-color:#287a3e;color:#fff}.step-line{flex:1;height:3px;background:#ddd}.step-line.done{background:#287a3e}.step-card{display:none}.step-card.active{display:block}.search-big{width:100%;min-height:56px;padding:14px;font-size:18px;border:2px solid #ddd;border-radius:14px}.customer-result{width:100%;min-height:60px;background:#fff;border:1.5px solid #ddd;border-radius:14px;padding:13px;margin-top:8px;text-align:left}.customer-name{font-weight:950;font-size:16px}.customer-meta{font-size:13px;color:#777;margin-top:3px}.customer-history{font-size:12px;color:#df6427;margin-top:4px;font-weight:800}.btn-new-customer{width:100%;min-height:54px;border:2px dashed #df6427;background:#fff;border-radius:14px;font-size:16px;font-weight:900;color:#df6427;margin-top:10px}.section-label{font-size:11px;color:#777;font-weight:900;text-transform:uppercase;letter-spacing:.8px;margin:16px 0 7px}.machine-pill,.complaint-pill{min-height:48px;padding:10px 14px;border:1.5px solid #ddd;border-radius:12px;background:#fff;font-weight:800;margin:3px}.machine-pill.selected,.complaint-pill.selected{border-color:#df6427;background:#fff4ef;color:#c7511b}.machine-pill span{display:block}.machine-pill small{color:#777}.accessory-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.accessory-btn,.urgency-btn{min-height:50px;border:1.5px solid #ddd;border-radius:12px;background:#fff;font-weight:850;padding:10px}.accessory-btn.selected{border-color:#287a3e;background:#e9f6ec;color:#287a3e}.urgency-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.urgency-btn.selected{border-color:#df6427;background:#fff4ef;color:#c7511b}.complaint-item{display:flex;align-items:center;gap:8px;padding:10px 2px;border-bottom:1px solid #eee}.complaint-item b{flex:1}.confirm-row{padding:12px 0;border-bottom:1px solid #eee}.confirm-label{font-size:11px;color:#888;font-weight:900;text-transform:uppercase;letter-spacing:.5px}.confirm-value{font-size:15px;font-weight:850;margin-top:3px}.receive-card{margin:10px 14px}.saving{opacity:.65;pointer-events:none}@media(max-width:380px){.urgency-row{grid-template-columns:1fr}.accessory-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="wrap" style="padding:0;max-width:600px">
-  <div style="padding:14px 16px 0">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <a href="home.html" style="font-size:13px;font-weight:800;color:#aaa;text-decoration:none">← Back</a>
-      <span style="font-size:13px;font-weight:900;color:#df6427" id="step-label">Customer</span>
-      <span style="font-size:12px;color:#aaa" id="step-counter">Step 1 of 3</span>
-    </div>
-    <div class="step-indicator">
-      <div class="step-dot active" id="dot-1">1</div>
-      <div class="step-line" id="line-1"></div>
-      <div class="step-dot" id="dot-2">2</div>
-      <div class="step-line" id="line-2"></div>
-      <div class="step-dot" id="dot-3">3</div>
-    </div>
+<div class="wrap receive-wrap">
+  <div class="receive-top">
+    <div class="step-meta"><a href="home.html">← Back</a><b id="step-label" style="color:#df6427">Customer</b><span class="small" id="step-counter">Step 1 of 3</span></div>
+    <div class="step-indicator"><div class="step-dot active" id="dot-1">1</div><div class="step-line" id="line-1"></div><div class="step-dot" id="dot-2">2</div><div class="step-line" id="line-2"></div><div class="step-dot" id="dot-3">3</div></div>
   </div>
-
-  <div class="step-card active" id="step-customer">
-    <div class="card" style="margin:12px 14px">
-      <div class="head">Who is the customer?</div>
-      <div class="body">
-        <input class="search-big" id="customer-search" placeholder="Phone, name, or alias..." oninput="searchCustomers()">
-        <div id="customer-results"></div>
-      </div>
-    </div>
-    <div class="card" id="new-customer-form" style="margin:0 14px;display:none">
-      <div class="head">New Customer</div>
-      <div class="body">
-        <div class="field"><label>Name</label><input id="nc-name" placeholder="Name"></div>
-        <div class="field"><label>Phone</label><input id="nc-phone" type="tel" placeholder="Mobile"></div>
-        <button type="button" class="btn primary block" onclick="confirmNewCustomer()">Use This Customer</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="step-card" id="step-machine">
-    <div class="card" style="margin:12px 14px">
-      <div class="head" id="machine-card-head">Which machine?</div>
-      <div class="body">
-        <div id="prev-machines"></div>
-        <div class="field"><label>Model</label>
-            <select id="machine-model" onchange="onModelChange()">
-                <option value="">Select model</option>
-                <option value="__other__">Other — type below</option>
-            </select>
-        </div>
-        <div class="field"><label>Serial Number</label><input id="machine-serial" placeholder="If available"></div>
-        <div id="complaint-pills"></div>
-        <div id="complaint-list"></div>
-        <div class="urgency-row">
-            <div class="urgency-btn" onclick="setUrgency('normal',this)">Normal</div>
-            <div class="urgency-btn" onclick="setUrgency('urgent',this)">Urgent</div>
-        </div>
-        <button type="button" class="btn primary block" onclick="goToConfirm()">Next →</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="step-card" id="step-confirm">
-    <div class="card" style="margin:12px 14px">
-      <div class="head">Confirm and Receive</div>
-      <div class="body">
-        <div id="confirm-summary"></div>
-        <button type="button" class="btn primary block" style="padding:18px" onclick="receiveMachine()">✓ Receive Machine</button>
-      </div>
-    </div>
-  </div>
+  <section class="step-card active" id="step-customer">
+    <div class="card receive-card"><div class="head">Who is the customer?</div><div class="body">
+      <input class="search-big" id="customer-search" autocomplete="off" placeholder="Phone, name, alias, or place" oninput="searchCustomers()">
+      <div id="customer-results"></div>
+    </div></div>
+    <div class="card receive-card" id="new-customer-form" style="display:none"><div class="head">New Customer</div><div class="body">
+      <div class="field"><label>Name</label><input id="nc-name" autocomplete="name" placeholder="Customer name"></div>
+      <div class="field"><label>Phone</label><input id="nc-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="Mobile number"></div>
+      <div class="field"><label>Place</label><input id="nc-place" placeholder="Village / town"></div>
+      <div class="field"><label>Alias / Pet Name</label><input id="nc-alias" placeholder="Optional"></div>
+      <button type="button" class="btn primary block" onclick="confirmNewCustomer()">Use This Customer →</button>
+    </div></div>
+  </section>
+  <section class="step-card" id="step-machine">
+    <div class="card receive-card"><div class="head">Machine & Complaint</div><div class="body">
+      <div id="previous-machines"></div>
+      <div class="field"><label>Model</label><select id="machine-model" onchange="onModelChange()"><option value="">Select model</option><option value="__other__">Other — type below</option></select></div>
+      <div class="field" id="other-model-field" style="display:none"><label>Type Model</label><input id="machine-model-other" autocapitalize="characters" placeholder="e.g. MS 250"></div>
+      <div class="field"><label>Serial Number</label><input id="machine-serial" placeholder="Optional — can add later"></div>
+      <div class="section-label">Complaint</div><div id="complaint-pills"></div>
+      <div class="field"><textarea id="complaint-input" placeholder="What is wrong? Keep it short."></textarea></div>
+      <button type="button" class="btn block" onclick="addComplaint()">+ Add Complaint</button><div id="complaint-list"></div>
+      <div class="section-label">Items received with machine</div><div class="accessory-grid" id="accessory-grid"></div>
+      <div class="section-label">Priority</div><div class="urgency-row"><button type="button" class="urgency-btn selected" onclick="setUrgency('normal',this)">Normal</button><button type="button" class="urgency-btn" onclick="setUrgency('urgent',this)">Urgent</button><button type="button" class="urgency-btn" onclick="setUrgency('no_rush',this)">No Rush</button></div>
+      <button type="button" class="btn primary block" style="margin-top:16px" onclick="goToConfirm()">Review Job →</button>
+    </div></div>
+  </section>
+  <section class="step-card" id="step-confirm">
+    <div class="card receive-card"><div class="head">Confirm and Receive</div><div class="body"><div id="confirm-summary"></div>
+      <button type="button" id="receive-btn" class="btn primary block" style="min-height:60px;margin-top:14px" onclick="receiveMachine()">✓ Receive & Open Job</button>
+      <button type="button" class="btn block" style="margin-top:8px" onclick="goToStep(1)">← Edit Details</button>
+    </div></div>
+  </section>
 </div>
-
 <script src="app.js"></script>
 <script>
-// Logic preserved and corrected from your original app.js
-const s = requireLogin();
-initShell('quick');
-let selectedCustomer = null;
-let selectedMachineId = null;
-let complaintArr = [];
-let urgency = 'normal';
-
-function goToStep(n) {
-    document.querySelectorAll('.step-card').forEach((c,i) => c.classList.toggle('active', i === n));
-    // ... keep your step indicator logic here
-}
-
-function receiveMachine() {
-    if (!selectedCustomer) { alert('Select customer'); return; }
-    // Core submission logic remains
-    toast('Machine received');
-    location.href = 'home.html';
-}
-
-function setUrgency(val, el) {
-    urgency = val;
-    document.querySelectorAll('.urgency-btn').forEach(b => b.classList.remove('selected'));
-    el.classList.add('selected');
-}
+var s=requireLogin();initShell('quick');
+var activeBranch=s.role==='Owner'?jget('tagro_device_branch','KVR'):s.branch;
+var selectedCustomer=null,selectedMachineId=null,complaintArr=[],urgency='normal';
+var commonComplaints=["Won't Start",'No Power','Chain Problem','Fuel Leak','Engine Noise','Service','Other'];
+var accessoryNames=['Guide bar','Chain','Fuel present','Loose parts','Photo taken','Battery / charger'];
+function goToStep(n){document.querySelectorAll('.step-card').forEach(function(c,i){c.classList.toggle('active',i===n)});var labels=['Customer','Machine & Complaint','Confirm'];document.getElementById('step-label').textContent=labels[n];document.getElementById('step-counter').textContent='Step '+(n+1)+' of 3';for(var i=1;i<=3;i++){var dot=document.getElementById('dot-'+i);dot.classList.toggle('active',i===n+1);dot.classList.toggle('done',i<n+1);dot.textContent=i<n+1?'✓':i;if(i<3)document.getElementById('line-'+i).classList.toggle('done',i<=n)}window.scrollTo({top:0,behavior:'smooth'})}
+function customerPool(){return customers().filter(function(c){return s.demo||c.branch===activeBranch})}
+function searchCustomers(){var q=document.getElementById('customer-search').value.trim();var pool=customerPool();var list=q?pool.filter(function(c){return [c.name,c.phone,c.place].concat(c.alias||[]).join(' ').toLowerCase().includes(q.toLowerCase())}).slice(0,8):pool.slice(-6).reverse();var html=list.map(function(c){var history=(c.machines||[]).map(function(m){return m.model}).filter(Boolean).join(', ');return '<button type="button" class="customer-result" onclick="chooseCustomer(decodeURIComponent(\''+encodeURIComponent(c.id)+'\'))"><div class="customer-name">'+esc(c.name)+'</div><div class="customer-meta">'+esc(c.phone||'No phone')+(c.place?' · '+esc(c.place):'')+'</div>'+(history?'<div class="customer-history">'+esc(history)+'</div>':'')+'</button>'}).join('');document.getElementById('customer-results').innerHTML=html+'<button type="button" class="btn-new-customer" onclick="showNewCustomer()">+ New Customer</button>'}
+function chooseCustomer(id){selectedCustomer=customers().find(function(c){return String(c.id)===String(id)});if(!selectedCustomer)return;document.getElementById('customer-search').value=selectedCustomer.name;document.getElementById('new-customer-form').style.display='none';prepareMachineStep();goToStep(1)}
+function showNewCustomer(){selectedCustomer=null;var form=document.getElementById('new-customer-form');form.style.display='block';var q=document.getElementById('customer-search').value.trim();if(q&&!/^\d+$/.test(q))document.getElementById('nc-name').value=q;if(/^\d{6,}$/.test(q))document.getElementById('nc-phone').value=q;setTimeout(function(){document.getElementById('nc-name').focus()},50)}
+function confirmNewCustomer(){var name=document.getElementById('nc-name').value.trim(),phone=document.getElementById('nc-phone').value.trim();if(!name)return toast('Customer name needed');if(!phone)return toast('Phone number needed');selectedCustomer={id:'c'+Date.now(),branch:activeBranch,name:name,phone:phone,place:document.getElementById('nc-place').value.trim(),alias:document.getElementById('nc-alias').value.trim()?[document.getElementById('nc-alias').value.trim()]:[],machines:[]};prepareMachineStep();goToStep(1)}
+function modelName(m){return String((m&&(m.model||m.name||m.code))||m||'').trim()}
+function prepareMachineStep(){selectedMachineId=null;complaintArr=[];renderComplaints();var previous=selectedCustomer.machines||[];document.getElementById('previous-machines').innerHTML=previous.length?'<div class="section-label">Previous Machines — tap one</div>'+previous.map(function(m){return '<button type="button" class="machine-pill" onclick="chooseMachine(decodeURIComponent(\''+encodeURIComponent(m.id||'')+'\'),this)"><span>'+esc(m.model||'Machine')+'</span><small>'+esc(m.serial||m.serialNo||'')+'</small></button>'}).join(''):'<div class="small" style="margin-bottom:12px">New customer — enter the machine below.</div>';var known=getBranchModels(activeBranch).map(modelName).concat(jget('tagro_custom_models',[]),previous.map(modelName),jobs().filter(function(j){return j.branch===activeBranch}).map(function(j){return j.machine&&j.machine.model||''})).filter(Boolean);var models=Array.from(new Set(known)).sort(function(a,b){return a.localeCompare(b,undefined,{numeric:true})});var select=document.getElementById('machine-model');select.innerHTML='<option value="">Select model</option>'+models.map(function(m){return '<option value="'+esc(m)+'">'+esc(m)+'</option>'}).join('')+'<option value="__other__">Other — type below</option>';document.getElementById('machine-serial').value='';document.getElementById('machine-model-other').value='';onModelChange()}
+function chooseMachine(id,el){var m=(selectedCustomer.machines||[]).find(function(x){return String(x.id||'')===String(id)});if(!m)return;selectedMachineId=m.id||null;var select=document.getElementById('machine-model'),model=m.model||'';if(Array.from(select.options).some(function(o){return o.value===model}))select.value=model;else{select.value='__other__';document.getElementById('machine-model-other').value=model}document.getElementById('machine-serial').value=m.serial||m.serialNo||'';document.querySelectorAll('.machine-pill').forEach(function(b){b.classList.remove('selected')});el.classList.add('selected');onModelChange()}
+function onModelChange(){var other=document.getElementById('machine-model').value==='__other__';document.getElementById('other-model-field').style.display=other?'block':'none'}
+function quickComplaint(text,el){document.querySelectorAll('.complaint-pill').forEach(function(b){b.classList.remove('selected')});el.classList.add('selected');var input=document.getElementById('complaint-input');input.value=text==='Other'?'':text;input.focus()}
+function addComplaint(){var input=document.getElementById('complaint-input'),text=input.value.trim();if(!text)return toast('Type the complaint first');complaintArr.push({text:text,status:'Received',at:new Date().toISOString()});input.value='';document.querySelectorAll('.complaint-pill').forEach(function(b){b.classList.remove('selected')});renderComplaints()}
+function renderComplaints(){document.getElementById('complaint-list').innerHTML=complaintArr.map(function(c,i){return '<div class="complaint-item"><b>'+(i+1)+'. '+esc(c.text)+'</b><button type="button" class="btn red" style="min-height:44px;padding:8px 10px" onclick="removeComplaint('+i+')">Remove</button></div>'}).join('')}
+function removeComplaint(i){complaintArr.splice(i,1);renderComplaints()}
+function toggleAccessory(el){el.classList.toggle('selected')}
+function setUrgency(value,el){urgency=value;document.querySelectorAll('.urgency-btn').forEach(function(b){b.classList.remove('selected')});el.classList.add('selected')}
+function selectedModel(){var value=document.getElementById('machine-model').value;return (value==='__other__'?document.getElementById('machine-model-other').value:value).trim().toUpperCase()}
+function selectedAccessories(){return Array.from(document.querySelectorAll('.accessory-btn.selected')).map(function(b){return b.dataset.value})}
+function goToConfirm(){if(!selectedCustomer){goToStep(0);return toast('Select a customer')}var model=selectedModel();if(!model)return toast('Machine model needed');if(document.getElementById('complaint-input').value.trim())addComplaint();if(!complaintArr.length)return toast('Add at least one complaint');var serial=document.getElementById('machine-serial').value.trim(),items=selectedAccessories();document.getElementById('confirm-summary').innerHTML='<div class="confirm-row"><div class="confirm-label">Customer</div><div class="confirm-value">'+esc(selectedCustomer.name)+' · '+esc(selectedCustomer.phone)+'</div></div><div class="confirm-row"><div class="confirm-label">Machine</div><div class="confirm-value">'+esc(model)+(serial?' · '+esc(serial):' · No serial')+'</div></div><div class="confirm-row"><div class="confirm-label">Complaint</div><div class="confirm-value">'+complaintArr.map(function(c){return esc(c.text)}).join(' / ')+'</div></div><div class="confirm-row"><div class="confirm-label">Priority & Items</div><div class="confirm-value">'+esc(urgency.replace('_',' '))+(items.length?' · '+items.map(esc).join(', '):'')+'</div></div><div class="confirm-row"><div class="confirm-label">Accepted By</div><div class="confirm-value">'+esc(s.name)+' · '+esc(activeBranch)+'</div></div>';goToStep(2)}
+function receiveMachine(){if(!selectedCustomer){goToStep(0);return toast('Select a customer')}var model=selectedModel();if(!model||!complaintArr.length){goToStep(1);return toast('Complete machine and complaint')}var btn=document.getElementById('receive-btn');if(btn.disabled)return;btn.disabled=true;btn.classList.add('saving');btn.textContent='Saving locally...';var now=new Date().toISOString(),serialNo=document.getElementById('machine-serial').value.trim();var job={id:'j'+Date.now(),workOrder:wo(activeBranch),branch:activeBranch,branchName:TAGRO.branches[activeBranch]||activeBranch,date:now,updatedAt:now,acceptedBy:s.name,status:'Received',urgency:urgency,customer:{name:selectedCustomer.name,phone:selectedCustomer.phone,place:selectedCustomer.place||'',alias:Array.isArray(selectedCustomer.alias)?selectedCustomer.alias.join(', '):(selectedCustomer.alias||'')},machine:{model:model,serialNo:serialNo},complaints:complaintArr,accessories:selectedAccessories(),parts:[],labour:0,total:0,notes:[],timeline:[{type:'received',description:'Machine received',by:s.name,at:now}],source:'receive'};var customerList=customers(),customerRecord=customerList.find(function(c){return c.id===selectedCustomer.id});if(!customerRecord){customerRecord=Object.assign({},selectedCustomer,{machines:[]});customerList.push(customerRecord)}var existing=(customerRecord.machines||[]).find(function(m){return(selectedMachineId&&m.id===selectedMachineId)||(serialNo&&(m.serial||m.serialNo)===serialNo)});if(existing){existing.model=model;existing.serial=serialNo}else{customerRecord.machines=customerRecord.machines||[];customerRecord.machines.push({id:'m'+Date.now(),model:model,serial:serialNo,note:''})}jset('tagro_customers',customerList);var all=jobs();all.push(job);saveJobs(all,job.id);toast('Machine received — opening work page');setTimeout(function(){location.href='work.html?id='+encodeURIComponent(job.id)},650)}
+document.getElementById('complaint-pills').innerHTML=commonComplaints.map(function(x){return '<button type="button" class="complaint-pill" onclick="quickComplaint(decodeURIComponent(\''+encodeURIComponent(x)+'\'),this)">'+esc(x)+'</button>'}).join('');document.getElementById('accessory-grid').innerHTML=accessoryNames.map(function(x){return '<button type="button" class="accessory-btn" data-value="'+esc(x)+'" onclick="toggleAccessory(this)">'+esc(x)+'</button>'}).join('');searchCustomers();
 </script>
-</body>
-</html>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(function(){})}</script>
+</body></html>

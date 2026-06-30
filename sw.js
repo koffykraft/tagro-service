@@ -1,39 +1,31 @@
-// TAGRO Service Worker v2 — PWA install + offline cache
-const CACHE = 'tagro-v2';
+// TAGRO Service Worker v3 — static hosting + offline workshop use
+const CACHE = 'tagro-v3';
 const CORE = [
-  '/', '/login.html', '/home.html', '/receive.html', '/work.html',
-  '/tracker.html', '/purchase.html', '/tech.html', '/catalog.html',
-  '/parts.html', '/reports.html', '/links.html', '/config.html',
-  '/staff-admin.html', '/app.js', '/app.css', '/parts-search.js',
-  '/manifest.json', '/icon-192.png', '/icon-512.png'
+  './', './index.html', './login.html', './home.html', './receive.html', './work.html',
+  './tracker.html', './purchase.html', './tech.html', './catalog.html', './parts.html',
+  './reports.html', './links.html', './config.html', './setup.html', './staff-admin.html',
+  './app.js', './app.css', './parts-search.js', './manifest.json',
+  './icon-192.png', './icon-512.png', './TAGRO Parts Master Template.xlsx'
 ];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())
-  );
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
-
-self.addEventListener('fetch', e => {
-  // Network first for API calls, cache first for assets
-  if (e.request.url.includes('workers.dev') || e.request.url.includes('dropbox')) {
-    return; // Let API calls go through normally
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  if (request.url.includes('workers.dev') || request.url.includes('dropbox')) return;
+  if (request.mode === 'navigate') {
+    event.respondWith(fetch(request).then(response => {
+      if (response.ok) caches.open(CACHE).then(cache => cache.put(request, response.clone()));
+      return response;
+    }).catch(() => caches.match(request).then(cached => cached || caches.match('./login.html'))));
+    return;
   }
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const network = fetch(e.request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
-  );
+  event.respondWith(caches.match(request).then(cached => cached || fetch(request).then(response => {
+    if (response.ok) caches.open(CACHE).then(cache => cache.put(request, response.clone()));
+    return response;
+  })));
 });

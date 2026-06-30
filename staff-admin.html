@@ -645,7 +645,13 @@ async function seedPartsIfNeeded() {
       '⚠️ Parts master not in KV yet. Tap to seed 2022 parts.';
     document.getElementById('parts-seed-status').style.color = '#d97706';
     document.getElementById('btn-seed-parts').style.display = 'block';
-  } catch {}
+  } catch(e) {
+    document.getElementById('parts-seed-status').textContent = 'Could not check cloud parts. You can retry seeding when online.';
+    document.getElementById('parts-seed-status').style.color = '#d97706';
+    document.getElementById('btn-seed-parts').style.display = 'block';
+    document.getElementById('btn-seed-parts').textContent = 'Retry Parts Master';
+    document.getElementById('btn-seed-parts').disabled = false;
+  }
 }
 
 async function seedParts() {
@@ -662,8 +668,8 @@ async function seedParts() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ parts, ownerToken: OWNER_TOKEN })
     });
-    const d = await r.json();
-    if (d.ok) {
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) {
       document.getElementById('parts-seed-status').textContent =
         `✓ ${d.count} parts seeded to KV (${d.version})`;
       document.getElementById('parts-seed-status').style.color = '#287a3e';
@@ -683,7 +689,7 @@ async function seedParts() {
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
 </script>

@@ -47,6 +47,10 @@
 </head>
 <body>
 <div class="wrap" style="max-width:600px">
+  <div id="setup-heading" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 14px">
+    <div><h1 style="font-size:24px;margin:0">Device Setup</h1><div class="small" id="setup-subtitle">Choose this phone's branch, then continue to login.</div></div>
+    <a id="setup-back" class="btn" href="home.html" style="display:none">Back</a>
+  </div>
 
   <!-- ── DEVICE BRANCH ── -->
   <div class="card config-section open" id="sec-branch">
@@ -57,7 +61,8 @@
     <div class="body">
       <p class="small" style="margin-bottom:12px">This device is locked to one branch. Staff from any branch can still log in.</p>
       <div class="branch-selector" id="branch-selector"></div>
-      <button class="btn primary block" style="margin-top:12px" onclick="saveBranch()">Set Branch</button>
+      <button id="save-branch-btn" class="btn primary block" style="margin-top:12px" onclick="saveBranch()">Set Branch</button>
+      <a id="continue-login" class="btn green block" style="margin-top:10px;display:none" href="login.html">Continue to Login →</a>
     </div>
   </div>
 
@@ -194,7 +199,8 @@
 // Soft auth check — config must work on fresh devices before login
 // Branch setting is always accessible; staff management requires login
 const s = session();
-if (s) initShell('links'); // only init nav shell if logged in
+if (s) initShell('setup'); // only init nav shell if logged in
+const canManage = !!s && (s.role === 'Owner' || s.role === 'Manager');
 
 // Only owner and managers can access config
 // (soft check — not a security boundary)
@@ -231,6 +237,12 @@ function saveBranch() {
   if (!selectedBranch) { toast('Select a branch'); return; }
   jset('tagro_device_branch', selectedBranch);
   toast('Branch set to ' + selectedBranch + ' — ' + TAGRO.branches[selectedBranch]);
+  const next = document.getElementById('continue-login');
+  if (!s) {
+    next.style.display = 'flex';
+    document.getElementById('save-branch-btn').textContent = 'Branch Saved ✓';
+    next.focus();
+  }
 }
 
 // ── Staff management ──────────────────────────────────────
@@ -494,7 +506,17 @@ function toggle(id) {
 
 // ── Init ──────────────────────────────────────────────────
 initBranch();
-renderStaffList();
+if (s) {
+  document.getElementById('setup-subtitle').textContent = 'Manage this device and workshop lists.';
+  document.getElementById('setup-back').style.display = 'inline-flex';
+}
+if (!s) {
+  ['sec-staff','sec-pin','sec-charges','sec-models','sec-data','sec-danger'].forEach(id => document.getElementById(id).style.display = 'none');
+  if (selectedBranch) document.getElementById('continue-login').style.display = 'flex';
+} else if (!canManage) {
+  ['sec-staff','sec-pin','sec-danger'].forEach(id => document.getElementById(id).style.display = 'none');
+}
+if (canManage) renderStaffList();
 renderCharges();
 renderCustomModels();
 renderDataStatus();
@@ -502,7 +524,7 @@ renderDataStatus();
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
 </script>

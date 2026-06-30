@@ -166,8 +166,8 @@ function init() {
 
   if (!branch) {
     document.getElementById('branch-tag').textContent = 'Not configured';
-    showToast('Device not configured. Opening setup...');
-    setTimeout(() => location.href = 'config.html', 1500);
+    showToast('Choose this device branch once, then continue to login.');
+    setTimeout(() => location.href = 'setup.html', 600);
     return;
   }
 
@@ -533,7 +533,7 @@ init();
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
 </script>
