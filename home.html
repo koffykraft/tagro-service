@@ -50,9 +50,9 @@
   </div>
 
   <div class="stat-strip">
-    <div class="stat-box"><div class="num" id="stat-open">-</div><div class="lbl">Open</div></div>
-    <div class="stat-box"><div class="num" id="stat-ready">-</div><div class="lbl">Ready</div></div>
-    <div class="stat-box"><div class="num" id="stat-wait">-</div><div class="lbl">Waiting</div></div>
+    <div class="stat-box" onclick="location.href='tracker.html'" style="cursor:pointer"><div class="num" id="stat-open">-</div><div class="lbl">Open</div></div>
+    <div class="stat-box" onclick="location.href='tracker.html?status=Ready'" style="cursor:pointer"><div class="num" id="stat-ready">-</div><div class="lbl">Ready</div></div>
+    <div class="stat-box" onclick="location.href='tracker.html?status=Waiting Parts'" style="cursor:pointer"><div class="num" id="stat-wait">-</div><div class="lbl">Waiting</div></div>
   </div>
 
   <div class="action-grid">
@@ -151,7 +151,8 @@ function renderDashboard() {
       j.timeline.forEach(t => {
         if (t.at) {
           events.push({
-            jobId: j.workOrder || j.id,
+            jobId: j.id,
+            workOrder: j.workOrder || j.id,
             model: j.machine?.model || j.model || 'Machine',
             text: t.text,
             by: t.by,
@@ -183,11 +184,11 @@ function renderDashboard() {
     else if (txt.includes('status')) type = 'repair_start';
 
     return `
-      <div class="feed-item" onclick="location.href='bench.html?job=${encodeURIComponent(e.jobId)}'" style="cursor:pointer">
+      <div class="feed-item" onclick="location.href='work.html?id=${encodeURIComponent(e.jobId)}'" style="cursor:pointer">
         <div class="feed-icon">${eventIcon(type)}</div>
         <div class="feed-content">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div class="feed-title">${esc(e.jobId)} <span style="font-weight:400;color:#777">— ${esc(e.model)}</span></div>
+            <div class="feed-title">${esc(e.workOrder)} <span style="font-weight:400;color:#777">— ${esc(e.model)}</span></div>
             <div class="feed-time">${timeAgo(e.at)}</div>
           </div>
           <div class="feed-meta">${esc(e.text)} <span style="color:#aaa">by ${esc(e.by)}</span></div>

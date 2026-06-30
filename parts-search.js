@@ -33,7 +33,7 @@ function partsData() {
 }
 
 /**
- * Main search engine — used across work.html, parts.html, and bench.html.
+ * Main search engine — used across work.html and parts.html.
  * Implements a "Busy-style" multi-word search strategy with score priorities.
  */
 function searchParts(query, limit) {

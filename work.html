@@ -200,6 +200,7 @@
           </div>
           <div id="parts-suggest" class="parts-suggest hide"></div>
         </div>
+        <button class="btn block" style="margin-top:10px" onclick="openCatalogForThisJob()">📚 Open Catalog</button>
       </div>
     </div>
 
@@ -460,12 +461,7 @@ function addNote() {
 }
 
 // ── Estimate ──────────────────────────────────────────────
-function renderEstimate() {
-  const lines = job.estimate?.lines || [];
-  if (!lines.length) {
-    document.getElementById('estimate-lines').innerHTML =
-      '<div class="card"><div class="body small">No estimate yet. Search for parts and labour above.</div></div>';
-    document.getElementByIfunction toggleEstimateLine(i) {
+function toggleEstimateLine(i) {
   const el = document.getElementById('el-' + i);
   if (!el) return;
   const isOpen = el.classList.contains('expanded');
@@ -543,10 +539,18 @@ function renderEstimate() {
     </div>`;
 
   updateSMSPreview(total);
-} for your ${job.machine?.model}.\n` +
+}
+
+function updateSMSPreview(total) {
+  if (!job.estimate?.lines?.length) {
+    document.getElementById('sms-preview').style.display = 'none';
+    return;
+  }
+  const branchPhone = getBranchPhone();
+  document.getElementById('sms-estimate-preview').textContent =
+    `TAGRO Service: Estimate ready for your ${job.machine?.model}.\n` +
     `Work Order: ${job.workOrder}\n` +
     `Amount: Rs.${total.toLocaleString('en-IN')}\n` +
-    `Approve: ${approvalUrl}\n` +
     `Query: ${branchPhone}`;
   document.getElementById('sms-preview').style.display = 'block';
 }
@@ -1230,6 +1234,10 @@ function openTechAssistant() {
     (job.complaints || []).map(c => c.text).join('; ') || job.complaintText || ''
   );
   location.href = `tech.html?job=${wo}&model=${model}&complaint=${complaint}`;
+}
+
+function openCatalogForThisJob() {
+  location.href = `catalog.html?id=${encodeURIComponent(job.id)}`;
 }
 
 function getBranchPhone() {

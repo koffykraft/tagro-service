@@ -62,6 +62,21 @@ function setFilter(f, el) {
   render();
 }
 
+// Honor ?status= from links elsewhere in the app (e.g. Home stat boxes)
+(function applyUrlFilter() {
+  const urlStatus = new URLSearchParams(location.search).get('status');
+  if (!urlStatus) return;
+  const pills = document.querySelectorAll('.filter-pill');
+  for (const p of pills) {
+    if (p.textContent.trim() === urlStatus || (urlStatus === 'Waiting Parts' && p.textContent.trim() === 'Waiting Parts')) {
+      filter = urlStatus;
+      pills.forEach(x => x.classList.remove('on'));
+      p.classList.add('on');
+      break;
+    }
+  }
+})();
+
 function render() {
   const q = document.getElementById('q').value.toLowerCase().trim();
   let arr = jobs().filter(j => s.role === 'Owner' || s.demo || j.branch === s.branch);
@@ -83,22 +98,21 @@ function render() {
     const age = Math.floor((Date.now() - new Date(j.date).getTime()) / 86400000);
 
     return `
-    <div class="job-item">
+    <div class="job-item" onclick="if(!event.target.closest('a')) location.href='work.html?id=${esc(j.id)}'" style="cursor:pointer">
       <div class="job-model">
-        ${esc(j.machine?.model || '—')} — ${esc(j.customer?.name || '—')}
+        <span style="color:var(--orange)">${esc(j.machine?.model || '—')}</span> — ${esc(j.customer?.name || '—')}
         <span class="badge ${statusCls}" style="margin-left:6px">${esc(j.status)}</span>
         ${!j.machine?.serialNo ? '<span class="badge amber" style="margin-left:4px">No Serial</span>' : ''}
       </div>
       <div class="job-sub">
         ${esc(j.workOrder)} · ${esc(j.branch || '')} · ${age}d old<br>
         ${esc(j.customer?.phone || '')} ${j.customer?.place ? '· ' + esc(j.customer.place) : ''}
-        ${j.machine?.serialNo ? '<br>' + esc(j.machine.serialNo) : ''}
+        ${j.machine?.serialNo ? '<br>Serial: ' + esc(j.machine.serialNo) : ''}
         ${(j.complaints || []).map(c => c.text).join(' / ') ? '<br>' + (j.complaints||[]).map(c=>esc(c.text)).join(' / ') : ''}
         ${j.assignedTo ? '<br>🔧 ' + esc(j.assignedTo) : ''}
       </div>
       <div class="job-actions">
-        <a class="btn primary" href="work.html?id=${esc(j.id)}" style="font-size:13px;padding:8px 14px">Open Job</a>
-        ${j.customer?.phone ? `<a class="btn" href="tel:${esc(j.customer.phone)}" style="font-size:13px;padding:8px 14px">📞 Call</a>` : ''}
+        ${j.customer?.phone ? `<a class="btn" href="tel:${esc(j.customer.phone)}" onclick="event.stopPropagation()" style="font-size:13px;padding:8px 14px">📞 Call</a>` : ''}
       </div>
     </div>`;
   }).join('');

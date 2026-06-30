@@ -2,7 +2,7 @@
 const CACHE = 'tagro-v2';
 const CORE = [
   '/', '/login.html', '/home.html', '/receive.html', '/work.html',
-  '/bench.html', '/tracker.html', '/purchase.html', '/tech.html',
+  '/tracker.html', '/purchase.html', '/tech.html', '/catalog.html',
   '/parts.html', '/reports.html', '/links.html', '/config.html',
   '/staff-admin.html', '/app.js', '/app.css', '/parts-search.js',
   '/manifest.json', '/icon-192.png', '/icon-512.png'

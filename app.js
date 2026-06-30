@@ -537,13 +537,28 @@ function speakAloud(text) {
 function initShell(active) {
   seed();
   let s = session();
-  let top = document.createElement('div');
-  top.className = 'top';
+  let top = document.createElement('header');
   top.innerHTML = `
-    <div class="logo">TAGRO</div>
-    <span class="tag">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'ALL' : esc(s?.branch) || '—'}</span>
-    <span class="user" onclick="logout()">${esc(s?.name) || ''} ×</span>`;
+    <a class="logo-link" href="home.html"><img src="${localStorage.getItem('tagro_logo_data') || ''}" alt="TAGRO" onerror="this.style.display='none'"></a>
+    <span class="branch">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'ALL' : esc(s?.branch) || '—'}</span>
+    <span class="user" onclick="openUserMenu()">${esc(s?.name) || ''}</span>`;
   document.body.prepend(top);
+
+  // User menu — replaces the old one-tap-to-logout behaviour.
+  // Tapping the name opens a small menu instead of logging out immediately,
+  // so an accidental tap can no longer end the session and lose your place.
+  let menu = document.createElement('div');
+  menu.id = 'user-menu';
+  menu.className = 'modal';
+  menu.innerHTML = `
+    <div class="sheet">
+      <h2 style="margin-top:0">${esc(s?.name) || ''}</h2>
+      <p class="sub">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'All Branches' : esc(s?.branch) || ''}</p>
+      <a class="btn block" href="home.html" style="margin-top:14px">Home</a>
+      <button class="btn block" style="margin-top:10px" onclick="closeUserMenu()">Cancel</button>
+      <button class="btn red block" style="margin-top:10px" onclick="confirmLogout()">Logout</button>
+    </div>`;
+  document.body.appendChild(menu);
 
   if (s?.demo) document.body.insertAdjacentHTML('afterbegin',
     '<div class="demo">DEMO MODE — practice data only. Nothing here is a real job.</div>');
@@ -553,10 +568,9 @@ function initShell(active) {
   let tabs = [
     ['home.html','Home','home'],
     ['receive.html','Receive','quick'],
-    ['bench.html','Bench','bench'],
     ['tracker.html','Jobs','jobs'],
     ['tech.html','Tech','tech'],
-    ['catalog.html','Catalog','catalog'], // FULLY WIRED: catalog.html tab link added to active tabs shell!
+    ['catalog.html','Catalog','catalog'],
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];
@@ -571,6 +585,16 @@ function initShell(active) {
   setTimeout(() => { pullJobsFromDropbox().catch(() => {}); }, 1000);
 
   initializeUniversalVoice();
+}
+
+function openUserMenu() {
+  document.getElementById('user-menu').classList.add('open');
+}
+function closeUserMenu() {
+  document.getElementById('user-menu').classList.remove('open');
+}
+function confirmLogout() {
+  if (confirm('Log out of TAGRO?')) logout();
 }
 
 seed();

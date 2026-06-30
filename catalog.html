@@ -3,110 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipment Parts Catalog | TAGRO Service OS</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#df6427">
+    <title>Parts Catalog — TAGRO</title>
+    <link rel="stylesheet" href="app.css">
+    <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
     <style>
-        :root {
-            --bg: #f5f5f5;
-            --surface: #ffffff;
-            --primary: #df6427; /* TAGRO Orange */
-            --text-main: #333;
-            --text-muted: #666;
-            --border: #ddd;
-        }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 24px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header { margin-bottom: 24px; }
-        .logo { font-size: 22px; font-weight: 900; color: var(--text-main); }
-        .logo span { color: var(--primary); }
-        
-        /* Search Box */
-        .search-container { background: var(--surface); padding: 16px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 24px; }
-        #search { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; outline: none; }
-        
-        /* Table Style */
-        .table-container { background: var(--surface); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f9f9f9; text-align: left; padding: 16px; font-size: 14px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
-        td { padding: 16px; border-bottom: 1px solid #eee; font-size: 15px; }
-        tr:hover { background: #fdfdfd; }
+        .table-container { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 5px 18px rgba(0,0,0,.05); margin:0 14px 14px; }
+        table { width:100%; border-collapse:collapse; }
+        th { background:#f9f9f9; text-align:left; padding:14px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#777; border-bottom:1px solid var(--line); }
+        td { padding:14px 12px; border-bottom:1px solid #eee; font-size:14px; }
+        tr.part-row { cursor:pointer; }
+        tr.part-row:hover, tr.part-row:active { background:#fdf6f2; }
+        .search-wrap { padding:14px; }
     </style>
 </head>
 <body>
+<div class="wrap" style="padding:0;max-width:900px">
 
-<div class="container">
-    <div class="header">
-        <div class="logo"><span>▰</span> TAGRO Service OS</div>
-        <h2 style="margin-top:10px;">Equipment Parts Catalog</h2>
+  <div class="card" style="margin:14px">
+    <div class="head">Parts Catalog</div>
+    <div class="body search-wrap">
+      <input type="text" id="search" placeholder="Search by part number, name, or machine..." onkeyup="filterParts()" style="font-size:16px">
+      <p class="small" style="margin-top:8px" id="job-context-note"></p>
     </div>
+  </div>
 
-    <div class="search-container">
-        <input type="text" id="search" placeholder="Search by part number, name, or machine..." onkeyup="filterParts()">
-    </div>
-
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>Part Number</th>
-                    <th>Description</th>
-                    <th>MRP (₹)</th>
-                </tr>
-            </thead>
-            <tbody id="catalog-body">
-                </tbody>
-        </table>
-    </div>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Part Number</th>
+          <th>Description</th>
+          <th>MRP (₹)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="catalog-body"></tbody>
+    </table>
+  </div>
 </div>
 
+<script src="app.js"></script>
 <script>
-    function renderCatalog() {
-    const rawData = localStorage.getItem('tagro_parts_data');
-    if (!rawData) return;
-    
-    const data = JSON.parse(rawData);
-    const body = document.getElementById('catalog-body');
-    
-    body.innerHTML = data.map(p => {
-        // Use p.name (your custom name) if available, otherwise use p.stihlName
-        const displayName = p.name && p.name.trim() !== "" ? p.name : (p.stihlName || 'Unknown Part');
-        
-        // Check if this part has a corresponding PDF/Diagram based on your log
-        const hasDiagram = p.modelGroup ? true : false; // Or add logic to check against your model_keys
-        
-        return `
-            <tr>
-                <td style="font-family:monospace; font-weight:600;">${p.no || '-'}</td>
-                <td>
-                    <div style="font-weight:500;">${displayName}</div>
-                    <div style="font-size:12px; color:var(--text-muted);">${p.group || 'General'}</div>
-                </td>
-                <td style="font-weight:600;">${p.mrp ? '₹' + p.mrp : '-'}</td>
-                <td>
-                    ${hasDiagram ? `<button onclick="viewDiagram('${p.no}')" style="cursor:pointer; border:none; background:var(--primary); color:white; padding:4px 8px; border-radius:4px; font-size:11px;">View</button>` : '-'}
-                </td>
-            </tr>
-        `;
-    }).join('');
+const s = requireLogin();
+initShell('catalog');
+
+// If opened from a job's estimate (work.html "Open Catalog"), remember which job
+// so a tapped part can be sent straight back into that job's estimate.
+const params = new URLSearchParams(location.search);
+const returnJobId = params.get('job') || params.get('id');
+if (returnJobId) {
+  document.getElementById('job-context-note').textContent =
+    'Tap a part to add it to job ' + returnJobId + '.';
+} else {
+  document.getElementById('job-context-note').textContent =
+    'Browsing only. Open a job from Jobs, then use "Open Catalog" from its Estimate tab to add parts directly.';
 }
 
-    function filterParts() {
-    const query = document.getElementById('search').value.toLowerCase();
-    // Split the query into an array of words (e.g., "clutch 460" -> ["clutch", "460"])
-    const keywords = query.split(' ').filter(word => word.length > 0);
-    
-    const rows = document.querySelectorAll('#catalog-body tr');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        
-        // Every keyword must be present in the row text for it to be visible
-        const matchesAll = keywords.every(word => text.includes(word));
-        
-        row.style.display = matchesAll ? '' : 'none';
-    });
+function renderCatalog() {
+  const rawData = localStorage.getItem('tagro_parts_data');
+  if (!rawData) {
+    document.getElementById('catalog-body').innerHTML =
+      '<tr><td colspan="4" class="small" style="text-align:center;padding:24px">No parts loaded yet.</td></tr>';
+    return;
+  }
+
+  const data = JSON.parse(rawData);
+  const body = document.getElementById('catalog-body');
+
+  body.innerHTML = data.map(p => {
+    const displayName = p.name && p.name.trim() !== '' ? p.name : (p.stihlName || 'Unknown Part');
+    const price = p.price || p.mrp || 0;
+
+    return `
+      <tr class="part-row" onclick="selectPart('${esc(p.no || '')}', '${esc(displayName)}', ${price})">
+        <td style="font-family:monospace;font-weight:600">${esc(p.no || '-')}</td>
+        <td>
+          <div style="font-weight:700">${esc(displayName)}</div>
+          <div class="small">${esc(p.group || 'General')}</div>
+        </td>
+        <td style="font-weight:700">${price ? '₹' + price : '-'}</td>
+        <td>${returnJobId ? '<span class="badge">+ Add</span>' : ''}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
-    document.addEventListener('DOMContentLoaded', renderCatalog);
+function selectPart(no, name, price) {
+  if (!returnJobId) { toast('Open this from a job to add parts directly'); return; }
+
+  const all = jobs();
+  const job = all.find(j => j.id === returnJobId || j.workOrder === returnJobId);
+  if (!job) { toast('Job not found — it may have been removed'); return; }
+
+  if (!job.estimate) job.estimate = [];
+  job.estimate.push({ no, name, price, qty: 1, total: price });
+  saveJobs(all);
+
+  toast(name + ' added to ' + (job.workOrder || job.id));
+  setTimeout(() => { location.href = 'work.html?id=' + encodeURIComponent(job.id); }, 600);
+}
+
+function filterParts() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const keywords = query.split(' ').filter(word => word.length > 0);
+  const rows = document.querySelectorAll('#catalog-body tr');
+
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const matchesAll = keywords.every(word => text.includes(word));
+    row.style.display = matchesAll ? '' : 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', renderCatalog);
 </script>
 </body>
 </html>
