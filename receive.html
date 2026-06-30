@@ -446,10 +446,18 @@ function renderComplaintPills() {
   const selected = complaintArr.map(c => c.text);
   const common = ["Won't Start","No Power","Chain Problem","Carburetor Issue",
     "Fuel Leak","Engine Noise","Full Service","Sprayer Issue","Brushcutter Problem","Other"];
+
   document.getElementById('complaint-pills').innerHTML = common.map(c => {
     const isSel = selected.includes(c);
-    return `<div class="complaint-pill${isSel ? ' selected' : ''}" onclick="quickComplaint('${c}')">${c}${isSel ? ' ✓' : ''}</div>`;
+    return `
+      <div class="complaint-pill${isSel ? ' selected' : ''}" data-complaint="${esc(c)}">
+        ${esc(c)}${isSel ? ' ✓' : ''}
+      </div>`;
   }).join('');
+
+  document.querySelectorAll('[data-complaint]').forEach(el => {
+    el.onclick = () => quickComplaint(el.dataset.complaint);
+  });
 }
 
 function renderComplaintList() {
