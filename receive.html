@@ -1,4 +1,4 @@
-<!doctype html>
+R<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -236,9 +236,9 @@
           </div>
         </div>
 
-        <button id="receive-btn" class="btn primary block" style="margin-top:14px;padding:18px;font-size:17px" onclick="receiveMachine()">
-  ✓ Receive Machine
-</button>
+        <button class="btn primary block" style="margin-top:14px;padding:18px;font-size:17px" onclick="receiveMachine()">
+          ✓ Receive Machine
+        </button>
       </div>
     </div>
   </div>
@@ -446,18 +446,10 @@ function renderComplaintPills() {
   const selected = complaintArr.map(c => c.text);
   const common = ["Won't Start","No Power","Chain Problem","Carburetor Issue",
     "Fuel Leak","Engine Noise","Full Service","Sprayer Issue","Brushcutter Problem","Other"];
-
   document.getElementById('complaint-pills').innerHTML = common.map(c => {
     const isSel = selected.includes(c);
-    return `
-      <div class="complaint-pill${isSel ? ' selected' : ''}" data-complaint="${esc(c)}">
-        ${esc(c)}${isSel ? ' ✓' : ''}
-      </div>`;
+    return `<div class="complaint-pill${isSel ? ' selected' : ''}" onclick="quickComplaint('${c}')">${c}${isSel ? ' ✓' : ''}</div>`;
   }).join('');
-
-  document.querySelectorAll('[data-complaint]').forEach(el => {
-    el.onclick = () => quickComplaint(el.dataset.complaint);
-  });
 }
 
 function renderComplaintList() {
@@ -538,110 +530,84 @@ function buildConfirmSummary() {
     </div>`;
 }
 
-// ── Save and receive ──────────────────────────────────────async function receiveMachine() {
-  const btn = document.getElementById('receive-btn');
-  if (btn.disabled) return;
+// ── Save and receive ──────────────────────────────────────
+function receiveMachine() {
+  const model  = getModelValue();
+  const serial = document.getElementById('machine-serial').value.trim();
+  const source = document.getElementById('machine-source').value;
+  const accs   = [...document.querySelectorAll('[data-acc].selected')].map(b => b.dataset.acc);
+  const branch = s.branch;
+  const woNum  = wo(branch);
+  const now    = new Date().toISOString();
 
-  btn.disabled = true;
-  btn.textContent = 'Receiving...';
-
-  try {
-    const model  = getModelValue();
-    const serial = document.getElementById('machine-serial').value.trim();
-    const source = document.getElementById('machine-source').value;
-    const accs   = [...document.querySelectorAll('[data-acc].selected')].map(b => b.dataset.acc);
-    const branch = s.branch;
-    const woNum  = wo(branch);
-    const now    = new Date().toISOString();
-
-    if (!selectedCustomer) throw new Error('No customer selected');
-    if (!model) throw new Error('No model selected');
-
-    const job = {
-      id:          'j' + Date.now(),
-      workOrder:   woNum,
-      branch,
-      branchName:  s.branchName,
-      date:        now,
-      status:      'Received',
-      acceptedBy:  s.name,
-      urgency,
-      customer: {
-        id:    selectedCustomer.id,
-        name:  selectedCustomer.name,
-        phone: selectedCustomer.phone,
-        place: selectedCustomer.place,
-        alias: selectedCustomer.alias || []
-      },
-      machine: {
-        id:        selectedMachineId || ('m' + Date.now()),
-        model,
-        serialNo:  serial,
-        source:    source || 'unknown'
-      },
-      complaints:  complaintArr,
-      accessories: accs,
-      timeline: [{
-        type:        'received',
-        description: model + ' received from ' + selectedCustomer.name,
-        by:          s.name,
-        at:          now
-      }],
-      estimate: { lines: [] },
-      parts:   [],
-      labour:  [],
-      notes:   [],
-      photos:  []
-    };
-
-    const all = jobs();
-    all.push(job);
-
-    await saveJobs(all, job.id);
-
-    const cList = customers();
-    let existing = cList.find(c => c.id === selectedCustomer.id);
-
-    if (!existing) {
-      selectedCustomer.machines = selectedCustomer.machines || [];
-      selectedCustomer.machines.push({ id: job.machine.id, model, serial, source });
-      delete selectedCustomer._new;
-      cList.push(selectedCustomer);
-    } else {
-      existing.machines = existing.machines || [];
-      const machineExists = existing.machines.find(m =>
-        m.model === model && m.serial === serial
-      );
-      if (!machineExists) {
-        existing.machines.push({ id: job.machine.id, model, serial, source });
-      }
-    }
-
-    jset('tagro_customers', cList);
-
-    recordEvent(branch, {
+  // Build job
+  const job = {
+    id:          'j' + Date.now(),
+    workOrder:   woNum,
+    branch,
+    branchName:  s.branchName,
+    date:        now,
+    status:      'Received',
+    acceptedBy:  s.name,
+    urgency,
+    customer: {
+      id:    selectedCustomer.id,
+      name:  selectedCustomer.name,
+      phone: selectedCustomer.phone,
+      place: selectedCustomer.place,
+      alias: selectedCustomer.alias || []
+    },
+    machine: {
+      id:        selectedMachineId || ('m' + Date.now()),
+      model,
+      serialNo:  serial,
+      source:    source || 'unknown'
+    },
+    complaints:  complaintArr,
+    accessories: accs,
+    timeline: [{
       type:        'received',
       description: model + ' received from ' + selectedCustomer.name,
-      jobId:       job.id,
-      workOrder:   woNum,
       by:          s.name,
       at:          now
-    });
+    }],
+    parts:   [],
+    labour:  [],
+    notes:   [],
+    photos:  []
+  };
 
-    btn.textContent = '✓ Received — Opening Job...';
-    toast('Machine received — ' + woNum);
+  // Save job
+  const all = jobs();
+  all.push(job);
+  saveJobs(all, job.id);
 
-    setTimeout(() => {
-      location.href = 'work.html?id=' + encodeURIComponent(job.id);
-    }, 500);
+  // Save or update customer
+  const cList = customers();
+  let existing = cList.find(c => c.id === selectedCustomer.id);
 
-  } catch (err) {
-    console.error(err);
-    btn.disabled = false;
-    btn.textContent = '✓ Receive Machine';
-    toast('Could not receive machine. Check details.');
+  if (!existing) {
+    // New customer
+    selectedCustomer.machines = selectedCustomer.machines || [];
+    if (!selectedCustomer.machines.find(m => m.id === job.machine.id)) {
+      selectedCustomer.machines.push({ id: job.machine.id, model, serial, source });
+    }
+    delete selectedCustomer._new;
+    cList.push(selectedCustomer);
+  } else {
+    // Existing — add machine if new
+    existing.machines = existing.machines || [];
+    const machineExists = existing.machines.find(m =>
+      m.model === model && m.serial === serial
+    );
+    if (!machineExists) {
+      existing.machines.push({ id: job.machine.id, model, serial, source });
+    }
   }
-}
+  jset('tagro_customers', cList);
+
+  // Record event
+  recordEvent(branch, {
     type:        'received',
     description: model + ' received from ' + selectedCustomer.name,
     jobId:       job.id,
