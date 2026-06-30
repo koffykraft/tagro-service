@@ -600,3 +600,20 @@ function confirmLogout() {
 }
 
 seed();
+
+
+// ── TAB SWITCHER ──────────────────────────────────────────
+function showTab(tabName, btn) {
+  // Hide all panels
+  document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+  // Deactivate all buttons
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  
+  // Show selected panel
+  const target = document.getElementById(tabName);
+  if (target) target.style.display = 'block';
+  
+  // Activate clicked button
+  if (btn) btn.classList.add('active');
+}
+
