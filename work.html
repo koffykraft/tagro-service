@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#df6427">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TAGRO">
@@ -80,69 +81,32 @@
 .sms-icon { font-size:20px; }
 .sms-label { font-weight:800; font-size:14px; }
 .sms-sub { font-size:12px; color:#aaa; }
-/* ── Voice Helper ── */
-.voice-fab {
-  position:fixed; bottom:24px; right:20px; z-index:300;
-  width:58px; height:58px; border-radius:50%;
-  background:#df6427; border:none; cursor:pointer;
-  box-shadow:0 4px 16px rgba(223,100,39,.45);
-  display:flex; align-items:center; justify-content:center;
-  font-size:24px; transition:transform .15s, box-shadow .15s;
-}
+
+/* Voice Helper */
+.voice-fab { position:fixed; bottom:24px; right:20px; z-index:300; width:58px; height:58px; border-radius:50%; background:#df6427; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(223,100,39,.45); display:flex; align-items:center; justify-content:center; font-size:24px; transition:transform .15s, box-shadow .15s; }
 .voice-fab:active { transform:scale(.93); }
-.voice-fab.listening {
-  background:#ba3327;
-  animation:pulse-ring 1.2s ease-out infinite;
-}
-@keyframes pulse-ring {
-  0%   { box-shadow:0 0 0 0 rgba(186,51,39,.55); }
-  70%  { box-shadow:0 0 0 14px rgba(186,51,39,0); }
-  100% { box-shadow:0 0 0 0 rgba(186,51,39,0); }
-}
-.voice-overlay {
-  display:none; position:fixed; inset:0; z-index:400;
-  background:rgba(0,0,0,.55); align-items:flex-end; justify-content:center;
-}
+.voice-fab.listening { background:#ba3327; animation:pulse-ring 1.2s ease-out infinite; }
+@keyframes pulse-ring { 0% { box-shadow:0 0 0 0 rgba(186,51,39,.55); } 70% { box-shadow:0 0 0 14px rgba(186,51,39,0); } 100% { box-shadow:0 0 0 0 rgba(186,51,39,0); } }
+.voice-overlay { display:none; position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.55); align-items:flex-end; justify-content:center; }
 .voice-overlay.show { display:flex; }
-.voice-sheet {
-  background:#fff; border-radius:24px 24px 0 0;
-  width:100%; max-width:640px; padding:20px 20px 36px;
-  max-height:88vh; overflow-y:auto;
-}
-.voice-mode-row {
-  display:flex; gap:6px; margin-bottom:16px;
-  overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
-}
+.voice-sheet { background:#fff; border-radius:24px 24px 0 0; width:100%; max-width:640px; padding:20px 20px 36px; max-height:88vh; overflow-y:auto; }
+.voice-mode-row { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
 .voice-mode-row::-webkit-scrollbar { display:none; }
-.vmode-btn {
-  flex:none; padding:7px 14px; border-radius:99px; border:1.5px solid #e8e8e8;
-  font-size:12px; font-weight:800; cursor:pointer; background:#fff; white-space:nowrap;
-}
+.vmode-btn { flex:none; padding:7px 14px; border-radius:99px; border:1.5px solid #e8e8e8; font-size:12px; font-weight:800; cursor:pointer; background:#fff; white-space:nowrap; }
 .vmode-btn.active { background:#df6427; color:#fff; border-color:#df6427; }
-.voice-transcript {
-  min-height:64px; background:#f7f7f7; border-radius:14px;
-  padding:14px; font-size:15px; line-height:1.55; color:#222; margin-bottom:12px;
-}
+.voice-transcript { min-height:64px; background:#f7f7f7; border-radius:14px; padding:14px; font-size:15px; line-height:1.55; color:#222; margin-bottom:12px; }
 .voice-transcript.empty { color:#bbb; font-style:italic; }
-.voice-listening-indicator {
-  display:none; align-items:center; gap:6px;
-  font-size:12px; font-weight:800; color:#ba3327; margin-bottom:8px;
-}
+.voice-listening-indicator { display:none; align-items:center; gap:6px; font-size:12px; font-weight:800; color:#ba3327; margin-bottom:8px; }
 .voice-listening-indicator.show { display:flex; }
-.vli-dot { width:8px; height:8px; border-radius:50%; background:#ba3327;
-  animation:vblink .7s ease-in-out infinite alternate; }
+.vli-dot { width:8px; height:8px; border-radius:50%; background:#ba3327; animation:vblink .7s ease-in-out infinite alternate; }
 @keyframes vblink { from{opacity:1} to{opacity:.2} }
-.voice-ai-result {
-  background:#fff8f4; border:1.5px solid #f0d8c8; border-radius:14px;
-  padding:14px; margin-bottom:12px; display:none;
-}
+.voice-ai-result { background:#fff8f4; border:1.5px solid #f0d8c8; border-radius:14px; padding:14px; margin-bottom:12px; display:none; }
 .voice-ai-result.show { display:block; }
 .vai-label { font-size:11px; font-weight:800; color:#df6427; margin-bottom:6px; letter-spacing:.05em; }
 .vai-item { font-size:13px; margin:4px 0; line-height:1.5; }
 .vai-item strong { font-weight:800; }
 .voice-action-row { display:flex; gap:8px; flex-wrap:wrap; }
 .voice-action-row .btn { flex:1; min-width:0; }
-
 </style>
 </head>
 <body>
@@ -565,10 +529,7 @@ function searchPartsLive() {
     return;
   }
 
-  // Use parts-search.js searchParts() — Busy-style word matching
-  const results = typeof searchParts === 'function'
-    ? searchParts(q, 8)
-    : [];
+  const results = typeof searchParts === 'function' ? searchParts(q, 8) : [];
 
   if (!results.length) {
     sug.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#aaa">No parts found for "' + q + '" — try different words</div>';
@@ -598,25 +559,24 @@ function addPartLine(idx) {
   if (!p) return;
 
   const line = {
-    type:         'part',
-    id:           p.id || p.no || ('p' + Date.now()),
-    name:         p.name,
-    no:           p.no,
-    stihlNo:      p.stihlNo || p.no,
-    stihlName:    p.stihlName || p.name,
-    qty:          1,
-    standardRate: p.mrp || p.price || 0,
-    amount:       p.mrp || p.price || 0,
-    gst:          p.gst || 18,
-    hsn:          p.hsn || '',
-    poStatus:     'Need Purchase',
-    addedBy:      s.name,
-    addedAt:      new Date().toISOString()
+    type:          'part',
+    id:            p.id || p.no || ('p' + Date.now()),
+    name:          p.name,
+    no:            p.no,
+    stihlNo:       p.stihlNo || p.no,
+    stihlName:     p.stihlName || p.name,
+    qty:           1,
+    standardRate:  p.mrp || p.price || 0,
+    amount:        p.mrp || p.price || 0,
+    gst:           p.gst || 18,
+    hsn:           p.hsn || '',
+    poStatus:      'Need Purchase',
+    addedBy:       s.name,
+    addedAt:       new Date().toISOString()
   };
 
   if (!job.estimate) job.estimate = { lines: [] };
 
-  // Duplicate detection — if same part number exists, increment qty (Item 6)
   const partKey = p.no || p.id;
   if (partKey) {
     const existing = job.estimate.lines.find(ln => ln.type === 'part' && (ln.no === partKey || ln.id === partKey));
@@ -633,7 +593,6 @@ function addPartLine(idx) {
   }
 
   job.estimate.lines.push(line);
-
   sug.classList.add('hide');
   document.getElementById('parts-search').value = '';
 
@@ -648,7 +607,6 @@ function renderLabourPills() {
   const model  = job.machine?.model || '';
   const labour = labourData();
 
-  // Get relevant labour for this model
   const relevant = labour.filter(l =>
     l.active !== 'N' && (l.modelGroup === 'ALL' || l.modelGroup === model)
   ).slice(0, 8);
@@ -660,7 +618,6 @@ function renderLabourPills() {
     </button>`
   ).join('');
 
-  // Store for lookup
   window._labourPillData = relevant;
 }
 
@@ -669,17 +626,17 @@ function addLabourLine(idx, src) {
   if (!l) return;
 
   const line = {
-    type:         'labour',
-    id:           'labour_' + Date.now(),
-    name:         l.name,
-    description:  l.description || '',
-    qty:          1,
-    standardRate: l.standardRate || 0,
-    amount:       l.quoteRate || l.standardRate || 0,
-    gst:          l.gst || 18,
-    sac:          l.sac || '998714',
-    addedBy:      s.name,
-    addedAt:      new Date().toISOString()
+    type:          'labour',
+    id:            'labour_' + Date.now(),
+    name:          l.name,
+    description:   l.description || '',
+    qty:           1,
+    standardRate:  l.standardRate || 0,
+    amount:        l.quoteRate || l.standardRate || 0,
+    gst:           l.gst || 18,
+    sac:           l.sac || '998714',
+    addedBy:       s.name,
+    addedAt:       new Date().toISOString()
   };
 
   if (!job.estimate) job.estimate = { lines: [] };
@@ -762,7 +719,7 @@ function previewVariance() {
 }
 
 function saveEdit() {
-  const ln     = job.estimate.lines[editIdx];
+  const ln   = job.estimate.lines[editIdx];
   const newAmt = parseFloat(document.getElementById('edit-amount').value) || 0;
   const reason = document.getElementById('edit-reason').value.trim();
 
@@ -783,13 +740,6 @@ function saveEdit() {
 function closeEditModal() {
   document.getElementById('edit-modal').classList.remove('show');
   editIdx = null;
-}
-
-function updateQty(idx, val) {
-  const qty = Math.max(1, parseInt(val) || 1);
-  job.estimate.lines[idx].qty = qty;
-  saveJob();
-  renderEstimate();
 }
 
 function adjustQty(idx, delta) {
@@ -985,7 +935,7 @@ async function sendReadySMS() {
 }
 
 // ── WhatsApp fallback ─────────────────────────────────────
-const WA_SENDER = '919388312248'; // TAGRO WhatsApp number
+const WA_SENDER = '919388312248';
 
 function openWhatsApp(type) {
   const phone = job.customer?.phone;
@@ -999,13 +949,10 @@ function openWhatsApp(type) {
   if (custPhone.length === 10) custPhone = '91' + custPhone;
 
   if (type === 'estimate') {
-    // Generate image then open WhatsApp
     generateEstimateImage().then(dataUrl => {
       if (dataUrl) {
-        // Show share sheet with image
         showEstimateShare(dataUrl, custPhone);
       } else {
-        // Fallback to text
         const msg = `TAGRO Service: Your ${model} estimate is ready.\nWork Order: ${wo}\nAmount: ₹${total}\nApprove/Query: ${branch}`;
         window.open(`https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`, '_blank');
       }
@@ -1039,30 +986,25 @@ async function generateEstimateImage() {
     const headerH = 120, footerH = 80;
     const bodyH = (parts.length ? sectionHead + parts.length * rowH + 8 : 0)
                 + (labour.length ? sectionHead + labour.length * rowH + 8 : 0)
-                + 60; // totals
+                + 60; 
     const H = headerH + bodyH + footerH + PAD * 2;
 
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    // Background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
-    // Header strip
     ctx.fillStyle = '#df6427';
     ctx.fillRect(0, 0, W, headerH);
 
-    // Logo
     const logo = new Image();
     logo.src = TAGRO_LOGO;
     await new Promise(r => { logo.onload = r; logo.onerror = r; });
-    // Draw logo white-ish (it's on orange bg) — scale to fit 120px wide
     const logoW = 120, logoH = Math.round(logoW * logo.height / logo.width);
     ctx.drawImage(logo, PAD, (headerH - logoH) / 2, logoW, logoH);
 
-    // Header text
     ctx.fillStyle = '#ffffff';
     ctx.font = '800 22px -apple-system,sans-serif';
     ctx.textAlign = 'right';
@@ -1087,17 +1029,14 @@ async function generateEstimateImage() {
       items.forEach((ln, idx) => {
         ctx.fillStyle = idx % 2 === 0 ? '#f9f9f9' : '#ffffff';
         ctx.fillRect(0, y, W, rowH);
-        // Dot
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(PAD + 6, y + rowH/2, 4, 0, Math.PI*2);
         ctx.fill();
-        // Name
         ctx.fillStyle = '#121212';
         ctx.font = '700 13px -apple-system,sans-serif';
         const name = ln.name.length > 38 ? ln.name.slice(0,36)+'…' : ln.name;
         ctx.fillText(name, PAD + 18, y + rowH/2 + 5);
-        // Qty × amount
         ctx.textAlign = 'right';
         ctx.fillStyle = '#121212';
         ctx.font = '800 14px -apple-system,sans-serif';
@@ -1116,12 +1055,10 @@ async function generateEstimateImage() {
     if (parts.length)  drawSection('Parts',  parts,  '#df6427');
     if (labour.length) drawSection('Labour', labour, '#287a3e');
 
-    // Divider
     ctx.fillStyle = '#eee';
     ctx.fillRect(PAD, y, W - PAD*2, 1);
     y += 12;
 
-    // Totals
     function drawTotal(label, val, big) {
       ctx.fillStyle = big ? '#121212' : '#888';
       ctx.font = big ? '900 18px -apple-system,sans-serif' : '500 13px -apple-system,sans-serif';
@@ -1138,7 +1075,6 @@ async function generateEstimateImage() {
     ctx.fillStyle = '#eee'; ctx.fillRect(PAD, y, W - PAD*2, 1); y += 12;
     drawTotal('TOTAL', total, true);
 
-    // Footer
     y = H - footerH + 16;
     ctx.fillStyle = '#f5f5f5';
     ctx.fillRect(0, H - footerH, W, footerH);
@@ -1149,28 +1085,22 @@ async function generateEstimateImage() {
 
     return canvas.toDataURL('image/png');
   } catch(e) {
-    console.error('Image gen failed:', e);
     return null;
   }
 }
 
 function showEstimateShare(dataUrl, custPhone) {
-  // Show the image in a modal with share/download options
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:12px';
-  
   const img = document.createElement('img');
   img.src = dataUrl;
   img.style.cssText = 'max-width:100%;max-height:60vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4)';
-  
   const btnRow = document.createElement('div');
   btnRow.style.cssText = 'display:flex;gap:10px;width:100%;max-width:400px';
-
   const waBtn = document.createElement('button');
   waBtn.textContent = '💬 Open WhatsApp';
   waBtn.style.cssText = 'flex:1;padding:14px;background:#25D366;color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer';
   waBtn.onclick = () => {
-    // Download image first, then open WA
     const a = document.createElement('a');
     a.href = dataUrl;
     a.download = 'TAGRO-Estimate-' + (job.workOrder||'').replace(/\//g,'-') + '.png';
@@ -1180,22 +1110,14 @@ function showEstimateShare(dataUrl, custPhone) {
       document.body.removeChild(overlay);
     }, 800);
   };
-
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕';
   closeBtn.style.cssText = 'padding:14px 18px;background:#fff;color:#333;border:0;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer';
   closeBtn.onclick = () => document.body.removeChild(overlay);
-
   btnRow.appendChild(waBtn);
   btnRow.appendChild(closeBtn);
   overlay.appendChild(img);
   overlay.appendChild(btnRow);
-
-  const hint = document.createElement('div');
-  hint.style.cssText = 'color:rgba(255,255,255,.7);font-size:12px;text-align:center';
-  hint.textContent = 'Image will download → attach it in WhatsApp';
-  overlay.appendChild(hint);
-
   document.body.appendChild(overlay);
 }
 
@@ -1255,6 +1177,14 @@ function formatTime(iso) {
 // ══════════════════════════════════════════════════════════
 // VOICE HELPER
 // ══════════════════════════════════════════════════════════
+if (typeof voiceRecognition === 'undefined') {
+  var voiceMode = 'complaint';
+  var voiceRecognition = null;
+  var voiceListening = false;
+  var voiceTranscript = '';
+  var voiceAiData = null;
+}
+
 const VOICE_HINTS = {
   complaint:   'Describe the customer complaint and what you see on the machine.',
   parts:       'Name the parts you are using or replacing — e.g. "piston ring, crank bearing, gasket".',
@@ -1268,12 +1198,6 @@ const VOICE_APPLY_LABELS = {
   observation: 'Add to Timeline',
   lookup:      'Search Parts',
 };
-
-let voiceMode      = 'complaint';
-let voiceRecognition = null;
-let voiceListening = false;
-let voiceTranscript = '';
-let voiceAiData    = null;
 
 function openVoiceHelper() {
   document.getElementById('voice-overlay').classList.add('show');
@@ -1305,7 +1229,6 @@ function resetVoicePanel() {
   document.getElementById('voice-actions').style.display = 'none';
 }
 
-// ── Speech Recognition ────────────────────────────────────
 function toggleListening() {
   if (voiceListening) { stopListening(); return; }
   startListening();
@@ -1313,10 +1236,7 @@ function toggleListening() {
 
 function startListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    toast('Speech not supported on this browser. Try Chrome.');
-    return;
-  }
+  if (!SR) { toast('Speech not supported on this browser. Try Chrome.'); return; }
   if (voiceRecognition) voiceRecognition.abort();
 
   voiceRecognition = new SR();
@@ -1367,7 +1287,6 @@ function stopListening() {
   if (voiceRecognition) voiceRecognition.stop();
 }
 
-// ── AI Analysis ───────────────────────────────────────────
 async function analyzeVoiceInput() {
   const text = voiceTranscript.trim();
   if (!text) return;
@@ -1378,40 +1297,14 @@ async function analyzeVoiceInput() {
   content.innerHTML = '<div style="color:#aaa;font-size:13px">Analysing…</div>';
   document.getElementById('voice-actions').style.display = 'none';
 
-  const model    = job.machine?.model || '';
+  const model   = job.machine?.model || '';
   const branch   = job.branch || '';
 
   const prompts = {
-    complaint: `You are a STIHL service advisor. A mechanic spoke this about a ${model} machine:
-"${text}"
-Return JSON with:
-- complaint: clean 1-sentence complaint summary
-- observations: array of specific technical findings (max 4, each under 8 words)
-- urgency: "urgent" | "normal" | "no_rush"
-- suggested_parts: array of part names likely needed (from speech, max 4)
-Only JSON, no other text.`,
-
-    parts: `A mechanic at a STIHL workshop said: "${text}"
-Machine model: ${model}
-Return JSON with:
-- parts: array of objects, each with: name (string), qty (integer, default 1), note (string or null)
-- search_terms: array of short strings to look up in parts database
-Only JSON, no other text.`,
-
-    observation: `A mechanic said: "${text}"
-Return JSON with:
-- note: clean professional 1-sentence observation for the job timeline
-- severity: "info" | "warning" | "critical"
-- action_needed: short string or null
-Only JSON, no other text.`,
-
-    lookup: `A mechanic wants to find a STIHL part. They said: "${text}"
-Machine model: ${model}
-Return JSON with:
-- search_query: best 2-4 word search string for the parts database
-- part_description: clear plain name of the part
-- likely_models: array of model names this part might fit
-Only JSON, no other text.`,
+    complaint: `You are a STIHL service advisor. A mechanic spoke this about a ${model} machine:\n"${text}"\nReturn JSON with:\n- complaint: clean 1-sentence complaint summary\n- observations: array of specific technical findings (max 4, each under 8 words)\n- urgency: "urgent" | "normal" | "no_rush"\n- suggested_parts: array of part names likely needed (from speech, max 4)\nOnly JSON, no other text.`,
+    parts: `A mechanic at a STIHL workshop said: "${text}"\nMachine model: ${model}\nReturn JSON with:\n- parts: array of objects, each with: name (string), qty (integer, default 1), note (string or null)\n- search_terms: array of short strings to look up in parts database\nOnly JSON, no other text.`,
+    observation: `A mechanic said: "${text}"\nReturn JSON with:\n- note: clean professional 1-sentence observation for the job timeline\n- severity: "info" | "warning" | "critical"\n- action_needed: short string or null\nOnly JSON, no other text.`,
+    lookup: `A mechanic wants to find a STIHL part. They said: "${text}"\nMachine model: ${model}\nReturn JSON with:\n- search_query: best 2-4 word search string for the parts database\n- part_description: clear plain name of the part\n- likely_models: array of model names this part might fit\nOnly JSON, no other text.`,
   };
 
   try {
@@ -1419,30 +1312,20 @@ Only JSON, no other text.`,
     const res = await fetch(cfg.apiBase + '/tech', {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({
-        model,
-        branch,
-        query: text,
-        mode: 'voice_' + voiceMode,
-        prompt_override: prompts[voiceMode],
-      })
+      body: JSON.stringify({ model, branch, query: text, mode: 'voice_' + voiceMode, prompt_override: prompts[voiceMode] })
     });
 
     if (!res.ok) throw new Error('API error ' + res.status);
     const raw = await res.json();
-    // tech endpoint returns { reply } — parse JSON from reply text
     let data;
     try {
       const cleaned = (raw.reply || '{}').replace(/```json|```/g, '').trim();
       data = JSON.parse(cleaned);
-    } catch(e) {
-      data = { _raw: raw.reply };
-    }
+    } catch(e) { data = { _raw: raw.reply }; }
     voiceAiData = data;
     renderVoiceResult(data);
   } catch(err) {
     content.innerHTML = `<div class="vai-item" style="color:#ba3327">Could not analyse — check connection.<br><small>${err.message}</small></div>`;
-    // Still allow manual apply
     document.getElementById('voice-actions').style.display = 'flex';
     document.getElementById('voice-apply-btn').textContent = 'Apply as Text';
     voiceAiData = null;
@@ -1454,35 +1337,24 @@ function renderVoiceResult(data) {
   let html = '';
 
   if (voiceMode === 'complaint') {
-    if (data.complaint)
-      html += `<div class="vai-item"><strong>Complaint:</strong> ${esc(data.complaint)}</div>`;
-    if (data.observations?.length)
-      html += `<div class="vai-item"><strong>Findings:</strong> ${data.observations.map(o => esc(o)).join(' · ')}</div>`;
-    if (data.urgency && data.urgency !== 'normal')
-      html += `<div class="vai-item"><strong>Urgency:</strong> ${esc(data.urgency)}</div>`;
-    if (data.suggested_parts?.length)
-      html += `<div class="vai-item" style="color:#888"><strong>Likely parts:</strong> ${data.suggested_parts.map(p => esc(p)).join(', ')}</div>`;
+    if (data.complaint) html += `<div class="vai-item"><strong>Complaint:</strong> ${esc(data.complaint)}</div>`;
+    if (data.observations?.length) html += `<div class="vai-item"><strong>Findings:</strong> ${data.observations.map(o => esc(o)).join(' · ')}</div>`;
+    if (data.urgency && data.urgency !== 'normal') html += `<div class="vai-item"><strong>Urgency:</strong> ${esc(data.urgency)}</div>`;
+    if (data.suggested_parts?.length) html += `<div class="vai-item" style="color:#888"><strong>Likely parts:</strong> ${data.suggested_parts.map(p => esc(p)).join(', ')}</div>`;
   }
   else if (voiceMode === 'parts') {
     if (data.parts?.length) {
-      html += data.parts.map(p =>
-        `<div class="vai-item">• <strong>${esc(p.name)}</strong> × ${p.qty || 1}${p.note ? ' <span style="color:#aaa">— '+esc(p.note)+'</span>' : ''}</div>`
-      ).join('');
+      html += data.parts.map(p => `<div class="vai-item">• <strong>${esc(p.name)}</strong> × ${p.qty || 1}${p.note ? ' <span style="color:#aaa">— '+esc(p.note)+'</span>' : ''}</div>`).join('');
     }
-    if (data.search_terms?.length)
-      html += `<div class="vai-item" style="color:#888;margin-top:6px">Will search: ${data.search_terms.map(t => esc(t)).join(', ')}</div>`;
+    if (data.search_terms?.length) html += `<div class="vai-item" style="color:#888;margin-top:6px">Will search: ${data.search_terms.map(t => esc(t)).join(', ')}</div>`;
   }
   else if (voiceMode === 'observation') {
-    if (data.note)
-      html += `<div class="vai-item"><strong>Note:</strong> ${esc(data.note)}</div>`;
-    if (data.action_needed)
-      html += `<div class="vai-item" style="color:#d97706"><strong>Action:</strong> ${esc(data.action_needed)}</div>`;
+    if (data.note) html += `<div class="vai-item"><strong>Note:</strong> ${esc(data.note)}</div>`;
+    if (data.action_needed) html += `<div class="vai-item" style="color:#d97706"><strong>Action:</strong> ${esc(data.action_needed)}</div>`;
   }
   else if (voiceMode === 'lookup') {
-    if (data.part_description)
-      html += `<div class="vai-item"><strong>Part:</strong> ${esc(data.part_description)}</div>`;
-    if (data.search_query)
-      html += `<div class="vai-item" style="color:#888">Search query: "${esc(data.search_query)}"</div>`;
+    if (data.part_description) html += `<div class="vai-item"><strong>Part:</strong> ${esc(data.part_description)}</div>`;
+    if (data.search_query) html += `<div class="vai-item" style="color:#aaa">Search query: "${esc(data.search_query)}"</div>`;
   }
 
   if (!html) html = `<div class="vai-item" style="color:#aaa">Transcript: "${esc(voiceTranscript)}"</div>`;
@@ -1490,7 +1362,6 @@ function renderVoiceResult(data) {
   document.getElementById('voice-actions').style.display = 'flex';
 }
 
-// ── Apply voice result ────────────────────────────────────
 function voiceApply() {
   const data = voiceAiData;
   const text = voiceTranscript.trim();
@@ -1500,26 +1371,20 @@ function voiceApply() {
     job.complaint = complaint;
     if (data?.urgency) job.urgency = data.urgency;
     addTimeline('inspection', 'Complaint recorded: ' + complaint);
-    if (data?.observations?.length)
-      data.observations.forEach(o => addTimeline('note', o));
+    if (data?.observations?.length) data.observations.forEach(o => addTimeline('note', o));
     saveJob();
     renderHeader();
     renderTimeline();
     toast('Complaint saved');
-    // Switch to timeline tab to show result
     document.querySelector('.tab-btn').click();
     closeVoiceHelper({target: document.getElementById('voice-overlay')});
   }
-
   else if (voiceMode === 'parts') {
     const parts = data?.parts || [];
     if (parts.length) {
-      // Search and add each part
       let added = 0;
       parts.forEach(p => {
-        const results = typeof searchParts === 'function'
-          ? searchParts(p.name, 8)
-          : [];
+        const results = typeof searchParts === 'function' ? searchParts(p.name, 8) : [];
         if (results.length) {
           const best = results[0];
           if (!job.estimate) job.estimate = { lines: [] };
@@ -1527,11 +1392,7 @@ function voiceApply() {
           if (existing) {
             existing.qty = (existing.qty || 1) + (p.qty || 1);
           } else {
-            job.estimate.lines.push({
-              type:'part', id:best.no||best.id, no:best.no||best.id,
-              name:best.name, qty:p.qty||1,
-              unitPrice:best.price||0, price:(best.price||0)*(p.qty||1),
-            });
+            job.estimate.lines.push({ type:'part', id:best.no||best.id, no:best.no||best.id, name:best.name, qty:p.qty||1, unitPrice:best.price||0, price:(best.price||0)*(p.qty||1) });
           }
           added++;
         }
@@ -1539,11 +1400,9 @@ function voiceApply() {
       addTimeline('estimate', `Voice: ${added} part(s) added`);
       saveJob();
       renderEstimate();
-      // Switch to estimate tab
       document.querySelectorAll('.tab-btn')[1].click();
       toast(added + ' part(s) added to estimate');
     } else {
-      // Fallback — put search terms into the parts search box
       const q = data?.search_terms?.[0] || text;
       document.getElementById('parts-search').value = q;
       document.querySelectorAll('.tab-btn')[1].click();
@@ -1552,7 +1411,6 @@ function voiceApply() {
     }
     closeVoiceHelper({target: document.getElementById('voice-overlay')});
   }
-
   else if (voiceMode === 'observation') {
     const note = data?.note || text;
     addTimeline('note', note);
@@ -1562,7 +1420,6 @@ function voiceApply() {
     toast('Observation added to timeline');
     closeVoiceHelper({target: document.getElementById('voice-overlay')});
   }
-
   else if (voiceMode === 'lookup') {
     const q = data?.search_query || text;
     document.getElementById('parts-search').value = q;
@@ -1573,10 +1430,7 @@ function voiceApply() {
   }
 }
 
-function voiceDiscard() {
-  resetVoicePanel();
-}
-// ══════════════════════════════════════════════════════════
+function voiceDiscard() { resetVoicePanel(); }
 
 loadJob();
 </script>
@@ -1586,56 +1440,35 @@ loadJob();
 <!-- ── Voice Helper Sheet ── -->
 <div class="voice-overlay" id="voice-overlay" onclick="closeVoiceHelper(event)">
   <div class="voice-sheet" onclick="event.stopPropagation()">
-
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div style="font-size:17px;font-weight:900">🎙️ Voice Helper</div>
       <button onclick="closeVoiceHelper()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#aaa">×</button>
     </div>
-
-    <!-- Mode selector -->
     <div class="voice-mode-row">
       <button class="vmode-btn active" id="vmode-complaint"  onclick="setVoiceMode('complaint')">🔍 Complaint</button>
       <button class="vmode-btn"        id="vmode-parts"      onclick="setVoiceMode('parts')">🔩 Parts Used</button>
       <button class="vmode-btn"        id="vmode-observation"onclick="setVoiceMode('observation')">📌 Observation</button>
       <button class="vmode-btn"        id="vmode-lookup"     onclick="setVoiceMode('lookup')">🔎 Part Lookup</button>
     </div>
-
-    <!-- Mode hint -->
-    <div id="voice-hint" style="font-size:12px;color:#aaa;margin-bottom:10px">
-      Describe the customer's complaint and what you observed on the machine.
-    </div>
-
-    <!-- Listening indicator -->
+    <div id="voice-hint" style="font-size:12px;color:#aaa;margin-bottom:10px">Describe the customer's complaint and what you observed on the machine.</div>
     <div class="voice-listening-indicator" id="vli">
       <div class="vli-dot"></div>
       <span>Listening…</span>
     </div>
-
-    <!-- Live transcript -->
     <div class="voice-transcript empty" id="voice-transcript">Tap the mic and speak…</div>
-
-    <!-- Mic button -->
     <div style="text-align:center;margin-bottom:14px">
       <button id="voice-mic-btn" onclick="toggleListening()"
-        style="width:64px;height:64px;border-radius:50%;border:none;background:#df6427;
-               color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 14px rgba(223,100,39,.4)">
-        🎙️
-      </button>
+        style="width:64px;height:64px;border-radius:50%;border:none;background:#df6427;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 14px rgba(223,100,39,.4)">🎙️</button>
       <div id="voice-mic-label" style="font-size:11px;color:#aaa;margin-top:6px;font-weight:800">TAP TO SPEAK</div>
     </div>
-
-    <!-- AI result panel -->
     <div class="voice-ai-result" id="voice-ai-result">
       <div class="vai-label">AI ANALYSIS</div>
       <div id="vai-content"></div>
     </div>
-
-    <!-- Action buttons -->
     <div class="voice-action-row" id="voice-actions" style="display:none">
       <button class="btn" onclick="voiceDiscard()">Discard</button>
       <button class="btn primary" id="voice-apply-btn" onclick="voiceApply()">Apply</button>
     </div>
-
   </div>
 </div>
 
