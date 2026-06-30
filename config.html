@@ -443,7 +443,7 @@ function removeCustomModel(i) {
 // ── Data status ───────────────────────────────────────────
 function renderDataStatus() {
   const partsCount  = jget('tagro_parts_data', []).length;
-  const labourCount = jget('tagro_labour_data', []).length;
+  const labourCount = jget('tagro_custom_charges', TAGRO.charges).length;
   const partsDate   = localStorage.getItem('tagro_parts_updated');
 
   document.getElementById('data-status').innerHTML = `

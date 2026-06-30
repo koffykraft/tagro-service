@@ -119,7 +119,7 @@ function seed() {
 
 function customers() { return jget('tagro_customers', TAGRO.customers) }
 function jobs() { return jget(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', []) }
-function saveJobs(a) { jset(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', a); syncJobs(a) }
+function saveJobs(a, touchedId) { jset(isDemo() ? 'tagro_demo_jobs' : 'tagro_jobs', a); return syncJobs(a, touchedId) }
 function po() { return jget(isDemo() ? 'tagro_demo_po' : 'tagro_po', []) }
 function savePo(a) { jset(isDemo() ? 'tagro_demo_po' : 'tagro_po', a) }
 function comments() { return jget('tagro_comments', []) }
@@ -175,11 +175,13 @@ async function sendSMS(type, data) {
   }
 }
 
-async function syncJobs(jobsArr) {
+async function syncJobs(jobsArr, touchedId) {
   if (isDemo()) return;
   let s = session();
   if (!s || !s.branch) return;
-  const job = jobsArr[jobsArr.length - 1];
+  const job = touchedId
+    ? jobsArr.find(j => j.id === touchedId || j.workOrder === touchedId)
+    : jobsArr[jobsArr.length - 1];
   if (!job) return;
   try {
     const res = await fetch(`${API}/dropbox/save-job`, {
@@ -539,7 +541,7 @@ function initShell(active) {
   let s = session();
   let top = document.createElement('header');
   top.innerHTML = `
-    <a class="logo-link" href="home.html"><img src="${localStorage.getItem('tagro_logo_data') || ''}" alt="TAGRO" onerror="this.style.display='none'"></a>
+    <a class="logo-link" href="home.html" style="font-weight:900;font-style:italic;font-size:18px;letter-spacing:-1px;color:var(--dark);text-decoration:none;display:flex;align-items:center"><span style="color:var(--orange);font-style:normal;margin-right:2px">▰</span>TAGRO</a>
     <span class="branch">${s?.demo ? 'DEMO' : s?.role === 'Owner' ? 'ALL' : esc(s?.branch) || '—'}</span>
     <span class="user" onclick="openUserMenu()">${esc(s?.name) || ''}</span>`;
   document.body.prepend(top);

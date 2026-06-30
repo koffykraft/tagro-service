@@ -580,7 +580,7 @@ function receiveMachine() {
   // Save job
   const all = jobs();
   all.push(job);
-  saveJobs(all);
+  saveJobs(all, job.id);
 
   // Save or update customer
   const cList = customers();

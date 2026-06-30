@@ -97,9 +97,13 @@ function selectPart(no, name, price) {
   const job = all.find(j => j.id === returnJobId || j.workOrder === returnJobId);
   if (!job) { toast('Job not found — it may have been removed'); return; }
 
-  if (!job.estimate) job.estimate = [];
-  job.estimate.push({ no, name, price, qty: 1, total: price });
-  saveJobs(all);
+  if (!job.estimate) job.estimate = { lines: [] };
+  job.estimate.lines.push({
+    type: 'part', id: no || ('p' + Date.now()), no, name,
+    qty: 1, standardRate: price, amount: price, gst: 18,
+    poStatus: 'Need Purchase', addedBy: s.name, addedAt: new Date().toISOString()
+  });
+  saveJobs(all, job.id);
 
   toast(name + ' added to ' + (job.workOrder || job.id));
   setTimeout(() => { location.href = 'work.html?id=' + encodeURIComponent(job.id); }, 600);

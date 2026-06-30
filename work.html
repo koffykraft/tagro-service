@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#df6427">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TAGRO">
@@ -21,8 +20,26 @@
 .job-status-row { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
 
 /* Section tabs */
-.tab-row { display:flex; background:#f5f5f5; padding:4px; border-radius:12px; margin:14px; gap:4px; }
+/* top:52px accounts for the global <header> from app.js's initShell(), which is
+   also position:sticky;top:0 with ~10px padding + content (~52px rendered height).
+   Without this offset the tab-row would overlap the global header instead of
+   settling correctly below it once both become pinned during scroll. */
+.tab-row { display:flex; background:#f5f5f5; padding:4px; border-radius:12px; margin:14px 14px 0; gap:4px; position:sticky; top:52px; z-index:10; }
 .tab-btn { flex:1; padding:8px 4px; border:none; background:transparent; border-radius:9px; font-size:12px; font-weight:800; color:#888; cursor:pointer; }
+
+/* Job-context strip — sticky, sits directly below the sticky tab row (which itself
+   sits below the global sticky header), always shows which job is open regardless
+   of scroll position or active tab. top offset = global header (~52px) + tab-row
+   height (~44px) = ~96px. */
+.job-context-strip {
+  position: sticky; top: 96px; z-index: 9;
+  background: #fff; border-bottom: 1px solid #eee;
+  padding: 8px 14px; margin: 0 14px;
+  font-size: 12px; color: #555;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.job-context-strip b { font-size:13px; color:#121212; }
+.job-context-strip .ctx-status { margin-left:auto; font-weight:800; padding:2px 8px; border-radius:99px; background:#fff0e8; color:#df6427; font-size:11px; }
 .tab-btn.active { background:#fff; color:#df6427; box-shadow:0 1px 4px rgba(0,0,0,.08); }
 
 .tab-panel { display:none; padding:0 14px 14px; }
@@ -81,32 +98,69 @@
 .sms-icon { font-size:20px; }
 .sms-label { font-weight:800; font-size:14px; }
 .sms-sub { font-size:12px; color:#aaa; }
-
-/* Voice Helper */
-.voice-fab { position:fixed; bottom:24px; right:20px; z-index:300; width:58px; height:58px; border-radius:50%; background:#df6427; border:none; cursor:pointer; box-shadow:0 4px 16px rgba(223,100,39,.45); display:flex; align-items:center; justify-content:center; font-size:24px; transition:transform .15s, box-shadow .15s; }
+/* ── Voice Helper ── */
+.voice-fab {
+  position:fixed; bottom:24px; right:20px; z-index:300;
+  width:58px; height:58px; border-radius:50%;
+  background:#df6427; border:none; cursor:pointer;
+  box-shadow:0 4px 16px rgba(223,100,39,.45);
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; transition:transform .15s, box-shadow .15s;
+}
 .voice-fab:active { transform:scale(.93); }
-.voice-fab.listening { background:#ba3327; animation:pulse-ring 1.2s ease-out infinite; }
-@keyframes pulse-ring { 0% { box-shadow:0 0 0 0 rgba(186,51,39,.55); } 70% { box-shadow:0 0 0 14px rgba(186,51,39,0); } 100% { box-shadow:0 0 0 0 rgba(186,51,39,0); } }
-.voice-overlay { display:none; position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.55); align-items:flex-end; justify-content:center; }
+.voice-fab.listening {
+  background:#ba3327;
+  animation:pulse-ring 1.2s ease-out infinite;
+}
+@keyframes pulse-ring {
+  0%   { box-shadow:0 0 0 0 rgba(186,51,39,.55); }
+  70%  { box-shadow:0 0 0 14px rgba(186,51,39,0); }
+  100% { box-shadow:0 0 0 0 rgba(186,51,39,0); }
+}
+.voice-overlay {
+  display:none; position:fixed; inset:0; z-index:400;
+  background:rgba(0,0,0,.55); align-items:flex-end; justify-content:center;
+}
 .voice-overlay.show { display:flex; }
-.voice-sheet { background:#fff; border-radius:24px 24px 0 0; width:100%; max-width:640px; padding:20px 20px 36px; max-height:88vh; overflow-y:auto; }
-.voice-mode-row { display:flex; gap:6px; margin-bottom:16px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+.voice-sheet {
+  background:#fff; border-radius:24px 24px 0 0;
+  width:100%; max-width:640px; padding:20px 20px 36px;
+  max-height:88vh; overflow-y:auto;
+}
+.voice-mode-row {
+  display:flex; gap:6px; margin-bottom:16px;
+  overflow-x:auto; scrollbar-width:none; padding-bottom:2px;
+}
 .voice-mode-row::-webkit-scrollbar { display:none; }
-.vmode-btn { flex:none; padding:7px 14px; border-radius:99px; border:1.5px solid #e8e8e8; font-size:12px; font-weight:800; cursor:pointer; background:#fff; white-space:nowrap; }
+.vmode-btn {
+  flex:none; padding:7px 14px; border-radius:99px; border:1.5px solid #e8e8e8;
+  font-size:12px; font-weight:800; cursor:pointer; background:#fff; white-space:nowrap;
+}
 .vmode-btn.active { background:#df6427; color:#fff; border-color:#df6427; }
-.voice-transcript { min-height:64px; background:#f7f7f7; border-radius:14px; padding:14px; font-size:15px; line-height:1.55; color:#222; margin-bottom:12px; }
+.voice-transcript {
+  min-height:64px; background:#f7f7f7; border-radius:14px;
+  padding:14px; font-size:15px; line-height:1.55; color:#222; margin-bottom:12px;
+}
 .voice-transcript.empty { color:#bbb; font-style:italic; }
-.voice-listening-indicator { display:none; align-items:center; gap:6px; font-size:12px; font-weight:800; color:#ba3327; margin-bottom:8px; }
+.voice-listening-indicator {
+  display:none; align-items:center; gap:6px;
+  font-size:12px; font-weight:800; color:#ba3327; margin-bottom:8px;
+}
 .voice-listening-indicator.show { display:flex; }
-.vli-dot { width:8px; height:8px; border-radius:50%; background:#ba3327; animation:vblink .7s ease-in-out infinite alternate; }
+.vli-dot { width:8px; height:8px; border-radius:50%; background:#ba3327;
+  animation:vblink .7s ease-in-out infinite alternate; }
 @keyframes vblink { from{opacity:1} to{opacity:.2} }
-.voice-ai-result { background:#fff8f4; border:1.5px solid #f0d8c8; border-radius:14px; padding:14px; margin-bottom:12px; display:none; }
+.voice-ai-result {
+  background:#fff8f4; border:1.5px solid #f0d8c8; border-radius:14px;
+  padding:14px; margin-bottom:12px; display:none;
+}
 .voice-ai-result.show { display:block; }
 .vai-label { font-size:11px; font-weight:800; color:#df6427; margin-bottom:6px; letter-spacing:.05em; }
 .vai-item { font-size:13px; margin:4px 0; line-height:1.5; }
 .vai-item strong { font-weight:800; }
 .voice-action-row { display:flex; gap:8px; flex-wrap:wrap; }
 .voice-action-row .btn { flex:1; min-width:0; }
+
 </style>
 </head>
 <body>
@@ -130,8 +184,13 @@
     <button class="tab-btn active" onclick="showTab('timeline',this)">Timeline</button>
     <button class="tab-btn" onclick="showTab('estimate',this)">Estimate</button>
     <button class="tab-btn" onclick="showTab('status',this)">Status</button>
-    <button class="tab-btn" onclick="showTab('sms',this)">Messages</button>
   </div>
+
+  <!-- Persistent job-context strip — stays visible regardless of active tab or scroll
+       position, so the mechanic always knows which job they are working on, even deep
+       inside a long Estimate or Status screen. Also hosts the Messages trigger, since
+       Messages is collapsed out of the tab row to free up navigation space. -->
+  <div class="job-context-strip" id="job-context-strip"></div>
 
   <!-- TIMELINE tab -->
   <div class="tab-panel active" id="tab-timeline">
@@ -189,6 +248,13 @@
     <div id="estimate-total"></div>
 
     <button class="btn primary block" style="margin-top:12px" onclick="saveEstimate()">Save Estimate</button>
+
+    <!-- Contextual forward-action prompt for the Estimate tab specifically — kept
+         separate from #status-next-action (which lives in the Status tab) because
+         tab-panels stay simultaneously present in the DOM; a prompt shown from the
+         wrong tab's element would be invisible to whichever tab the user is
+         actually looking at. -->
+    <div id="estimate-next-action" style="display:none;margin-top:12px;padding:12px;background:#fff8f4;border:1.5px solid #f0e0d6;border-radius:12px"></div>
   </div>
 
   <!-- STATUS tab -->
@@ -197,6 +263,11 @@
       <div class="head">Current Status</div>
       <div class="body">
         <div class="status-flow" id="status-flow"></div>
+        <!-- Contextual forward-action prompt — appears only at genuine lifecycle
+             transitions (Ready, Delivered), offering a one-tap next step without
+             forcing navigation. Separate from toast() since toast only supports
+             plain auto-dismissing text, not an action button. -->
+        <div id="status-next-action" style="display:none;margin-top:12px;padding:12px;background:#fff8f4;border:1.5px solid #f0e0d6;border-radius:12px"></div>
       </div>
     </div>
 
@@ -236,7 +307,12 @@
   </div>
 
   <!-- SMS tab -->
-  <div class="tab-panel" id="tab-sms">
+  <div class="edit-overlay" id="messages-modal">
+   <div class="edit-sheet" style="max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="edit-title" style="margin:0">Messages</div>
+      <button onclick="closeMessagesModal()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+    </div>
     <div id="sms-preview" class="card" style="display:none">
       <div class="head">Estimate ready to send</div>
       <div class="body">
@@ -301,6 +377,41 @@
         <div class="small">No messages sent yet.</div>
       </div>
     </div>
+   </div>
+  </div>
+
+  <!-- Switch Job modal — select another open job, then confirm leaving the current
+       one. Two internal panels toggled via JS rather than two separate overlays,
+       so the flow feels like one continuous action to the mechanic. -->
+  <div class="edit-overlay" id="switch-job-modal">
+   <div class="edit-sheet" style="max-height:85vh;overflow-y:auto">
+
+    <div id="switch-select-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="edit-title" style="margin:0">Switch to another job</div>
+        <button onclick="closeSwitchJobModal()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1">×</button>
+      </div>
+      <div id="switch-job-list"></div>
+    </div>
+
+    <div id="switch-confirm-panel" style="display:none">
+      <div class="edit-title" style="margin-bottom:6px">Leaving this job</div>
+      <p class="small" style="margin-bottom:14px">Confirm the current status before switching to another machine.</p>
+      <div class="card" style="margin-bottom:16px">
+        <div class="body">
+          <div style="font-weight:900;font-size:16px" id="switch-confirm-model"></div>
+          <div class="small" style="margin-bottom:8px" id="switch-confirm-customer"></div>
+          <span class="badge orange" id="switch-confirm-status"></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="cancelSwitchJob()">Back</button>
+        <button class="btn primary" onclick="confirmSwitchJob()">Confirm & Switch</button>
+      </div>
+      <button onclick="closeSwitchJobModal()" class="small" style="border:none;background:none;cursor:pointer;text-decoration:underline;margin-top:10px;display:block">Cancel switching entirely</button>
+    </div>
+
+   </div>
   </div>
 
   <div style="height:30px"></div>
@@ -372,6 +483,18 @@ function renderHeader() {
     ${job.assignedTo ? `<span class="badge">🔧 ${esc(job.assignedTo)}</span>` : '<span class="badge" style="background:#fdecea;color:#ba3327">Unassigned</span>'}
     ${job.machine?.serialNo ? '' : '<span class="badge" style="background:#fff3d5;color:#d97706">No Serial</span>'}
     <span class="badge">${ageDays()} day${ageDays() !== 1 ? 's' : ''} old</span>`;
+
+  renderJobContextStrip();
+}
+
+function renderJobContextStrip() {
+  document.getElementById('job-context-strip').innerHTML = `
+    <b>${esc(job.machine?.model || '—')}</b>
+    <span>— ${esc(job.customer?.name || '—')}</span>
+    <span style="color:#aaa;font-family:monospace;font-size:11px">${esc(job.workOrder || '')}</span>
+    <button onclick="openMessagesModal()" title="Messages" style="border:none;background:none;cursor:pointer;font-size:16px;padding:2px 4px;line-height:1">💬</button>
+    <button onclick="openSwitchJobModal()" title="Switch to a different job" style="border:none;background:none;cursor:pointer;font-size:16px;padding:2px 4px;line-height:1">🔁</button>
+    <span class="ctx-status">${esc(job.status || 'Received')}</span>`;
 }
 
 function ageDays() {
@@ -383,7 +506,8 @@ function renderTimeline() {
   const tl = job.timeline || [];
 
   // Complaint + urgency context at top (Item 1)
-  const complaint = job.complaint || job.complaintText || '';
+  const complaintList = job.complaints || [];
+  const complaint = complaintList.map(c => c.text).join(' / ') || job.complaintText || '';
   const urgencyLabel = { urgent:'Urgent', normal:'Normal', no_rush:'No Rush' }[job.urgency] || '';
   const urgencyColor = { urgent:'#ba3327', normal:'#287a3e', no_rush:'#aaa' }[job.urgency] || '#aaa';
   const contextHtml = complaint ? `
@@ -529,7 +653,10 @@ function searchPartsLive() {
     return;
   }
 
-  const results = typeof searchParts === 'function' ? searchParts(q, 8) : [];
+  // Use parts-search.js searchParts() — Busy-style word matching
+  const results = typeof searchParts === 'function'
+    ? searchParts(q, 8)
+    : [];
 
   if (!results.length) {
     sug.innerHTML = '<div style="padding:12px 14px;font-size:13px;color:#aaa">No parts found for "' + q + '" — try different words</div>';
@@ -559,24 +686,25 @@ function addPartLine(idx) {
   if (!p) return;
 
   const line = {
-    type:          'part',
-    id:            p.id || p.no || ('p' + Date.now()),
-    name:          p.name,
-    no:            p.no,
-    stihlNo:       p.stihlNo || p.no,
-    stihlName:     p.stihlName || p.name,
-    qty:           1,
-    standardRate:  p.mrp || p.price || 0,
-    amount:        p.mrp || p.price || 0,
-    gst:           p.gst || 18,
-    hsn:           p.hsn || '',
-    poStatus:      'Need Purchase',
-    addedBy:       s.name,
-    addedAt:       new Date().toISOString()
+    type:         'part',
+    id:           p.id || p.no || ('p' + Date.now()),
+    name:         p.name,
+    no:           p.no,
+    stihlNo:      p.stihlNo || p.no,
+    stihlName:    p.stihlName || p.name,
+    qty:          1,
+    standardRate: p.mrp || p.price || 0,
+    amount:       p.mrp || p.price || 0,
+    gst:          p.gst || 18,
+    hsn:          p.hsn || '',
+    poStatus:     'Need Purchase',
+    addedBy:      s.name,
+    addedAt:      new Date().toISOString()
   };
 
   if (!job.estimate) job.estimate = { lines: [] };
 
+  // Duplicate detection — if same part number exists, increment qty (Item 6)
   const partKey = p.no || p.id;
   if (partKey) {
     const existing = job.estimate.lines.find(ln => ln.type === 'part' && (ln.no === partKey || ln.id === partKey));
@@ -593,6 +721,7 @@ function addPartLine(idx) {
   }
 
   job.estimate.lines.push(line);
+
   sug.classList.add('hide');
   document.getElementById('parts-search').value = '';
 
@@ -607,6 +736,7 @@ function renderLabourPills() {
   const model  = job.machine?.model || '';
   const labour = labourData();
 
+  // Get relevant labour for this model
   const relevant = labour.filter(l =>
     l.active !== 'N' && (l.modelGroup === 'ALL' || l.modelGroup === model)
   ).slice(0, 8);
@@ -618,6 +748,7 @@ function renderLabourPills() {
     </button>`
   ).join('');
 
+  // Store for lookup
   window._labourPillData = relevant;
 }
 
@@ -626,17 +757,17 @@ function addLabourLine(idx, src) {
   if (!l) return;
 
   const line = {
-    type:          'labour',
-    id:            'labour_' + Date.now(),
-    name:          l.name,
-    description:   l.description || '',
-    qty:           1,
-    standardRate:  l.standardRate || 0,
-    amount:        l.quoteRate || l.standardRate || 0,
-    gst:           l.gst || 18,
-    sac:           l.sac || '998714',
-    addedBy:       s.name,
-    addedAt:       new Date().toISOString()
+    type:         'labour',
+    id:           'labour_' + Date.now(),
+    name:         l.name,
+    description:  l.description || '',
+    qty:          1,
+    standardRate: l.standardRate || 0,
+    amount:       l.quoteRate || l.standardRate || 0,
+    gst:          l.gst || 18,
+    sac:          l.sac || '998714',
+    addedBy:      s.name,
+    addedAt:      new Date().toISOString()
   };
 
   if (!job.estimate) job.estimate = { lines: [] };
@@ -682,7 +813,7 @@ function searchLabourLive() {
 }
 
 function labourData() {
-  return jget('tagro_labour_data', TAGRO.charges.map(c => ({
+  return jget('tagro_custom_charges', TAGRO.charges.map(c => ({
     name: c.name, standardRate: c.amount, quoteRate: c.amount, gst: 18, sac: '998714',
     modelGroup: 'ALL', active: 'Y'
   })));
@@ -719,7 +850,7 @@ function previewVariance() {
 }
 
 function saveEdit() {
-  const ln   = job.estimate.lines[editIdx];
+  const ln     = job.estimate.lines[editIdx];
   const newAmt = parseFloat(document.getElementById('edit-amount').value) || 0;
   const reason = document.getElementById('edit-reason').value.trim();
 
@@ -740,6 +871,101 @@ function saveEdit() {
 function closeEditModal() {
   document.getElementById('edit-modal').classList.remove('show');
   editIdx = null;
+}
+
+function openMessagesModal() {
+  renderSMSHistory();
+  document.getElementById('messages-modal').classList.add('show');
+}
+
+function closeMessagesModal() {
+  document.getElementById('messages-modal').classList.remove('show');
+}
+
+// ── Switch Job ────────────────────────────────────────────
+let switchTargetId = null;
+
+function openSwitchJobModal() {
+  // Reset to the select panel every time this opens, regardless of how it was
+  // left last time (e.g. mid-confirm then cancelled out via the X or backdrop).
+  document.getElementById('switch-select-panel').style.display = '';
+  document.getElementById('switch-confirm-panel').style.display = 'none';
+  switchTargetId = null;
+
+  // Same branch-scoping rule as tracker.html (s.role === 'Owner' || s.demo ||
+  // j.branch === s.branch), reused exactly rather than re-invented, so the list
+  // of switchable jobs is always consistent with what the Jobs page itself shows.
+  const all = jobs().filter(j =>
+    j.id !== job.id && (s.role === 'Owner' || s.demo || j.branch === s.branch)
+  );
+
+  const listEl = document.getElementById('switch-job-list');
+  if (!all.length) {
+    listEl.innerHTML = '<div class="small">No other open jobs at this branch.</div>';
+  } else {
+    listEl.innerHTML = all.map(j => {
+      const age = Math.floor((Date.now() - new Date(j.date).getTime()) / 86400000);
+      return `
+        <div class="job-item" style="cursor:pointer" onclick="selectSwitchTarget('${esc(j.id)}')">
+          <div class="job-model">
+            ${esc(j.machine?.model || '—')} — ${esc(j.customer?.name || '—')}
+            <span class="badge orange" style="margin-left:6px">${esc(j.status)}</span>
+          </div>
+          <div class="job-sub">${esc(j.workOrder)} · ${age}d old</div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('switch-job-modal').classList.add('show');
+}
+
+function selectSwitchTarget(targetId) {
+  switchTargetId = targetId;
+  const target = jobs().find(j => j.id === targetId);
+  if (!target) { toast('Job not found'); return; }
+
+  // Show the CURRENT job's status (the one being left), per the user's exact
+  // specification — this is a checkpoint confirming what is being left behind,
+  // not a preview of the job being switched to.
+  document.getElementById('switch-confirm-model').textContent =
+    (job.machine?.model || '—') + ' — ' + (job.customer?.name || '—');
+  document.getElementById('switch-confirm-customer').textContent =
+    job.workOrder || '';
+  document.getElementById('switch-confirm-status').textContent = job.status || 'Received';
+
+  document.getElementById('switch-select-panel').style.display = 'none';
+  document.getElementById('switch-confirm-panel').style.display = '';
+}
+
+function cancelSwitchJob() {
+  // Return to the select panel — no navigation, no save, nothing changed.
+  switchTargetId = null;
+  document.getElementById('switch-confirm-panel').style.display = 'none';
+  document.getElementById('switch-select-panel').style.display = '';
+}
+
+async function confirmSwitchJob() {
+  if (!switchTargetId) return;
+  addTimeline('note', 'Switched to another job — status confirmed at: ' + (job.status || 'Received'));
+  const targetId = switchTargetId;
+  // Disable the button and show feedback while the outgoing job's final state
+  // syncs to the cloud — navigating away before this completes risks the page
+  // unload silently aborting the in-flight sync request.
+  const confirmBtn = document.querySelector('#switch-confirm-panel .btn.primary');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Saving…'; }
+  try {
+    await saveJob();
+  } catch {
+    // saveJob/syncJobs already queue failures into tagro_pending_sync for retry —
+    // a failure here does not mean data is lost, only that the cloud sync will
+    // retry on next successful page load. Proceed with navigation regardless.
+  }
+  location.href = 'work.html?id=' + encodeURIComponent(targetId);
+}
+
+function closeSwitchJobModal() {
+  document.getElementById('switch-job-modal').classList.remove('show');
+  switchTargetId = null;
 }
 
 function adjustQty(idx, delta) {
@@ -801,10 +1027,19 @@ function changePOStatus(idx) {
 
 function saveEstimate() {
   if (!job.estimate?.lines?.length) { toast('Add parts or labour first'); return; }
-  job.status = job.status === 'Received' ? 'Waiting Approval' : job.status;
+  const statusChanged = job.status === 'Received';
+  job.status = statusChanged ? 'Waiting Approval' : job.status;
   addTimeline('estimate', 'Estimate saved — ₹' + getTotalAmount().toLocaleString('en-IN'));
   saveJob();
+  renderHeader();
   toast('Estimate saved');
+
+  const el = document.getElementById('estimate-next-action');
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="font-weight:800;font-size:13px;margin-bottom:8px">Estimate saved${statusChanged ? ' — status moved to Waiting Approval' : ''}. Send it to the customer?</div>
+    <button class="btn primary" style="font-size:13px;padding:8px 14px" onclick="openMessagesModal(); document.getElementById('estimate-next-action').style.display='none'">Open Messages</button>
+    <button class="btn" style="font-size:13px;padding:8px 14px" onclick="document.getElementById('estimate-next-action').style.display='none'">Not now</button>`;
 }
 
 function getTotalAmount() {
@@ -838,6 +1073,33 @@ function setStatus(newStatus) {
   renderHeader();
   renderStatus();
   toast('Status: ' + newStatus);
+  showNextActionPrompt(newStatus);
+}
+
+function showNextActionPrompt(newStatus) {
+  const el = document.getElementById('status-next-action');
+  if (newStatus === 'Ready') {
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div style="font-weight:800;font-size:13px;margin-bottom:8px">Machine is ready. Notify the customer?</div>
+      <button class="btn primary" style="font-size:13px;padding:8px 14px" onclick="openMessagesModal(); hideNextActionPrompt()">Open Messages</button>
+      <button class="btn" style="font-size:13px;padding:8px 14px" onclick="hideNextActionPrompt()">Not now</button>`;
+  } else if (newStatus === 'Delivered') {
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div style="font-weight:800;font-size:13px;margin-bottom:8px">Job delivered. This machine's work here is done.</div>
+      <a class="btn primary" style="font-size:13px;padding:8px 14px;text-decoration:none" href="tracker.html">Back to Jobs</a>
+      <button class="btn" style="font-size:13px;padding:8px 14px" onclick="hideNextActionPrompt()">Stay here</button>`;
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
+
+function hideNextActionPrompt() {
+  const el = document.getElementById('status-next-action');
+  el.style.display = 'none';
+  el.innerHTML = '';
 }
 
 function populateAssign() {
@@ -851,6 +1113,14 @@ function populateAssign() {
     if (name === job.assignedTo) opt.selected = true;
     sel.appendChild(opt);
   });
+  // If this job has never been assigned, default the selection (not the saved
+  // value) to whoever is currently logged in — removes the friction of manually
+  // finding your own name every time, without silently auto-assigning on view.
+  // An explicit "Assign" click is still required to actually commit it.
+  if (!job.assignedTo && s?.name) {
+    const matchingOption = Array.from(sel.options).find(o => o.value === s.name);
+    if (matchingOption) sel.value = s.name;
+  }
 }
 
 function saveAssignment() {
@@ -880,7 +1150,7 @@ async function sendEstimateSMS() {
 
   toast('Sending...');
   try {
-    const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/estimate', {
+    const resp = await fetch(API + '/sms/estimate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -907,15 +1177,18 @@ async function sendStatusSMS() {
   if (!phone) { toast('No customer phone'); return; }
   toast('Sending...');
   try {
-    await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/status', {
+    const resp = await fetch(API + '/sms/status', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, workOrder: job.workOrder, model: job.machine?.model, status: job.status, branchPhone: getBranchPhone() })
     });
-    addTimeline('sms', 'Status SMS sent to ' + phone);
-    saveJob(); renderTimeline(); renderSMSHistory();
-    toast('Status sent');
-  } catch { toast('SMS failed'); }
+    const r = await resp.json();
+    if (r.ok) {
+      addTimeline('sms', 'Status SMS sent to ' + phone);
+      saveJob(); renderTimeline(); renderSMSHistory();
+      toast('Status sent');
+    } else { toast('SMS failed — check connection'); }
+  } catch { toast('SMS failed — check connection'); }
 }
 
 async function sendReadySMS() {
@@ -923,21 +1196,24 @@ async function sendReadySMS() {
   if (!phone) { toast('No customer phone'); return; }
   toast('Sending...');
   try {
-    await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/sms/ready', {
+    const resp = await fetch(API + '/sms/ready', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, workOrder: job.workOrder, model: job.machine?.model, invoiceAmount: Math.round(getTotalAmount()), branchPhone: getBranchPhone() })
     });
-    addTimeline('sms', 'Ready SMS sent to ' + phone);
-    saveJob(); renderTimeline(); renderSMSHistory();
-    toast('Ready notification sent');
-  } catch { toast('SMS failed'); }
+    const r = await resp.json();
+    if (r.ok) {
+      addTimeline('sms', 'Ready SMS sent to ' + phone);
+      saveJob(); renderTimeline(); renderSMSHistory();
+      toast('Ready notification sent');
+    } else { toast('SMS failed — check connection'); }
+  } catch { toast('SMS failed — check connection'); }
 }
 
 // ── WhatsApp fallback ─────────────────────────────────────
-const WA_SENDER = '919388312248';
+const WA_SENDER = '919388312248'; // TAGRO WhatsApp number
 
-function openWhatsApp(type) {
+async function openWhatsApp(type) {
   const phone = job.customer?.phone;
   if (!phone) { toast('No customer phone number'); return; }
   const model  = job.machine?.model || 'your machine';
@@ -949,14 +1225,13 @@ function openWhatsApp(type) {
   if (custPhone.length === 10) custPhone = '91' + custPhone;
 
   if (type === 'estimate') {
-    generateEstimateImage().then(dataUrl => {
-      if (dataUrl) {
-        showEstimateShare(dataUrl, custPhone);
-      } else {
-        const msg = `TAGRO Service: Your ${model} estimate is ready.\nWork Order: ${wo}\nAmount: ₹${total}\nApprove/Query: ${branch}`;
-        window.open(`https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`, '_blank');
-      }
-    });
+    const dataUrl = await generateEstimateImage();
+    if (dataUrl) {
+      showEstimateShare(dataUrl, custPhone);
+    } else {
+      const msg = `TAGRO Service: Your ${model} estimate is ready.\nWork Order: ${wo}\nAmount: ₹${total}\nApprove/Query: ${branch}`;
+      window.open(`https://wa.me/${custPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+    }
   } else {
     let msg = '';
     if (type === 'status') {
@@ -986,25 +1261,30 @@ async function generateEstimateImage() {
     const headerH = 120, footerH = 80;
     const bodyH = (parts.length ? sectionHead + parts.length * rowH + 8 : 0)
                 + (labour.length ? sectionHead + labour.length * rowH + 8 : 0)
-                + 60; 
+                + 60; // totals
     const H = headerH + bodyH + footerH + PAD * 2;
 
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
 
+    // Background
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, W, H);
 
+    // Header strip
     ctx.fillStyle = '#df6427';
     ctx.fillRect(0, 0, W, headerH);
 
+    // Logo
     const logo = new Image();
     logo.src = TAGRO_LOGO;
     await new Promise(r => { logo.onload = r; logo.onerror = r; });
+    // Draw logo white-ish (it's on orange bg) — scale to fit 120px wide
     const logoW = 120, logoH = Math.round(logoW * logo.height / logo.width);
     ctx.drawImage(logo, PAD, (headerH - logoH) / 2, logoW, logoH);
 
+    // Header text
     ctx.fillStyle = '#ffffff';
     ctx.font = '800 22px -apple-system,sans-serif';
     ctx.textAlign = 'right';
@@ -1029,14 +1309,17 @@ async function generateEstimateImage() {
       items.forEach((ln, idx) => {
         ctx.fillStyle = idx % 2 === 0 ? '#f9f9f9' : '#ffffff';
         ctx.fillRect(0, y, W, rowH);
+        // Dot
         ctx.fillStyle = color;
         ctx.beginPath();
         ctx.arc(PAD + 6, y + rowH/2, 4, 0, Math.PI*2);
         ctx.fill();
+        // Name
         ctx.fillStyle = '#121212';
         ctx.font = '700 13px -apple-system,sans-serif';
         const name = ln.name.length > 38 ? ln.name.slice(0,36)+'…' : ln.name;
         ctx.fillText(name, PAD + 18, y + rowH/2 + 5);
+        // Qty × amount
         ctx.textAlign = 'right';
         ctx.fillStyle = '#121212';
         ctx.font = '800 14px -apple-system,sans-serif';
@@ -1055,10 +1338,12 @@ async function generateEstimateImage() {
     if (parts.length)  drawSection('Parts',  parts,  '#df6427');
     if (labour.length) drawSection('Labour', labour, '#287a3e');
 
+    // Divider
     ctx.fillStyle = '#eee';
     ctx.fillRect(PAD, y, W - PAD*2, 1);
     y += 12;
 
+    // Totals
     function drawTotal(label, val, big) {
       ctx.fillStyle = big ? '#121212' : '#888';
       ctx.font = big ? '900 18px -apple-system,sans-serif' : '500 13px -apple-system,sans-serif';
@@ -1075,6 +1360,7 @@ async function generateEstimateImage() {
     ctx.fillStyle = '#eee'; ctx.fillRect(PAD, y, W - PAD*2, 1); y += 12;
     drawTotal('TOTAL', total, true);
 
+    // Footer
     y = H - footerH + 16;
     ctx.fillStyle = '#f5f5f5';
     ctx.fillRect(0, H - footerH, W, footerH);
@@ -1085,22 +1371,28 @@ async function generateEstimateImage() {
 
     return canvas.toDataURL('image/png');
   } catch(e) {
+    console.error('Image gen failed:', e);
     return null;
   }
 }
 
 function showEstimateShare(dataUrl, custPhone) {
+  // Show the image in a modal with share/download options
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:12px';
+  
   const img = document.createElement('img');
   img.src = dataUrl;
   img.style.cssText = 'max-width:100%;max-height:60vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.4)';
+  
   const btnRow = document.createElement('div');
   btnRow.style.cssText = 'display:flex;gap:10px;width:100%;max-width:400px';
+
   const waBtn = document.createElement('button');
   waBtn.textContent = '💬 Open WhatsApp';
   waBtn.style.cssText = 'flex:1;padding:14px;background:#25D366;color:#fff;border:0;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer';
   waBtn.onclick = () => {
+    // Download image first, then open WA
     const a = document.createElement('a');
     a.href = dataUrl;
     a.download = 'TAGRO-Estimate-' + (job.workOrder||'').replace(/\//g,'-') + '.png';
@@ -1110,14 +1402,22 @@ function showEstimateShare(dataUrl, custPhone) {
       document.body.removeChild(overlay);
     }, 800);
   };
+
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '✕';
   closeBtn.style.cssText = 'padding:14px 18px;background:#fff;color:#333;border:0;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer';
   closeBtn.onclick = () => document.body.removeChild(overlay);
+
   btnRow.appendChild(waBtn);
   btnRow.appendChild(closeBtn);
   overlay.appendChild(img);
   overlay.appendChild(btnRow);
+
+  const hint = document.createElement('div');
+  hint.style.cssText = 'color:rgba(255,255,255,.7);font-size:12px;text-align:center';
+  hint.textContent = 'Image will download → attach it in WhatsApp';
+  overlay.appendChild(hint);
+
   document.body.appendChild(overlay);
 }
 
@@ -1146,7 +1446,7 @@ function saveJob() {
   const all = jobs();
   const idx = all.findIndex(j => j.id === job.id);
   if (idx >= 0) all[idx] = job; else all.push(job);
-  saveJobs(all);
+  return saveJobs(all, job.id);
 }
 
 function openTechAssistant() {
@@ -1177,14 +1477,6 @@ function formatTime(iso) {
 // ══════════════════════════════════════════════════════════
 // VOICE HELPER
 // ══════════════════════════════════════════════════════════
-if (typeof voiceRecognition === 'undefined') {
-  var voiceMode = 'complaint';
-  var voiceRecognition = null;
-  var voiceListening = false;
-  var voiceTranscript = '';
-  var voiceAiData = null;
-}
-
 const VOICE_HINTS = {
   complaint:   'Describe the customer complaint and what you see on the machine.',
   parts:       'Name the parts you are using or replacing — e.g. "piston ring, crank bearing, gasket".',
@@ -1198,6 +1490,12 @@ const VOICE_APPLY_LABELS = {
   observation: 'Add to Timeline',
   lookup:      'Search Parts',
 };
+
+let voiceMode      = 'complaint';
+let voiceRecognition = null;
+let voiceListening = false;
+let voiceTranscript = '';
+let voiceAiData    = null;
 
 function openVoiceHelper() {
   document.getElementById('voice-overlay').classList.add('show');
@@ -1229,6 +1527,7 @@ function resetVoicePanel() {
   document.getElementById('voice-actions').style.display = 'none';
 }
 
+// ── Speech Recognition ────────────────────────────────────
 function toggleListening() {
   if (voiceListening) { stopListening(); return; }
   startListening();
@@ -1236,7 +1535,10 @@ function toggleListening() {
 
 function startListening() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { toast('Speech not supported on this browser. Try Chrome.'); return; }
+  if (!SR) {
+    toast('Speech not supported on this browser. Try Chrome.');
+    return;
+  }
   if (voiceRecognition) voiceRecognition.abort();
 
   voiceRecognition = new SR();
@@ -1287,6 +1589,7 @@ function stopListening() {
   if (voiceRecognition) voiceRecognition.stop();
 }
 
+// ── AI Analysis ───────────────────────────────────────────
 async function analyzeVoiceInput() {
   const text = voiceTranscript.trim();
   if (!text) return;
@@ -1297,35 +1600,39 @@ async function analyzeVoiceInput() {
   content.innerHTML = '<div style="color:#aaa;font-size:13px">Analysing…</div>';
   document.getElementById('voice-actions').style.display = 'none';
 
-  const model   = job.machine?.model || '';
+  const model    = job.machine?.model || '';
   const branch   = job.branch || '';
 
-  const prompts = {
-    complaint: `You are a STIHL service advisor. A mechanic spoke this about a ${model} machine:\n"${text}"\nReturn JSON with:\n- complaint: clean 1-sentence complaint summary\n- observations: array of specific technical findings (max 4, each under 8 words)\n- urgency: "urgent" | "normal" | "no_rush"\n- suggested_parts: array of part names likely needed (from speech, max 4)\nOnly JSON, no other text.`,
-    parts: `A mechanic at a STIHL workshop said: "${text}"\nMachine model: ${model}\nReturn JSON with:\n- parts: array of objects, each with: name (string), qty (integer, default 1), note (string or null)\n- search_terms: array of short strings to look up in parts database\nOnly JSON, no other text.`,
-    observation: `A mechanic said: "${text}"\nReturn JSON with:\n- note: clean professional 1-sentence observation for the job timeline\n- severity: "info" | "warning" | "critical"\n- action_needed: short string or null\nOnly JSON, no other text.`,
-    lookup: `A mechanic wants to find a STIHL part. They said: "${text}"\nMachine model: ${model}\nReturn JSON with:\n- search_query: best 2-4 word search string for the parts database\n- part_description: clear plain name of the part\n- likely_models: array of model names this part might fit\nOnly JSON, no other text.`,
+  const modePrefix = {
+    complaint:   'A mechanic reported this complaint/observation: ',
+    parts:       'A mechanic needs these parts identified and found in the parts database: ',
+    observation: 'Record this as a timeline observation, rephrased clearly and professionally: ',
+    lookup:      'Help find this part in the parts database: ',
   };
 
   try {
-    const cfg = await getConfig();
-    const res = await fetch(cfg.apiBase + '/tech', {
+    const res = await fetch(API + '/ai/tech-assist', {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ model, branch, query: text, mode: 'voice_' + voiceMode, prompt_override: prompts[voiceMode] })
+      body: JSON.stringify({
+        model,
+        mode: 'voice_' + voiceMode,
+        question: (modePrefix[voiceMode] || '') + text,
+        jobContext: { workOrder: job.workOrder, branch }
+      })
     });
 
     if (!res.ok) throw new Error('API error ' + res.status);
     const raw = await res.json();
-    let data;
-    try {
-      const cleaned = (raw.reply || '{}').replace(/```json|```/g, '').trim();
-      data = JSON.parse(cleaned);
-    } catch(e) { data = { _raw: raw.reply }; }
+    if (!raw.ok) throw new Error(raw.error || 'AI request failed');
+    // Backend returns plain text in `answer` — no structured JSON support exists
+    // on this endpoint (confirmed against tech.html's working implementation).
+    const data = { _raw: raw.answer };
     voiceAiData = data;
     renderVoiceResult(data);
   } catch(err) {
     content.innerHTML = `<div class="vai-item" style="color:#ba3327">Could not analyse — check connection.<br><small>${err.message}</small></div>`;
+    // Still allow manual apply
     document.getElementById('voice-actions').style.display = 'flex';
     document.getElementById('voice-apply-btn').textContent = 'Apply as Text';
     voiceAiData = null;
@@ -1334,85 +1641,49 @@ async function analyzeVoiceInput() {
 
 function renderVoiceResult(data) {
   const content = document.getElementById('vai-content');
-  let html = '';
+  const answer = data?._raw?.trim();
 
-  if (voiceMode === 'complaint') {
-    if (data.complaint) html += `<div class="vai-item"><strong>Complaint:</strong> ${esc(data.complaint)}</div>`;
-    if (data.observations?.length) html += `<div class="vai-item"><strong>Findings:</strong> ${data.observations.map(o => esc(o)).join(' · ')}</div>`;
-    if (data.urgency && data.urgency !== 'normal') html += `<div class="vai-item"><strong>Urgency:</strong> ${esc(data.urgency)}</div>`;
-    if (data.suggested_parts?.length) html += `<div class="vai-item" style="color:#888"><strong>Likely parts:</strong> ${data.suggested_parts.map(p => esc(p)).join(', ')}</div>`;
-  }
-  else if (voiceMode === 'parts') {
-    if (data.parts?.length) {
-      html += data.parts.map(p => `<div class="vai-item">• <strong>${esc(p.name)}</strong> × ${p.qty || 1}${p.note ? ' <span style="color:#aaa">— '+esc(p.note)+'</span>' : ''}</div>`).join('');
-    }
-    if (data.search_terms?.length) html += `<div class="vai-item" style="color:#888;margin-top:6px">Will search: ${data.search_terms.map(t => esc(t)).join(', ')}</div>`;
-  }
-  else if (voiceMode === 'observation') {
-    if (data.note) html += `<div class="vai-item"><strong>Note:</strong> ${esc(data.note)}</div>`;
-    if (data.action_needed) html += `<div class="vai-item" style="color:#d97706"><strong>Action:</strong> ${esc(data.action_needed)}</div>`;
-  }
-  else if (voiceMode === 'lookup') {
-    if (data.part_description) html += `<div class="vai-item"><strong>Part:</strong> ${esc(data.part_description)}</div>`;
-    if (data.search_query) html += `<div class="vai-item" style="color:#aaa">Search query: "${esc(data.search_query)}"</div>`;
-  }
+  const html = answer
+    ? `<div class="vai-item">${esc(answer)}</div>`
+    : `<div class="vai-item" style="color:#aaa">Transcript: "${esc(voiceTranscript)}"</div>`;
 
-  if (!html) html = `<div class="vai-item" style="color:#aaa">Transcript: "${esc(voiceTranscript)}"</div>`;
   content.innerHTML = html;
   document.getElementById('voice-actions').style.display = 'flex';
 }
 
+// ── Apply voice result ────────────────────────────────────
 function voiceApply() {
   const data = voiceAiData;
   const text = voiceTranscript.trim();
 
   if (voiceMode === 'complaint') {
-    const complaint = data?.complaint || text;
-    job.complaint = complaint;
-    if (data?.urgency) job.urgency = data.urgency;
+    const complaint = data?._raw?.trim() || text;
+    if (!job.complaints) job.complaints = [];
+    job.complaints.push({ text: complaint, at: new Date().toISOString() });
     addTimeline('inspection', 'Complaint recorded: ' + complaint);
-    if (data?.observations?.length) data.observations.forEach(o => addTimeline('note', o));
     saveJob();
     renderHeader();
     renderTimeline();
     toast('Complaint saved');
+    // Switch to timeline tab to show result
     document.querySelector('.tab-btn').click();
     closeVoiceHelper({target: document.getElementById('voice-overlay')});
   }
+
   else if (voiceMode === 'parts') {
-    const parts = data?.parts || [];
-    if (parts.length) {
-      let added = 0;
-      parts.forEach(p => {
-        const results = typeof searchParts === 'function' ? searchParts(p.name, 8) : [];
-        if (results.length) {
-          const best = results[0];
-          if (!job.estimate) job.estimate = { lines: [] };
-          const existing = job.estimate.lines.find(l => l.no === (best.no || best.id));
-          if (existing) {
-            existing.qty = (existing.qty || 1) + (p.qty || 1);
-          } else {
-            job.estimate.lines.push({ type:'part', id:best.no||best.id, no:best.no||best.id, name:best.name, qty:p.qty||1, unitPrice:best.price||0, price:(best.price||0)*(p.qty||1) });
-          }
-          added++;
-        }
-      });
-      addTimeline('estimate', `Voice: ${added} part(s) added`);
-      saveJob();
-      renderEstimate();
-      document.querySelectorAll('.tab-btn')[1].click();
-      toast(added + ' part(s) added to estimate');
-    } else {
-      const q = data?.search_terms?.[0] || text;
-      document.getElementById('parts-search').value = q;
-      document.querySelectorAll('.tab-btn')[1].click();
-      searchPartsLive();
-      toast('Search pre-filled — tap a result to add');
-    }
+    // Backend returns plain text, not a structured parts array — pre-fill the
+    // parts search box with the AI's interpretation (or raw transcript) and
+    // let the mechanic pick from real search results, rather than guessing.
+    const q = data?._raw?.trim() || text;
+    document.getElementById('parts-search').value = q;
+    document.querySelectorAll('.tab-btn')[1].click();
+    searchPartsLive();
+    toast('Search pre-filled — tap a result to add');
     closeVoiceHelper({target: document.getElementById('voice-overlay')});
   }
+
   else if (voiceMode === 'observation') {
-    const note = data?.note || text;
+    const note = data?._raw?.trim() || text;
     addTimeline('note', note);
     saveJob();
     renderTimeline();
@@ -1420,8 +1691,9 @@ function voiceApply() {
     toast('Observation added to timeline');
     closeVoiceHelper({target: document.getElementById('voice-overlay')});
   }
+
   else if (voiceMode === 'lookup') {
-    const q = data?.search_query || text;
+    const q = data?._raw?.trim() || text;
     document.getElementById('parts-search').value = q;
     document.querySelectorAll('.tab-btn')[1].click();
     searchPartsLive();
@@ -1430,7 +1702,10 @@ function voiceApply() {
   }
 }
 
-function voiceDiscard() { resetVoicePanel(); }
+function voiceDiscard() {
+  resetVoicePanel();
+}
+// ══════════════════════════════════════════════════════════
 
 loadJob();
 </script>
@@ -1440,35 +1715,56 @@ loadJob();
 <!-- ── Voice Helper Sheet ── -->
 <div class="voice-overlay" id="voice-overlay" onclick="closeVoiceHelper(event)">
   <div class="voice-sheet" onclick="event.stopPropagation()">
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <div style="font-size:17px;font-weight:900">🎙️ Voice Helper</div>
       <button onclick="closeVoiceHelper()" style="border:none;background:none;font-size:22px;cursor:pointer;color:#aaa">×</button>
     </div>
+
+    <!-- Mode selector -->
     <div class="voice-mode-row">
       <button class="vmode-btn active" id="vmode-complaint"  onclick="setVoiceMode('complaint')">🔍 Complaint</button>
       <button class="vmode-btn"        id="vmode-parts"      onclick="setVoiceMode('parts')">🔩 Parts Used</button>
       <button class="vmode-btn"        id="vmode-observation"onclick="setVoiceMode('observation')">📌 Observation</button>
       <button class="vmode-btn"        id="vmode-lookup"     onclick="setVoiceMode('lookup')">🔎 Part Lookup</button>
     </div>
-    <div id="voice-hint" style="font-size:12px;color:#aaa;margin-bottom:10px">Describe the customer's complaint and what you observed on the machine.</div>
+
+    <!-- Mode hint -->
+    <div id="voice-hint" style="font-size:12px;color:#aaa;margin-bottom:10px">
+      Describe the customer's complaint and what you observed on the machine.
+    </div>
+
+    <!-- Listening indicator -->
     <div class="voice-listening-indicator" id="vli">
       <div class="vli-dot"></div>
       <span>Listening…</span>
     </div>
+
+    <!-- Live transcript -->
     <div class="voice-transcript empty" id="voice-transcript">Tap the mic and speak…</div>
+
+    <!-- Mic button -->
     <div style="text-align:center;margin-bottom:14px">
       <button id="voice-mic-btn" onclick="toggleListening()"
-        style="width:64px;height:64px;border-radius:50%;border:none;background:#df6427;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 14px rgba(223,100,39,.4)">🎙️</button>
+        style="width:64px;height:64px;border-radius:50%;border:none;background:#df6427;
+               color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 14px rgba(223,100,39,.4)">
+        🎙️
+      </button>
       <div id="voice-mic-label" style="font-size:11px;color:#aaa;margin-top:6px;font-weight:800">TAP TO SPEAK</div>
     </div>
+
+    <!-- AI result panel -->
     <div class="voice-ai-result" id="voice-ai-result">
       <div class="vai-label">AI ANALYSIS</div>
       <div id="vai-content"></div>
     </div>
+
+    <!-- Action buttons -->
     <div class="voice-action-row" id="voice-actions" style="display:none">
       <button class="btn" onclick="voiceDiscard()">Discard</button>
       <button class="btn primary" id="voice-apply-btn" onclick="voiceApply()">Apply</button>
     </div>
+
   </div>
 </div>
 
