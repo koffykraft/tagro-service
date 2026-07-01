@@ -582,7 +582,7 @@ function initShell(active) {
     ['receive.html','Receive','quick'],
     ['tracker.html','Jobs','jobs'],
     ['tech.html','Tech','tech'],
-    ['catalog.html','Catalog','catalog'],
+    ['reference.html','Reference','reference'],
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
   ];
@@ -627,4 +627,3 @@ function showTab(tabName, btn) {
   // Activate clicked button
   if (btn) btn.classList.add('active');
 }
-
