@@ -627,4 +627,3 @@ function showTab(tabName, btn) {
   // Activate clicked button
   if (btn) btn.classList.add('active');
 }
-
