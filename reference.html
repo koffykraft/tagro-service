@@ -4,29 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TAGRO Reference</title>
+    <title>Debug Page</title>
     <link rel="stylesheet" href="app.css">
 </head>
 <body>
     <div class="wrap">
-        <h2>Parts List</h2>
-        <div id="list"></div>
+        <h2>System Check</h2>
+        <div id="status" style="padding: 20px; background: #eee; border-radius: 8px;"></div>
     </div>
 
     <script src="app.js"></script>
     <script>
-        // This takes the list of parts already inside your app
-        // and puts them on the screen immediately.
-        const list = document.getElementById('list');
-        const parts = TAGRO.parts || []; 
-
-        list.innerHTML = parts.map(p => `
-            <div class="card" style="margin-bottom: 10px; padding: 15px;">
-                <strong>${p.name}</strong><br>
-                <small>${p.no}</small>
-                <div style="float: right; font-weight: bold;">₹${p.price}</div>
-            </div>
-        `).join('');
+        const status = document.getElementById('status');
+        
+        // Let's check what exists
+        if (typeof TAGRO === 'undefined') {
+            status.innerHTML = "<strong>ERROR:</strong> TAGRO object is missing from app.js!";
+        } else if (!TAGRO.parts || TAGRO.parts.length === 0) {
+            status.innerHTML = "<strong>OK:</strong> TAGRO found, but TAGRO.parts is EMPTY.";
+        } else {
+            status.innerHTML = "<strong>SUCCESS:</strong> Found " + TAGRO.parts.length + " parts. (This should be working!)";
+        }
     </script>
 </body>
 </html>
