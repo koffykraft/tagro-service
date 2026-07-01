@@ -1,5 +1,4 @@
 ```javascript
-// TAGRO Service - app.js
 const API = 'https://tagro-api.icy-fire-d2ac.workers.dev';
 
 const TAGRO = {
@@ -23,7 +22,6 @@ const TAGRO = {
     ]
 };
 
-// Navigation
 const tabs = [
     ['home.html', 'Home', 'home'],
     ['receive.html', 'Receive', 'quick'],
@@ -34,12 +32,10 @@ const tabs = [
     ['links.html', 'Links', 'links']
 ];
 
-// Load roles from session storage
 const s = JSON.parse(sessionStorage.getItem('session') || '{}');
 if (s?.role === 'Owner' || s?.role === 'Manager') tabs.push(['config.html', 'Setup', 'setup']);
 if (s?.role === 'Owner') tabs.push(['staff-admin.html', 'Staff', 'admin']);
 
-// Render Navigation
 const nav = document.createElement('div');
 nav.className = 'nav';
 nav.innerHTML = tabs.map(t => 
@@ -48,18 +44,13 @@ nav.innerHTML = tabs.map(t =>
 
 document.body.insertBefore(nav, document.body.children[s?.demo ? 2 : 1]);
 
-// Initialize Data
-loadKVConfig().catch(() => {});
-setTimeout(() => { pullJobsFromDropbox().catch(() => {}); }, 1000);
-
-// Helper function for the Reference page
-function kvParts() { return TAGRO.parts; }
-function esc(str) { return str.replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-
-// Placeholder functions for app stability
 async function loadKVConfig() { return true; }
 async function pullJobsFromDropbox() { return true; }
+function kvParts() { return TAGRO.parts; }
+function esc(str) { return String(str).replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 function seed() { console.log("TAGRO Initialized"); }
+
 seed();
+loadKVConfig();
 
 ```
