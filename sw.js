@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v3';
+const CACHE_NAME = 'tagro-v4';
 const ASSETS = [
   '/',
   '/index.html',
@@ -16,25 +16,15 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(event.request).then((networkResponse) => {
-        // Only cache if the response is valid and is an opaque/basic response
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
-        }
-
-        // Clone the response BEFORE using it, so the cache has a fresh copy
+    fetch(event.request).then((networkResponse) => {
+      if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
         const responseToCache = networkResponse.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, responseToCache);
-        });
-
-        return networkResponse;
-      });
-    })
+        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseToCache)));
+      }
+      return networkResponse;
+    }).catch(() => caches.match(event.request).then((cachedResponse) => cachedResponse || caches.match('/home.html')))
   );
 });
 

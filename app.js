@@ -19,23 +19,10 @@ const TAGRO = {
     SDM: { manager:'Manager', staff:[] }
   },
   owner: { name:'T M Thomas', role:'Owner' },
-  parts: [
-    { no:'1123-640-2000', name:'MS250 Clutch Drum', price:480, stock:{KVR:0,PKM:1,MDM:2,SKT:0} },
-    { no:'0000-400-7000', name:'Spark Plug', price:180, stock:{KVR:12,PKM:5,MDM:8,SKT:6} },
-    { no:'4134-120-0600', name:'FS120 Carburetor Kit', price:950, stock:{KVR:0,PKM:0,MDM:1,SKT:0} },
-    { no:'3639-000-0068', name:'36RS Chain', price:720, stock:{KVR:3,PKM:12,MDM:6,SKT:2} },
-    { no:'3005-000-4813', name:'MS250 Guide Bar', price:1450, stock:{KVR:1,PKM:0,MDM:0,SKT:1} }
-  ],
-  customers: [
-    { id:'c1', branch:'KVR', name:'Thomas Thumpassery', alias:['Thomas Estate'], phone:'9656361846', place:'Karavaloor',
-      machines:[{id:'m1',model:'MS 250',serial:'184-KVR-250',note:'Frequent chain/clutch work'},{id:'m2',model:'FS 120',serial:'361-KVR-120',note:'Estate brushcutter'}] },
-    { id:'c2', branch:'KVR', name:'Jose Sawmill', alias:['Sawmill Jose'], phone:'9447000001', place:'Anchal',
-      machines:[{id:'m3',model:'MS 383',serial:'382-JOSE',note:'Hard daily use'}] },
-    { id:'c3', branch:'KVR', name:'Rubber Biju', alias:['Biju','Kuttappan'], phone:'9447000002', place:'Oyoor',
-      machines:[{id:'m4',model:'SR 450',serial:'SR-BIJU',note:'Sprayer'}] },
-    { id:'c4', branch:'MDM', name:'Victor Farms', alias:['Victor'], phone:'9447000003', place:'Marthandam',
-      machines:[{id:'m5',model:'BR 600',serial:'BR-VIC',note:''}] }
-  ],
+  // Production catalog and customer records are loaded from the cloud.
+  // Never seed browser storage with example business data.
+  parts: [],
+  customers: [],
   links: [
     { title:'TAGRO', url:'https://tagro.in' },
     { title:'STIHL India', url:'https://www.stihl.in' },
@@ -101,16 +88,53 @@ function userKey(branch, name) { return branch + '_' + name.replace(/\s+/g, '_')
 
 function allPeople(branch) {
   let p = TAGRO.people[branch] || { manager:'Manager', staff:[] };
-  let arr = [{ name: p.manager, role:'Manager' }, ...p.staff.map(n => ({ name: n, role:'Staff' }))];
-  arr.push({ name:'Demo', role:'Practice' });
-  return arr;
+  return [{ name: p.manager, role:'Manager' }, ...p.staff.map(n => ({ name: n, role:'Staff' }))]
+    .filter(person => person.name && person.name !== 'Manager');
 }
 
 // ── DATA ──────────────────────────────────────────────────
 
+function purgeLegacySampleData() {
+  const migrationKey = 'tagro_cleanup_no_sample_records_v1';
+  if (localStorage.getItem(migrationKey)) return;
+
+  const sampleCustomers = new Map([
+    ['c1', { name:'Thomas Thumpassery', phone:'9656361846' }],
+    ['c2', { name:'Jose Sawmill', phone:'9447000001' }],
+    ['c3', { name:'Rubber Biju', phone:'9447000002' }],
+    ['c4', { name:'Victor Farms', phone:'9447000003' }]
+  ]);
+  const isSampleCustomer = customer => {
+    const signature = sampleCustomers.get(String(customer?.id || ''));
+    return Boolean(signature && customer?.name === signature.name && customer?.phone === signature.phone);
+  };
+
+  const storedCustomers = jget('tagro_customers', []);
+  if (Array.isArray(storedCustomers)) {
+    jset('tagro_customers', storedCustomers.filter(customer => !isSampleCustomer(customer)));
+  }
+
+  const samplePhones = new Set([...sampleCustomers.values()].map(customer => customer.phone));
+  const sampleNames = new Set([...sampleCustomers.values()].map(customer => customer.name));
+  const storedJobs = jget('tagro_jobs', []);
+  if (Array.isArray(storedJobs)) {
+    jset('tagro_jobs', storedJobs.filter(job => {
+      const customer = job?.customer || {};
+      return !(sampleNames.has(customer.name) && samplePhones.has(customer.phone));
+    }));
+  }
+
+  localStorage.removeItem('tagro_demo_jobs');
+  localStorage.removeItem('tagro_demo_po');
+  const currentSession = jget('tagro_session', null);
+  if (currentSession?.demo) localStorage.removeItem('tagro_session');
+  localStorage.setItem(migrationKey, new Date().toISOString());
+}
+
 function seed() {
+  purgeLegacySampleData();
   if (!localStorage.getItem('tagro_customers')) jset('tagro_customers', TAGRO.customers);
-  if (!localStorage.getItem('tagro_parts')) jset('tagro_parts', TAGRO.parts);
+  if (!localStorage.getItem('tagro_parts')) jset('tagro_parts', []);
   if (!localStorage.getItem('tagro_links')) jset('tagro_links', TAGRO.links);
   if (!localStorage.getItem('tagro_comments')) jset('tagro_comments', []);
   if (!localStorage.getItem('tagro_jobs')) jset('tagro_jobs', []);
