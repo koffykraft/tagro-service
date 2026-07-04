@@ -95,33 +95,54 @@ function allPeople(branch) {
 // ── DATA ──────────────────────────────────────────────────
 
 function purgeLegacySampleData() {
-  const migrationKey = 'tagro_cleanup_no_sample_records_v1';
+  const migrationKey = 'tagro_cleanup_no_sample_records_v2';
   if (localStorage.getItem(migrationKey)) return;
 
-  const sampleCustomers = new Map([
-    ['c1', { name:'Thomas Thumpassery', phone:'9656361846' }],
-    ['c2', { name:'Jose Sawmill', phone:'9447000001' }],
-    ['c3', { name:'Rubber Biju', phone:'9447000002' }],
-    ['c4', { name:'Victor Farms', phone:'9447000003' }]
+  // Match the retired seed by internal IDs and machine shape, never by
+  // customer names or contact details. New customers use timestamp IDs.
+  const legacyFixtures = new Map([
+    ['c1', { branch:'KVR', machineIds:['m1','m2'] }],
+    ['c2', { branch:'KVR', machineIds:['m3'] }],
+    ['c3', { branch:'KVR', machineIds:['m4'] }],
+    ['c4', { branch:'MDM', machineIds:['m5'] }]
   ]);
-  const isSampleCustomer = customer => {
-    const signature = sampleCustomers.get(String(customer?.id || ''));
-    return Boolean(signature && customer?.name === signature.name && customer?.phone === signature.phone);
+  const isLegacyFixture = customer => {
+    const signature = legacyFixtures.get(String(customer?.id || ''));
+    if (!signature || customer?.branch !== signature.branch || customer?.createdAt) return false;
+    const machineIds = (customer.machines || []).map(machine => String(machine?.id || '')).sort();
+    return machineIds.length === signature.machineIds.length &&
+      machineIds.every((id, index) => id === signature.machineIds[index]);
   };
 
   const storedCustomers = jget('tagro_customers', []);
+  const removedCustomers = Array.isArray(storedCustomers)
+    ? storedCustomers.filter(isLegacyFixture)
+    : [];
+  const removedCustomerIds = new Set(removedCustomers.map(customer => String(customer.id)));
   if (Array.isArray(storedCustomers)) {
-    jset('tagro_customers', storedCustomers.filter(customer => !isSampleCustomer(customer)));
+    jset('tagro_customers', storedCustomers.filter(customer => !isLegacyFixture(customer)));
   }
 
-  const samplePhones = new Set([...sampleCustomers.values()].map(customer => customer.phone));
-  const sampleNames = new Set([...sampleCustomers.values()].map(customer => customer.name));
   const storedJobs = jget('tagro_jobs', []);
+  const removedJobs = Array.isArray(storedJobs)
+    ? storedJobs.filter(job =>
+        removedCustomerIds.has(String(job?.customerId || '')) ||
+        job?.demo === true ||
+        job?.source === 'demo' ||
+        String(job?.workOrder || '').startsWith('DEMO-'))
+    : [];
   if (Array.isArray(storedJobs)) {
-    jset('tagro_jobs', storedJobs.filter(job => {
-      const customer = job?.customer || {};
-      return !(sampleNames.has(customer.name) && samplePhones.has(customer.phone));
-    }));
+    const removedIds = new Set(removedJobs.map(job => job?.id || job?.workOrder).filter(Boolean));
+    jset('tagro_jobs', storedJobs.filter(job => !removedIds.has(job?.id || job?.workOrder)));
+  }
+
+  if (removedCustomers.length || removedJobs.length) {
+    jset('tagro_cleanup_backup_v2', {
+      createdAt: new Date().toISOString(),
+      reason: 'Retired browser fixtures',
+      customers: removedCustomers,
+      jobs: removedJobs
+    });
   }
 
   localStorage.removeItem('tagro_demo_jobs');

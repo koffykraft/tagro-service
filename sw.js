@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v4';
+const CACHE_NAME = 'tagro-v5';
 const ASSETS = [
   '/',
   '/index.html',
