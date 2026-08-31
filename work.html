@@ -455,8 +455,9 @@ let editType = null;
 // ── Load job ──────────────────────────────────────────────
 function loadJob() {
   const all = jobs();
-  job = all.find(j => j.id === id);
+  job = all.find(j => j.id === id || j.workOrder === id);
   if (!job) { document.body.innerHTML = '<div class="wrap"><div class="card"><div class="body">Job not found.</div></div></div>'; return; }
+  normalizeJobForWorkCard();
   renderHeader();
   renderTimeline();
   renderEstimate();
@@ -466,6 +467,45 @@ function loadJob() {
   populateAssign();
   document.getElementById('serial-field').value = job.machine?.serialNo || '';
   document.getElementById('source-field').value  = job.machine?.source || '';
+}
+
+function normalizeJobForWorkCard() {
+  job.customer = job.customer || {};
+  job.machine = job.machine || {};
+  job.timeline = Array.isArray(job.timeline) ? job.timeline : [];
+
+  if (Array.isArray(job.estimate)) {
+    job.estimate = {
+      lines: job.estimate.map(p => ({
+        type: 'part',
+        id: p.id || p.no || p.stihlNo || ('p' + Date.now()),
+        name: p.name || p.tagroName || p.stihlName || p.no || 'Part',
+        no: p.no || p.stihlNo || '',
+        stihlNo: p.stihlNo || p.no || '',
+        stihlName: p.stihlName || p.name || p.tagroName || '',
+        qty: Math.max(1, Number(p.qty || 1)),
+        standardRate: Number(p.price || p.amount || 0),
+        amount: Number(p.price || p.amount || 0),
+        gst: Number(p.gst || 18),
+        hsn: p.hsn || '',
+        poStatus: p.poStatus || 'Need Purchase',
+        addedBy: p.addedBy || s.name,
+        addedAt: p.addedAt || new Date().toISOString()
+      })),
+      source: 'service-desk-legacy-array'
+    };
+  }
+
+  if (!job.estimate || !Array.isArray(job.estimate.lines)) job.estimate = { lines: [] };
+  job.estimate.lines = job.estimate.lines.map(ln => ({
+    ...ln,
+    type: ln.type || 'part',
+    name: ln.name || ln.tagroName || ln.stihlName || ln.no || 'Line item',
+    qty: Math.max(1, Number(ln.qty || 1)),
+    amount: Number(ln.amount ?? ln.price ?? ln.mrp ?? 0),
+    standardRate: Number(ln.standardRate ?? ln.amount ?? ln.price ?? ln.mrp ?? 0),
+    gst: Number(ln.gst || 18)
+  }));
 }
 
 // ── Header ────────────────────────────────────────────────

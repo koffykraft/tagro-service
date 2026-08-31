@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v6-service-desk';
+const CACHE_NAME = 'tagro-v7-service-desk-repair';
 const ASSETS = [
   '/',
   '/index.html',

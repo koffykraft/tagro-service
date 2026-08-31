@@ -53,6 +53,20 @@ body.service-desk-body {
   max-width: 58ch;
 }
 
+.desk-branch-note {
+  display: inline-flex;
+  margin-top: 12px;
+  min-height: 34px;
+  align-items: center;
+  border: 1px solid var(--tagro-line);
+  background: #fffaf7;
+  color: #8d4b25;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
 .desk-status {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -144,15 +158,17 @@ body.service-desk-body {
 }
 
 .desk-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  flex-wrap: wrap;
   margin-top: 10px;
 }
 
 .desk-actions .btn {
   min-height: 48px;
-  flex: 1;
+  width: 100%;
+  white-space: normal;
+  line-height: 1.15;
 }
 
 .desk-chip-row {
@@ -343,6 +359,7 @@ body.service-desk-body {
     position: sticky;
     bottom: 0;
     z-index: 20;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     background: rgba(255,250,246,.96);
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
     margin-left: -2px;

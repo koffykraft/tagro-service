@@ -16,6 +16,7 @@
     <div class="desk-kicker">TAGRO Service App</div>
     <h1 class="desk-title">Receive, inspect, estimate, bill-ready.</h1>
     <div class="desk-sub">One guided desk for the workshop. Fill only what you know now. The job can still move forward, and missing details stay visible instead of becoming confusion later.</div>
+    <div class="desk-branch-note" id="desk-branch">Loading branch…</div>
     <div class="desk-status">
       <div class="desk-stat"><b id="stat-total">0</b><span>Open jobs</span></div>
       <div class="desk-stat"><b id="stat-estimate">0</b><span>Estimate/approval</span></div>
@@ -116,8 +117,6 @@
       <div class="desk-actions">
         <button type="button" class="btn primary" onclick="createOrUpdateDeskJob('Received')">Receive job</button>
         <button type="button" class="btn green" onclick="createOrUpdateDeskJob('Waiting Approval')">Estimate ready</button>
-      </div>
-      <div class="desk-actions">
         <button type="button" class="btn" onclick="createOrUpdateDeskJob('Repairing')">Save work</button>
         <button type="button" class="btn" onclick="openOldReceive()">Old receive page</button>
       </div>

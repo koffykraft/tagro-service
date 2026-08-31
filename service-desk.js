@@ -5,6 +5,7 @@
     selectedCustomer: null,
     selectedJob: null,
     selectedPart: null,
+    partResults: [],
     estimate: [],
     complaints: [],
     accessories: [],
@@ -50,6 +51,42 @@
   function modelValue() {
     return cleanText(el('machine-model-free').value || el('machine-model').value).toUpperCase();
   }
+  function fieldValue(id) {
+    return cleanText(el(id)?.value);
+  }
+  function typedCustomerPayload() {
+    const selected = state.selectedCustomer || {};
+    return {
+      id: selected.id || 'c' + Date.now(),
+      branch: selected.branch || state.branch,
+      name: fieldValue('new-name') || selected.name || '',
+      phone: fieldValue('new-phone') || selected.phone || '',
+      place: fieldValue('new-place') || selected.place || '',
+      alias: Array.isArray(selected.alias) ? selected.alias : [],
+      machines: Array.isArray(selected.machines) ? selected.machines : []
+    };
+  }
+  function estimateLines(now) {
+    return state.estimate.map(p => ({
+      type: 'part',
+      id: p.id || p.no || p.stihlNo || ('p' + Date.now() + Math.random().toString(36).slice(2, 5)),
+      name: p.name || p.tagroName || p.stihlName || p.no || 'Part',
+      no: p.no || p.stihlNo || '',
+      stihlNo: p.stihlNo || p.no || '',
+      stihlName: p.stihlName || p.name || p.tagroName || '',
+      qty: Math.max(1, Number(p.qty || 1)),
+      standardRate: Number(p.price || 0),
+      amount: Number(p.price || 0),
+      gst: Number(p.gst || 18),
+      hsn: p.hsn || '',
+      poStatus: p.poStatus || 'Need Purchase',
+      addedBy: state.session?.name || 'Staff',
+      addedAt: p.addedAt || now || new Date().toISOString()
+    }));
+  }
+  function estimateSubtotal() {
+    return state.estimate.reduce((a, p) => a + Number(p.total || 0), 0) + Number(el('labour')?.value || 0);
+  }
   function getCustomTiles(kind) {
     return jget('tagro_service_tiles_' + kind, []);
   }
@@ -65,6 +102,10 @@
     node.value = current ? current + '\n' + text : text;
     node.dispatchEvent(new Event('input', { bubbles: true }));
     updateDeskSummary();
+  }
+  function updateDeskSummary() {
+    renderSummary();
+    saveDraft();
   }
   function customerHay(c) {
     return [c.name, c.phone, c.place].concat(c.alias || []).join(' ').toLowerCase();
@@ -82,7 +123,7 @@
     const all = jobs();
     const idx = all.findIndex(j => j.id === job.id || j.workOrder === job.workOrder);
     if (idx >= 0) all[idx] = job; else all.push(job);
-    saveJobs(all, job.id);
+    return saveJobs(all, job.id);
   }
   function addTimeline(job, type, text) {
     job.timeline = Array.isArray(job.timeline) ? job.timeline : [];
@@ -205,10 +246,10 @@
     el('estimate-total').textContent = money(partsTotal + labour);
   }
   function renderSummary() {
-    const c = state.selectedCustomer;
+    const c = typedCustomerPayload();
     const complaintText = state.complaints.concat(cleanText(el('complaint-free')?.value) ? [cleanText(el('complaint-free')?.value)] : []).filter(Boolean).join(' / ');
     el('summary-box').innerHTML = `
-      <div class="desk-mini"><div class="desk-mini-label">Customer</div><div class="desk-mini-value">${c ? esc(c.name) + (c.phone ? ' · ' + esc(c.phone) : '') : 'Not selected yet'}</div></div>
+      <div class="desk-mini"><div class="desk-mini-label">Customer</div><div class="desk-mini-value">${c.name ? esc(c.name) + (c.phone ? ' · ' + esc(c.phone) : '') + (c.place ? ' · ' + esc(c.place) : '') : 'Not entered yet'}</div></div>
       <div class="desk-mini"><div class="desk-mini-label">Machine</div><div class="desk-mini-value">${esc(modelValue() || 'Not entered yet')}${el('machine-serial')?.value ? ' · ' + esc(el('machine-serial').value) : ''}</div></div>
       <div class="desk-mini"><div class="desk-mini-label">Complaint</div><div class="desk-mini-value">${esc(complaintText || 'Not entered yet')}</div></div>
       <div class="desk-mini"><div class="desk-mini-label">Estimate</div><div class="desk-mini-value">${state.estimate.length} parts · Labour ${money(el('labour')?.value || 0)} · Total <b>${el('estimate-total')?.textContent || '₹0'}</b></div></div>`;
@@ -343,12 +384,17 @@
       await ensurePartsData().catch(() => []);
       if (typeof searchParts === 'function') matches = searchParts(q, 8);
     }
+    state.partResults = matches;
     box.classList.add('show');
-    box.innerHTML = matches.length ? matches.map(p => `<button type="button" onclick="pickDeskPart('${encodeURIComponent(p.no || p.stihlNo || p.id || '')}')"><strong>${esc(p.name || p.tagroName || p.stihlName || p.no)}</strong><small>${esc(p.no || p.stihlNo || '')}${p.stihlName ? ' · ' + esc(p.stihlName) : ''} · ${money(p.price || p.mrp || 0)}</small></button>`).join('') : '<button type="button">No matching part in cached master. Try part number or fewer words.</button>';
+    box.innerHTML = matches.length ? matches.map((p, i) => {
+      const title = p.name || p.tagroName || p.stihlName || p.no || 'Part';
+      const number = p.no || p.stihlNo || p.id || '';
+      const stihl = p.stihlName ? ' · STIHL: ' + esc(p.stihlName) : '';
+      return `<button type="button" onclick="pickDeskPart(${i})"><strong>${esc(title)}</strong><small>${esc(number)}${stihl} · ${money(p.price || p.mrp || 0)}</small></button>`;
+    }).join('') : '<button type="button">No matching part in cached master. Try part number or fewer words.</button>';
   };
-  window.pickDeskPart = function (rawNo) {
-    const no = decodeURIComponent(rawNo);
-    const part = (typeof searchParts === 'function' ? searchParts(no, 1)[0] : null) || (partsData ? partsData().find(p => String(p.no || p.stihlNo || p.id) === no) : null);
+  window.pickDeskPart = function (idx) {
+    const part = state.partResults[Number(idx)];
     if (!part) return;
     state.selectedPart = part;
     el('part-search').value = part.name || part.tagroName || part.stihlName || part.no;
@@ -382,16 +428,8 @@
     state.estimate.splice(i, 1);
     renderLists();
   };
-  window.createOrUpdateDeskJob = function (targetStatus) {
-    const c = state.selectedCustomer || {
-      id: 'c' + Date.now(),
-      branch: state.branch,
-      name: cleanText(el('new-name').value),
-      phone: cleanText(el('new-phone').value),
-      place: cleanText(el('new-place').value),
-      alias: [],
-      machines: []
-    };
+  window.createOrUpdateDeskJob = async function (targetStatus) {
+    const c = typedCustomerPayload();
     if (!c.name) return toast('Customer name is needed');
     const model = modelValue();
     if (!model) return toast('Machine model is needed');
@@ -412,7 +450,22 @@
 
     const now = new Date().toISOString();
     const labour = Number(el('labour').value || 0);
-    const total = state.estimate.reduce((a, p) => a + Number(p.total || 0), 0) + labour;
+    const lines = estimateLines(now);
+    if (labour) {
+      lines.push({
+        type: 'labour',
+        id: 'lab' + Date.now(),
+        name: cleanText(el('bill-note').value).split('\n').filter(Boolean).slice(-1)[0] || 'Labour / service charge',
+        qty: 1,
+        standardRate: labour,
+        amount: labour,
+        gst: 18,
+        hsn: '',
+        addedBy: state.session?.name || 'Staff',
+        addedAt: now
+      });
+    }
+    const total = estimateSubtotal();
     const job = state.selectedJob || {
       id: 'j' + Date.now(),
       workOrder: wo(state.branch),
@@ -430,21 +483,22 @@
     job.observation = cleanText(el('observation').value);
     job.workDone = cleanText(el('work-done').value);
     job.accessories = state.accessories;
-    job.estimate = state.estimate;
+    job.estimate = { lines, source: 'service-desk', subtotal: total, savedAt: now };
     job.parts = state.estimate;
     job.labour = labour;
     job.billingNote = cleanText(el('bill-note').value);
     job.total = total;
     job.status = targetStatus || job.status || 'Received';
     addTimeline(job, 'service_desk', `Service Desk saved as ${job.status}`);
-    touchJob(job);
+    toast('Saving job…');
+    await touchJob(job);
     state.selectedJob = job;
     localStorage.removeItem(state.draftKey);
     toast('Saved — opening job card');
     setTimeout(() => { location.href = 'work.html?id=' + encodeURIComponent(job.id); }, 500);
   };
   window.openOldReceive = function () { location.href = 'receive.html'; };
-  window.updateDeskSummary = function () { renderSummary(); saveDraft(); };
+  window.updateDeskSummary = updateDeskSummary;
   window.clearDeskDraft = function () {
     if (!confirm('Clear this Service Desk screen? Saved jobs will not be deleted.')) return;
     localStorage.removeItem(state.draftKey);
@@ -467,7 +521,7 @@
       node.addEventListener('input', updateDeskSummary);
       node.addEventListener('change', updateDeskSummary);
     });
-    el('machine-model').addEventListener('change', syncModelSelect);
+    el('machine-model').addEventListener('change', window.syncModelSelect);
     ensurePartsData().then(() => renderModels()).catch(() => {});
   });
 })();
