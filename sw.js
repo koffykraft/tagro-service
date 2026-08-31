@@ -1,12 +1,16 @@
-const CACHE_NAME = 'tagro-v5';
+const CACHE_NAME = 'tagro-v6-service-desk';
 const ASSETS = [
   '/',
   '/index.html',
   '/home.html',
+  '/service-desk.html',
+  '/staff-parts.html',
   '/tracker.html',
   '/reference.html',
   '/app.js',
   '/app.css',
+  '/service-desk.css',
+  '/service-desk.js',
   '/parts-search.js',
   '/manifest.json'
 ];

@@ -179,6 +179,36 @@ body.service-desk-body {
   color: #bd4a13;
 }
 
+.desk-add-tile {
+  min-height: 40px;
+  border: 1.5px dashed var(--tagro-orange);
+  background: #fffaf7;
+  color: #bd4a13;
+  border-radius: 999px;
+  padding: 8px 13px;
+  font-weight: 950;
+  margin: 0 0 10px;
+  cursor: pointer;
+}
+
+.desk-chip.model {
+  border-radius: 15px;
+  min-width: 84px;
+}
+
+.desk-chip.service {
+  border-radius: 15px;
+  text-align: left;
+}
+
+.desk-chip small {
+  display: block;
+  color: var(--tagro-muted);
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 2px;
+}
+
 .desk-suggest {
   display: none;
   border: 1px solid var(--tagro-line);

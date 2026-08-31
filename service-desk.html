@@ -44,15 +44,21 @@
 
       <div class="desk-card">
         <h2>2. Machine and complaint</h2>
-        <p>Use a known model or type freely. Serial can be blank at intake.</p>
+        <p>Tap a model if visible. If not, type once and save it as a tile for next time. Serial can be blank at intake.</p>
+        <div class="desk-field">
+          <label>Model tiles</label>
+          <div class="desk-chip-row" id="model-chips"></div>
+          <button type="button" class="desk-add-tile" onclick="addModelTile()">+ Add model tile</button>
+        </div>
         <div class="desk-row">
-          <div class="desk-field"><label>Known model</label><select id="machine-model"></select></div>
+          <div class="desk-field"><label>Known model</label><select id="machine-model" onchange="syncModelSelect()"></select></div>
           <div class="desk-field"><label>Or type model</label><input id="machine-model-free" autocapitalize="characters" placeholder="e.g. MS 250"></div>
         </div>
         <div class="desk-field"><label>Serial number</label><input id="machine-serial" placeholder="Optional"></div>
         <div class="desk-field">
           <label>Common complaints</label>
           <div class="desk-chip-row" id="complaint-chips"></div>
+          <button type="button" class="desk-add-tile" onclick="addComplaintTile()">+ Add complaint tile</button>
           <textarea id="complaint-free" placeholder="Other complaint, if needed"></textarea>
         </div>
         <div class="desk-field">
@@ -63,9 +69,19 @@
 
       <div class="desk-card">
         <h2>3. Inspection and work</h2>
-        <p>These can be filled later. Save the job now if the counter is busy.</p>
-        <div class="desk-field"><label>Observation</label><textarea id="observation" placeholder="What staff/mechanic noticed"></textarea></div>
-        <div class="desk-field"><label>Work done</label><textarea id="work-done" placeholder="Repair/service work done"></textarea></div>
+        <p>Tap common phrases. Type only the unusual details.</p>
+        <div class="desk-field">
+          <label>Inspection tiles</label>
+          <div class="desk-chip-row" id="inspection-chips"></div>
+          <button type="button" class="desk-add-tile" onclick="addInspectionTile()">+ Add inspection tile</button>
+          <textarea id="observation" placeholder="What staff/mechanic noticed"></textarea>
+        </div>
+        <div class="desk-field">
+          <label>Work tiles</label>
+          <div class="desk-chip-row" id="work-chips"></div>
+          <button type="button" class="desk-add-tile" onclick="addWorkTile()">+ Add work tile</button>
+          <textarea id="work-done" placeholder="Repair/service work done"></textarea>
+        </div>
       </div>
 
       <div class="desk-card">
@@ -82,6 +98,11 @@
         </div>
         <button type="button" class="btn block" onclick="addDeskPart()">Add part to estimate</button>
         <div id="estimate-lines" style="margin-top:12px"></div>
+        <div class="desk-field">
+          <label>Service / labour tiles</label>
+          <div class="desk-chip-row" id="labour-chips"></div>
+          <button type="button" class="desk-add-tile" onclick="addLabourTile()">+ Add labour tile</button>
+        </div>
         <div class="desk-field"><label>Labour / service charge</label><input id="labour" type="number" min="0" placeholder="Optional"></div>
         <div class="desk-field"><label>Billing note</label><textarea id="bill-note" placeholder="Optional billing or accounts note"></textarea></div>
         <div class="desk-total"><span>Estimate total</span><b id="estimate-total">₹0</b></div>
@@ -100,6 +121,7 @@
         <button type="button" class="btn" onclick="createOrUpdateDeskJob('Repairing')">Save work</button>
         <button type="button" class="btn" onclick="openOldReceive()">Old receive page</button>
       </div>
+      <button type="button" class="btn red block" style="margin-top:8px" onclick="clearDeskDraft()">Clear screen</button>
     </aside>
   </section>
 </main>

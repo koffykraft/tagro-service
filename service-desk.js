@@ -11,14 +11,60 @@
     draftKey: 'tagro_service_desk_draft_v1'
   };
 
-  const complaintSeeds = ["Won't start", 'Low power', 'Chain problem', 'Fuel leak', 'Service', 'Noise', 'Other'];
+  const modelSeeds = [
+    'MS 170', 'MS 180', 'MS 210', 'MS 230', 'MS 250', 'MS 260', 'MS 361', 'MS 382',
+    'MS 440', 'MS 460', 'MS 461', 'MS 462', 'MS 660', 'MS 661',
+    'FS 120', 'FS 230', 'FS 250', 'FS 300', 'FS 350', 'FS 450',
+    'BG 56', 'BR 420', 'BR 600', 'HS 45', 'TS 420', 'RE 110'
+  ];
+  const complaintSeeds = [
+    "Won't start", 'Starts and stops', 'Low power', 'No acceleration', 'Chain not moving',
+    'Chain oil not coming', 'Chain brake problem', 'Fuel leak', 'Oil leak', 'High vibration',
+    'Engine noise', 'Overheating', 'Service required', 'Broken starter rope', 'Battery issue', 'Other'
+  ];
   const accessorySeeds = ['Guide bar', 'Chain', 'Fuel present', 'Loose parts', 'Battery / charger', 'Photo taken'];
+  const inspectionSeeds = [
+    'Fuel old / doubtful', 'Spark plug checked', 'Air filter dirty', 'Carburettor needs cleaning',
+    'Compression low', 'Chain/bar worn', 'Sprocket worn', 'Oil pump check needed',
+    'Starter assembly damaged', 'Customer misuse suspected', 'Estimate before work'
+  ];
+  const workSeeds = [
+    'General service done', 'Carburettor cleaned', 'Air filter cleaned/replaced',
+    'Spark plug replaced', 'Fuel line/filter replaced', 'Chain sharpened',
+    'Guide bar cleaned/dressed', 'Clutch assembly serviced', 'Starter rope replaced',
+    'Test run OK', 'Waiting for parts', 'Customer approval needed'
+  ];
+  const labourSeeds = [
+    { name: 'Full Service', amount: 3000 },
+    { name: 'Carburettor Service', amount: 300 },
+    { name: 'Carburettor Repairs', amount: 500 },
+    { name: 'Clutch Assembly Replacement', amount: 250 },
+    { name: 'Piston Replacement Labour', amount: 500 },
+    { name: 'Chain Sharpening', amount: 120 },
+    { name: 'Inspection / Diagnosis', amount: 150 }
+  ];
 
   function el(id) { return document.getElementById(id); }
   function money(n) { return '₹' + Math.round(Number(n || 0)).toLocaleString('en-IN'); }
   function cleanText(s) { return String(s || '').trim(); }
   function modelValue() {
-    return cleanText(el('machine-model').value || el('machine-model-free').value).toUpperCase();
+    return cleanText(el('machine-model-free').value || el('machine-model').value).toUpperCase();
+  }
+  function getCustomTiles(kind) {
+    return jget('tagro_service_tiles_' + kind, []);
+  }
+  function saveCustomTiles(kind, list) {
+    jset('tagro_service_tiles_' + kind, Array.from(new Set(list.map(cleanText).filter(Boolean))));
+  }
+  function unique(list) {
+    return Array.from(new Set(list.map(cleanText).filter(Boolean)));
+  }
+  function appendText(id, text) {
+    const node = el(id);
+    const current = cleanText(node.value);
+    node.value = current ? current + '\n' + text : text;
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+    updateDeskSummary();
   }
   function customerHay(c) {
     return [c.name, c.phone, c.place].concat(c.alias || []).join(' ').toLowerCase();
@@ -92,6 +138,18 @@
   function renderChips(id, values, selected, handlerName) {
     el(id).innerHTML = values.map(v => `<button type="button" class="desk-chip ${selected.includes(v) ? 'on' : ''}" onclick="${handlerName}('${encodeURIComponent(v)}')">${esc(v)}${selected.includes(v) ? ' ✓' : ''}</button>`).join('');
   }
+  function renderModelChips(models) {
+    const chosen = modelValue();
+    el('model-chips').innerHTML = models.slice(0, 40).map(m => `<button type="button" class="desk-chip model ${chosen === m.toUpperCase() ? 'on' : ''}" onclick="chooseModelTile('${encodeURIComponent(m)}')">${esc(m)}</button>`).join('');
+  }
+  function renderPhraseChips(id, values, targetField, handlerName) {
+    el(id).innerHTML = values.map(v => `<button type="button" class="desk-chip" onclick="${handlerName}('${encodeURIComponent(v)}')">${esc(v)}</button>`).join('');
+  }
+  function renderLabourChips() {
+    const custom = getCustomTiles('labour').map(name => ({ name, amount: 0 }));
+    const values = labourSeeds.concat(custom);
+    el('labour-chips').innerHTML = values.map(v => `<button type="button" class="desk-chip service" onclick="chooseLabourTile('${encodeURIComponent(v.name)}', ${Number(v.amount || 0)})">${esc(v.name)}<small>${Number(v.amount || 0) ? money(v.amount) : 'Set amount manually'}</small></button>`).join('');
+  }
   function renderCustomerChoice() {
     const c = state.selectedCustomer;
     el('chosen-customer').innerHTML = c
@@ -101,23 +159,31 @@
   function renderModels() {
     const seen = new Set();
     const models = [];
+    modelSeeds.concat(getCustomTiles('models')).forEach(m => {
+      const name = cleanText(m).toUpperCase();
+      if (name && !seen.has(name)) { seen.add(name); models.push(name); }
+    });
     getBranchModels(state.branch).forEach(m => {
-      const name = cleanText(m.model || m.name || m.code || m);
+      const name = cleanText(m.model || m.name || m.code || m).toUpperCase();
       if (name && !seen.has(name)) { seen.add(name); models.push(name); }
     });
     customers().forEach(c => (c.machines || []).forEach(m => {
-      const name = cleanText(m.model || m.name || m.code || m);
+      const name = cleanText(m.model || m.name || m.code || m).toUpperCase();
       if (name && !seen.has(name)) { seen.add(name); models.push(name); }
     }));
     jobs().forEach(j => {
-      const name = cleanText(j.machine?.model || j.model);
+      const name = cleanText(j.machine?.model || j.model).toUpperCase();
       if (name && !seen.has(name)) { seen.add(name); models.push(name); }
     });
     el('machine-model').innerHTML = '<option value="">Known model</option>' + models.sort((a,b) => a.localeCompare(b, undefined, { numeric: true })).map(m => `<option value="${esc(m)}">${esc(m)}</option>`).join('');
+    renderModelChips(models);
   }
   function renderLists() {
-    renderChips('complaint-chips', complaintSeeds, state.complaints, 'toggleComplaint');
+    renderChips('complaint-chips', unique(complaintSeeds.concat(getCustomTiles('complaints'))), state.complaints, 'toggleComplaint');
     renderChips('accessory-chips', accessorySeeds, state.accessories, 'toggleAccessoryDesk');
+    renderPhraseChips('inspection-chips', unique(inspectionSeeds.concat(getCustomTiles('inspection'))), 'observation', 'chooseInspectionTile');
+    renderPhraseChips('work-chips', unique(workSeeds.concat(getCustomTiles('work'))), 'work-done', 'chooseWorkTile');
+    renderLabourChips();
     renderEstimate();
     renderSummary();
     saveDraft();
@@ -193,6 +259,80 @@
     if (i >= 0) state.accessories.splice(i, 1); else state.accessories.push(value);
     renderLists();
   };
+  window.chooseModelTile = function (raw) {
+    const value = decodeURIComponent(raw).toUpperCase();
+    const select = el('machine-model');
+    if (Array.from(select.options).some(o => o.value === value)) select.value = value;
+    el('machine-model-free').value = value;
+    renderModels();
+    updateDeskSummary();
+  };
+  window.syncModelSelect = function () {
+    if (el('machine-model').value) el('machine-model-free').value = el('machine-model').value;
+    renderModelChips(Array.from(el('machine-model').options).map(o => o.value).filter(Boolean));
+    updateDeskSummary();
+  };
+  window.addModelTile = function () {
+    const typed = cleanText(el('machine-model-free').value || el('machine-model').value).toUpperCase();
+    const value = cleanText(prompt('Model tile name', typed || 'MS 250'));
+    if (!value) return;
+    const list = getCustomTiles('models');
+    list.push(value.toUpperCase());
+    saveCustomTiles('models', list);
+    el('machine-model-free').value = value.toUpperCase();
+    renderModels();
+    updateDeskSummary();
+  };
+  window.addComplaintTile = function () {
+    const typed = cleanText(el('complaint-free').value);
+    const value = cleanText(prompt('Complaint tile text', typed || 'Customer says machine is not working'));
+    if (!value) return;
+    const list = getCustomTiles('complaints');
+    list.push(value);
+    saveCustomTiles('complaints', list);
+    if (!state.complaints.includes(value)) state.complaints.push(value);
+    renderLists();
+  };
+  window.chooseInspectionTile = function (raw) {
+    appendText('observation', decodeURIComponent(raw));
+  };
+  window.addInspectionTile = function () {
+    const typed = cleanText(el('observation').value.split('\n').pop());
+    const value = cleanText(prompt('Inspection tile text', typed || 'Estimate before work'));
+    if (!value) return;
+    const list = getCustomTiles('inspection');
+    list.push(value);
+    saveCustomTiles('inspection', list);
+    appendText('observation', value);
+    renderLists();
+  };
+  window.chooseWorkTile = function (raw) {
+    appendText('work-done', decodeURIComponent(raw));
+  };
+  window.addWorkTile = function () {
+    const typed = cleanText(el('work-done').value.split('\n').pop());
+    const value = cleanText(prompt('Work tile text', typed || 'General service done'));
+    if (!value) return;
+    const list = getCustomTiles('work');
+    list.push(value);
+    saveCustomTiles('work', list);
+    appendText('work-done', value);
+    renderLists();
+  };
+  window.chooseLabourTile = function (rawName, amount) {
+    const name = decodeURIComponent(rawName);
+    if (Number(amount || 0)) el('labour').value = Number(amount || 0);
+    appendText('bill-note', name);
+    renderLists();
+  };
+  window.addLabourTile = function () {
+    const value = cleanText(prompt('Labour tile name', 'Custom labour'));
+    if (!value) return;
+    const list = getCustomTiles('labour');
+    list.push(value);
+    saveCustomTiles('labour', list);
+    renderLists();
+  };
   window.searchDeskParts = async function () {
     const q = cleanText(el('part-search').value);
     const box = el('part-results');
@@ -253,7 +393,6 @@
       machines: []
     };
     if (!c.name) return toast('Customer name is needed');
-    if (!c.phone) return toast('Phone number is needed');
     const model = modelValue();
     if (!model) return toast('Machine model is needed');
     const freeComplaint = cleanText(el('complaint-free').value);
@@ -306,6 +445,11 @@
   };
   window.openOldReceive = function () { location.href = 'receive.html'; };
   window.updateDeskSummary = function () { renderSummary(); saveDraft(); };
+  window.clearDeskDraft = function () {
+    if (!confirm('Clear this Service Desk screen? Saved jobs will not be deleted.')) return;
+    localStorage.removeItem(state.draftKey);
+    location.reload();
+  };
 
   window.addEventListener('DOMContentLoaded', async function () {
     state.session = requireLogin();
@@ -315,10 +459,15 @@
     el('desk-branch').textContent = state.session.role === 'Owner' ? `Owner view · active branch ${state.branch}` : (TAGRO.branches[state.branch] || state.branch);
     renderModels();
     restoreDraft();
+    renderModels();
     renderCustomerChoice();
     renderStats();
     renderLists();
-    document.querySelectorAll('input,textarea,select').forEach(node => node.addEventListener('input', updateDeskSummary));
-    ensurePartsData().catch(() => {});
+    document.querySelectorAll('input,textarea,select').forEach(node => {
+      node.addEventListener('input', updateDeskSummary);
+      node.addEventListener('change', updateDeskSummary);
+    });
+    el('machine-model').addEventListener('change', syncModelSelect);
+    ensurePartsData().then(() => renderModels()).catch(() => {});
   });
 })();
