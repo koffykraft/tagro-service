@@ -1,16 +1,19 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0;url=login.html">
-<title>TAGRO Service</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#df6427">
+  <title>TAGRO Service | home</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="tagro-ui.css">
 </head>
-<body><script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
-</script>
+<body data-page="home">
+  <div id="app"></div>
+  <script src="app.js"></script>
+  <script src="parts-search.js"></script>
+  <script src="tagro-os.js"></script>
+  <script>window.TAGRO_OS.boot();</script>
+  <script>if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });</script>
 </body>
 </html>
