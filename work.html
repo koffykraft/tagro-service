@@ -1499,7 +1499,10 @@ function openTechAssistant() {
 }
 
 function openCatalogForThisJob() {
-  location.href = `catalog.html?id=${encodeURIComponent(job.id)}`;
+  const params = new URLSearchParams();
+  params.set('id', job.id);
+  if (job.machine?.model) params.set('model', job.machine.model);
+  location.href = `reference.html?${params.toString()}`;
 }
 
 function getBranchPhone() {

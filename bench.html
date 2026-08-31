@@ -328,8 +328,7 @@ function launchVisualCatalog() {
   if (!activeJob) return;
   const model = activeJob.machine?.model || activeJob.model || 'MS250';
   const wo = activeJob.workOrder || activeJob.id || '';
-  const modelKey = model.replace(/\s+/g, '').toUpperCase();
-  location.href = `catalog.html?job=${encodeURIComponent(wo)}&model=${encodeURIComponent(modelKey)}`;
+  location.href = `reference.html?job=${encodeURIComponent(wo)}&model=${encodeURIComponent(model)}`;
 }
 
 // ── TIMELINE ─────────────────────────────────────────────

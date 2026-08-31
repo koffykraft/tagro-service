@@ -498,6 +498,15 @@
     setTimeout(() => { location.href = 'work.html?id=' + encodeURIComponent(job.id); }, 500);
   };
   window.openOldReceive = function () { location.href = 'receive.html'; };
+  window.openDeskReference = function () {
+    const params = new URLSearchParams();
+    const model = modelValue();
+    const q = cleanText(el('part-search')?.value);
+    if (state.selectedJob?.id) params.set('id', state.selectedJob.id);
+    if (model) params.set('model', model);
+    if (q) params.set('q', q);
+    location.href = 'reference.html' + (params.toString() ? '?' + params.toString() : '');
+  };
   window.updateDeskSummary = updateDeskSummary;
   window.clearDeskDraft = function () {
     if (!confirm('Clear this Service Desk screen? Saved jobs will not be deleted.')) return;

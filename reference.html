@@ -111,7 +111,7 @@
         <div class="field" style="margin-bottom:0;">
           <input id="ref-search-input" placeholder="TAGRO name, STIHL No, Alias, Model..." oninput="runSearch()" autocorrect="off" spellcheck="false">
         </div>
-        <div class="small" style="margin-top:8px;">Universal lookup across all pricing, models, and alias databases.</div>
+        <div class="small" style="margin-top:8px;" id="reference-context-note">Universal lookup across all pricing, models, and alias databases.</div>
       </div>
     </div>
     <div id="search-results-grid">
@@ -271,6 +271,12 @@ let iplPage = 2;
 let wmModel = 'MS 250';
 let wmPage = 1;
 let currentTargetAction = ''; // 'estimate' or 'stock'
+let searchResults = [];
+let iplResults = [];
+const referenceParams = new URLSearchParams(location.search);
+const returnJobId = referenceParams.get('job') || referenceParams.get('id') || '';
+const requestedModel = (referenceParams.get('model') || '').trim().toUpperCase();
+const requestedQuery = (referenceParams.get('q') || '').trim();
 
 // Mock Data structure for IPL and Manuals (representing R2/KV layout)
 const CATALOG_META = {
@@ -315,6 +321,7 @@ function runSearch() {
 
   // searchParts from parts-search.js already handles multi-field matching
   const results = searchParts(q, 15);
+  searchResults = results;
   if (!results.length) {
     el.innerHTML = '<div class="notice center">No parts found matching query in current database.</div>';
     return;
@@ -334,7 +341,7 @@ function runSearch() {
           <div class="ref-title">${esc(p.name)}</div>
           <div class="ref-sub mono">ID: ${esc(p.no)}</div>
         </div>
-        <button class="btn" style="padding:6px 12px; min-height:36px; font-size:12px; white-space:nowrap;" onclick="addBasket('${esc(p.no)}', '${esc(p.name)}', ${p.price||0})">
+        <button class="btn" style="padding:6px 12px; min-height:36px; font-size:12px; white-space:nowrap;" onclick="addBasketFromSearch(${searchResults.indexOf(p)})">
           + Basket
         </button>
       </div>
@@ -360,6 +367,7 @@ function initIPL() {
   const sel = document.getElementById('ipl-model-select');
   if(!sel.options.length) {
     sel.innerHTML = Object.keys(CATALOG_META).map(k => `<option value="${k}">${k}</option>`).join('');
+    if (requestedModel && CATALOG_META[requestedModel]) sel.value = requestedModel;
   }
   loadIPL();
 }
@@ -407,7 +415,8 @@ function updateIPLView() {
   const keyword = sectionName.split(' ')[0].toLowerCase();
   
   const allParts = partsData();
-  const matched = allParts.filter(p => p.name.toLowerCase().includes(keyword)).slice(0, 6);
+  const matched = allParts.filter(p => String(p.name || p.tagroName || p.stihlName || '').toLowerCase().includes(keyword)).slice(0, 6);
+  iplResults = matched;
   
   const listEl = document.getElementById('ipl-parts-list');
   if (!matched.length) {
@@ -421,7 +430,7 @@ function updateIPLView() {
         <div style="font-weight:900; font-size:14px;">${i+1}. ${esc(p.name)}</div>
         <div class="mono" style="font-size:11px; color:#777; margin-top:2px;">${p.no}</div>
       </div>
-      <button class="btn" style="min-height:30px; padding:6px 12px; font-size:12px;" onclick="addBasket('${p.no}','${esc(p.name)}',${p.price||p.mrp||0})">+ Add</button>
+       <button class="btn" style="min-height:30px; padding:6px 12px; font-size:12px;" onclick="addBasketFromIPL(${i})">+ Add</button>
     </div>
   `).join('');
 }
@@ -431,6 +440,7 @@ function initWM() {
   const sel = document.getElementById('wm-model-select');
   if(!sel.options.length) {
     sel.innerHTML = Object.keys(CATALOG_META).map(k => `<option value="${k}">${k}</option>`).join('');
+    if (requestedModel && CATALOG_META[requestedModel]) sel.value = requestedModel;
   }
   loadWorkshopManual();
 }
@@ -493,6 +503,18 @@ function addBasket(no, name, price) {
   jset('tagro_parts_basket', partsBasket);
   updateBadge();
   toast('Added to Universal Basket');
+}
+
+function addBasketFromSearch(idx) {
+  const p = searchResults[Number(idx)];
+  if (!p) return toast('Part not available');
+  addBasket(p.no || p.stihlNo || p.id || '', p.name || p.tagroName || p.stihlName || 'Part', Number(p.price || p.mrp || 0));
+}
+
+function addBasketFromIPL(idx) {
+  const p = iplResults[Number(idx)];
+  if (!p) return toast('Part not available');
+  addBasket(p.no || p.stihlNo || p.id || '', p.name || p.tagroName || p.stihlName || 'Part', Number(p.price || p.mrp || 0));
 }
 
 function updateBadge() {
@@ -575,7 +597,7 @@ function openTargetModal(action) {
             <div style="font-weight:900; color:var(--dark); font-size:14px;">${esc(j.machine?.model)}</div>
             <div class="mono" style="font-size:11px; color:#777; margin-top:2px;">${j.workOrder||j.id} · ${esc(j.customer?.name)}</div>
           </div>
-          <input type="radio" name="target-selection" value="${j.workOrder||j.id}" style="width:18px; height:18px; accent-color:var(--orange);">
+          <input type="radio" name="target-selection" value="${j.workOrder||j.id}" ${returnJobId && (returnJobId === j.id || returnJobId === j.workOrder) ? 'checked' : ''} style="width:18px; height:18px; accent-color:var(--orange);">
         </label>
       `).join('');
     }
@@ -603,13 +625,30 @@ function confirmTargetAction() {
     const allJobs = jobs();
     const job = allJobs.find(j => (j.workOrder||j.id) === rad.value);
     if (job) {
-      if (!job.estimate) job.estimate = [];
+      if (Array.isArray(job.estimate)) job.estimate = { lines: job.estimate };
+      if (!job.estimate || !Array.isArray(job.estimate.lines)) job.estimate = { lines: [] };
       partsBasket.forEach(b => {
-        const ex = job.estimate.find(e => e.no === b.no);
+        const ex = job.estimate.lines.find(e => e.type === 'part' && e.no === b.no);
         if (ex) ex.qty += b.qty;
-        else job.estimate.push({ no:b.no, name:b.name, price:b.price, qty:b.qty });
+        else job.estimate.lines.push({
+          type: 'part',
+          id: b.no || ('p' + Date.now()),
+          no: b.no,
+          stihlNo: b.no,
+          name: b.name,
+          stihlName: b.name,
+          qty: b.qty,
+          standardRate: Number(b.price || 0),
+          amount: Number(b.price || 0),
+          gst: 18,
+          hsn: '',
+          poStatus: 'Need Purchase',
+          addedBy: s.name,
+          addedAt: new Date().toISOString()
+        });
       });
-      saveJobs(allJobs);
+      job.updatedAt = new Date().toISOString();
+      saveJobs(allJobs, job.id);
       clearBasket();
       document.getElementById('target-modal').classList.remove('open');
       toast('Parts merged to Estimate');
@@ -701,6 +740,14 @@ async function init() {
       }
     } catch {}
   }
+  if (returnJobId) {
+    const job = jobs().find(j => j.id === returnJobId || j.workOrder === returnJobId);
+    if (job) {
+      document.getElementById('reference-context-note').textContent =
+        `Adding parts for ${job.machine?.model || 'machine'} · ${job.customer?.name || 'customer'} · ${job.workOrder || job.id}`;
+    }
+  }
+  if (requestedQuery) document.getElementById('ref-search-input').value = requestedQuery;
   updateBadge();
   runSearch();
 }
