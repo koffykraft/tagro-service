@@ -67,6 +67,8 @@
 .et-label { font-size:12px; color:#aaa; }
 .et-amount { font-size:28px; font-weight:900; }
 .et-gst { font-size:12px; color:#aaa; margin-top:4px; }
+.billing-state { border:1.5px solid #f0e0d6; background:#fff8f4; border-radius:14px; padding:12px; margin-top:12px; font-size:13px; color:#5c4033; line-height:1.45; }
+.billing-state b { color:#17120f; }
 
 /* Parts search */
 .parts-search-wrap { position:relative; }
@@ -248,6 +250,7 @@
     <div id="estimate-total"></div>
 
     <button class="btn primary block" style="margin-top:12px" onclick="saveEstimate()">Save Estimate</button>
+    <button class="btn green block" style="margin-top:8px" onclick="prepareInvoiceMaterial()">Prepare Invoice Material</button>
 
     <!-- Contextual forward-action prompt for the Estimate tab specifically — kept
          separate from #status-next-action (which lives in the Status tab) because
@@ -452,6 +455,25 @@ let job   = null;
 let editIdx = null;
 let editType = null;
 
+function toPaise(n) { return Math.round(Number(n || 0) * 100); }
+function fromPaise(n) { return Number(n || 0) / 100; }
+function lineAmountPaise(ln) { return toPaise(ln.amount) * Math.max(1, Number(ln.qty || 1)); }
+function estimateTotals() {
+  const lines = job?.estimate?.lines || [];
+  const subtotalPaise = lines.reduce((a, ln) => a + lineAmountPaise(ln), 0);
+  const taxPaise = lines.reduce((a, ln) => a + Math.round(lineAmountPaise(ln) * Number(ln.gst || 0) / 100), 0);
+  const totalPaise = subtotalPaise + taxPaise;
+  return {
+    currency: 'INR',
+    subtotalPaise,
+    taxPaise,
+    totalPaise,
+    subtotal: fromPaise(subtotalPaise),
+    tax: fromPaise(taxPaise),
+    total: fromPaise(totalPaise)
+  };
+}
+
 // ── Load job ──────────────────────────────────────────────
 function loadJob() {
   const all = jobs();
@@ -506,6 +528,17 @@ function normalizeJobForWorkCard() {
     standardRate: Number(ln.standardRate ?? ln.amount ?? ln.price ?? ln.mrp ?? 0),
     gst: Number(ln.gst || 18)
   }));
+  const totals = estimateTotals();
+  job.estimate.currency = job.estimate.currency || totals.currency;
+  job.estimate.subtotalPaise = Number(job.estimate.subtotalPaise || totals.subtotalPaise);
+  job.estimate.taxPaise = Number(job.estimate.taxPaise || totals.taxPaise);
+  job.estimate.totalPaise = Number(job.estimate.totalPaise || totals.totalPaise);
+  job.billing = job.billing || {
+    stage: job.estimate.lines.length ? 'estimate_ready' : 'not_started',
+    busyWriteStatus: 'pending_verification',
+    source: job.estimate.source || 'work-card'
+  };
+  job.invoiceMaterial = job.invoiceMaterial || { ready: false };
 }
 
 // ── Header ────────────────────────────────────────────────
@@ -522,6 +555,7 @@ function renderHeader() {
     ${job.urgency && job.urgency !== 'normal' ? `<span class="badge" style="background:#fff3d5;color:${urgencyColor}">${esc(job.urgency)}</span>` : ''}
     ${job.assignedTo ? `<span class="badge">🔧 ${esc(job.assignedTo)}</span>` : '<span class="badge" style="background:#fdecea;color:#ba3327">Unassigned</span>'}
     ${job.machine?.serialNo ? '' : '<span class="badge" style="background:#fff3d5;color:#d97706">No Serial</span>'}
+    ${job.invoiceMaterial?.ready ? '<span class="badge" style="background:#e8f5e9;color:#287a3e">Bill-ready</span>' : ''}
     <span class="badge">${ageDays()} day${ageDays() !== 1 ? 's' : ''} old</span>`;
 
   renderJobContextStrip();
@@ -648,9 +682,12 @@ function renderEstimate() {
   if (labour.length) html += '<div class="est-section-head" style="margin-top:8px">Labour (' + labour.length + ')</div>' + labour.map(lineHTML).join('');
   document.getElementById('estimate-lines').innerHTML = html;
 
-  const subtotal = lines.reduce((a, ln) => a + ln.amount * ln.qty, 0);
-  const taxTotal = lines.reduce((a, ln) => a + (ln.amount * ln.qty * ln.gst / 100), 0);
-  const total    = subtotal + taxTotal;
+  const totals = estimateTotals();
+  const subtotal = totals.subtotal;
+  const taxTotal = totals.tax;
+  const total    = totals.total;
+  const billingStage = job.invoiceMaterial?.ready ? 'Invoice material ready' : (job.billing?.stage === 'estimate_ready' ? 'Estimate ready' : 'Draft');
+  const busyStage = job.billing?.busyWriteStatus || 'pending_verification';
 
   document.getElementById('estimate-total').innerHTML = `
     <div class="estimate-total">
@@ -663,6 +700,11 @@ function renderEstimate() {
       <div style="display:flex;justify-content:space-between">
         <span class="et-label" style="font-size:14px">Total</span>
         <div class="et-amount">₹${total.toLocaleString('en-IN')}</div>
+      </div>
+      <div class="billing-state">
+        Billing stage: <b>${esc(billingStage)}</b><br>
+        Busy write: <b>${esc(busyStage)}</b><br>
+        <span>Invoice material is only a prepared billing packet. Actual BUSY write is confirmed after Busy Bridge rereads the written voucher.</span>
       </div>
     </div>`;
 
@@ -1028,10 +1070,12 @@ function adjustQty(idx, delta) {
 }
 
 function updateEstimateTotal() {
-  const lines = job.estimate?.lines || [];
-  const subtotal = lines.reduce((a, ln) => a + ln.amount * ln.qty, 0);
-  const taxTotal = lines.reduce((a, ln) => a + (ln.amount * ln.qty * ln.gst / 100), 0);
-  const total = subtotal + taxTotal;
+  const totals = estimateTotals();
+  const subtotal = totals.subtotal;
+  const taxTotal = totals.tax;
+  const total = totals.total;
+  const billingStage = job.invoiceMaterial?.ready ? 'Invoice material ready' : (job.billing?.stage === 'estimate_ready' ? 'Estimate ready' : 'Draft');
+  const busyStage = job.billing?.busyWriteStatus || 'pending_verification';
   document.getElementById('estimate-total').innerHTML = `
     <div class="estimate-total">
       <div style="display:flex;justify-content:space-between;margin-bottom:6px">
@@ -1043,6 +1087,11 @@ function updateEstimateTotal() {
       <div style="display:flex;justify-content:space-between">
         <span class="et-label" style="font-size:14px">Total</span>
         <div class="et-amount">₹${total.toLocaleString('en-IN')}</div>
+      </div>
+      <div class="billing-state">
+        Billing stage: <b>${esc(billingStage)}</b><br>
+        Busy write: <b>${esc(busyStage)}</b><br>
+        <span>Invoice material is only a prepared billing packet. Actual BUSY write is confirmed after Busy Bridge rereads the written voucher.</span>
       </div>
     </div>`;
   updateSMSPreview(total);
@@ -1068,10 +1117,35 @@ function changePOStatus(idx) {
 function saveEstimate() {
   if (!job.estimate?.lines?.length) { toast('Add parts or labour first'); return; }
   const statusChanged = job.status === 'Received';
+  const totals = estimateTotals();
   job.status = statusChanged ? 'Waiting Approval' : job.status;
-  addTimeline('estimate', 'Estimate saved — ₹' + getTotalAmount().toLocaleString('en-IN'));
+  job.estimate = {
+    ...job.estimate,
+    source: job.estimate.source || 'work-card',
+    currency: totals.currency,
+    subtotal: totals.subtotal,
+    subtotalPaise: totals.subtotalPaise,
+    tax: totals.tax,
+    taxPaise: totals.taxPaise,
+    total: totals.total,
+    totalPaise: totals.totalPaise,
+    savedAt: new Date().toISOString()
+  };
+  job.billing = {
+    ...(job.billing || {}),
+    stage: 'estimate_ready',
+    currency: totals.currency,
+    subtotalPaise: totals.subtotalPaise,
+    taxPaise: totals.taxPaise,
+    totalPaise: totals.totalPaise,
+    busyWriteStatus: job.billing?.busyWriteStatus || 'pending_verification',
+    updatedAt: new Date().toISOString(),
+    updatedBy: s.name
+  };
+  addTimeline('estimate', 'Estimate saved — ₹' + totals.total.toLocaleString('en-IN') + ' incl. GST');
   saveJob();
   renderHeader();
+  renderEstimate();
   toast('Estimate saved');
 
   const el = document.getElementById('estimate-next-action');
@@ -1083,7 +1157,51 @@ function saveEstimate() {
 }
 
 function getTotalAmount() {
-  return (job.estimate?.lines || []).reduce((a, ln) => a + (ln.amount * ln.qty) * (1 + ln.gst/100), 0);
+  return estimateTotals().total;
+}
+
+function prepareInvoiceMaterial() {
+  if (!job.estimate?.lines?.length) { toast('Add parts or labour first'); return; }
+  if (!job.workDone && !job.observation) {
+    toast('Add observation or work note first');
+    return;
+  }
+  const now = new Date().toISOString();
+  const totals = estimateTotals();
+  job.billing = {
+    ...(job.billing || {}),
+    stage: 'invoice_material_ready',
+    currency: totals.currency,
+    subtotalPaise: totals.subtotalPaise,
+    taxPaise: totals.taxPaise,
+    totalPaise: totals.totalPaise,
+    preparedBy: s.name,
+    preparedAt: now,
+    source: 'work-card',
+    busyWriteStatus: 'pending_verification',
+    note: 'Prepared for billing. Not posted to BUSY until Busy Bridge confirms post-write reread.'
+  };
+  job.invoiceMaterial = {
+    ready: true,
+    readyAt: now,
+    preparedBy: s.name,
+    sourceEstimateSavedAt: job.estimate.savedAt || now,
+    evidence: {
+      workOrder: job.workOrder,
+      customerId: job.customerId || '',
+      customerName: job.customer?.name || '',
+      machineModel: job.machine?.model || '',
+      lineCount: job.estimate.lines.length,
+      totalPaise: totals.totalPaise
+    }
+  };
+  job.total = totals.total;
+  job.totalPaise = totals.totalPaise;
+  addTimeline('billing', 'Invoice material prepared — ₹' + totals.total.toLocaleString('en-IN') + ' incl. GST; Busy write pending verification');
+  saveJob();
+  renderHeader();
+  renderEstimate();
+  toast('Invoice material ready');
 }
 
 // ── Status ────────────────────────────────────────────────

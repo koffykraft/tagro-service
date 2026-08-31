@@ -333,6 +333,35 @@ body.service-desk-body {
   font-size: 30px;
 }
 
+.desk-total small {
+  display: block;
+  margin-top: 6px;
+  color: rgba(255,255,255,.72);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.desk-money-trail {
+  margin-top: 8px;
+  border: 1px solid var(--tagro-line);
+  background: #fffdfb;
+  border-radius: 16px;
+  padding: 10px;
+}
+
+.desk-money-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--tagro-muted);
+  padding: 4px 0;
+}
+
+.desk-money-row b {
+  color: var(--tagro-ink);
+}
+
 .desk-alert {
   border-left: 5px solid var(--tagro-orange);
   background: var(--tagro-orange-soft);

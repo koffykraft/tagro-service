@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v8-service-tools-map';
+const CACHE_NAME = 'tagro-v9-billing-trace';
 const ASSETS = [
   '/',
   '/index.html',

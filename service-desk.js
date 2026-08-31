@@ -47,6 +47,24 @@
 
   function el(id) { return document.getElementById(id); }
   function money(n) { return '₹' + Math.round(Number(n || 0)).toLocaleString('en-IN'); }
+  function paise(n) { return Math.round(Number(n || 0) * 100); }
+  function rupeesFromPaise(n) { return Number(n || 0) / 100; }
+  function linePaise(amount, qty) { return paise(amount) * Math.max(1, Number(qty || 1)); }
+  function computeBilling(lines) {
+    const safeLines = Array.isArray(lines) ? lines : [];
+    const subtotalPaise = safeLines.reduce((a, ln) => a + linePaise(ln.amount ?? ln.price ?? 0, ln.qty), 0);
+    const taxPaise = safeLines.reduce((a, ln) => a + Math.round(linePaise(ln.amount ?? ln.price ?? 0, ln.qty) * Number(ln.gst || 0) / 100), 0);
+    const totalPaise = subtotalPaise + taxPaise;
+    return {
+      currency: 'INR',
+      subtotalPaise,
+      taxPaise,
+      totalPaise,
+      subtotal: rupeesFromPaise(subtotalPaise),
+      tax: rupeesFromPaise(taxPaise),
+      total: rupeesFromPaise(totalPaise)
+    };
+  }
   function cleanText(s) { return String(s || '').trim(); }
   function modelValue() {
     return cleanText(el('machine-model-free').value || el('machine-model').value).toUpperCase();
@@ -86,6 +104,26 @@
   }
   function estimateSubtotal() {
     return state.estimate.reduce((a, p) => a + Number(p.total || 0), 0) + Number(el('labour')?.value || 0);
+  }
+  function currentEstimateLines(now) {
+    const lines = estimateLines(now);
+    const labour = Number(el('labour')?.value || 0);
+    if (labour) {
+      lines.push({
+        type: 'labour',
+        id: 'lab' + Date.now(),
+        name: cleanText(el('bill-note')?.value).split('\n').filter(Boolean).slice(-1)[0] || 'Labour / service charge',
+        qty: 1,
+        standardRate: labour,
+        amount: labour,
+        gst: 18,
+        hsn: '',
+        sac: '998714',
+        addedBy: state.session?.name || 'Staff',
+        addedAt: now || new Date().toISOString()
+      });
+    }
+    return lines;
   }
   function getCustomTiles(kind) {
     return jget('tagro_service_tiles_' + kind, []);
@@ -243,16 +281,25 @@
           <small>Qty ${Number(p.qty || 1)} · ${money(p.price)} each · GST ${Number(p.gst || 0)}% <button class="btn red" style="min-height:34px;padding:4px 9px;margin-left:6px" onclick="removeEstimateLine(${i})">Remove</button></small>
         </div>`).join('');
     }
-    el('estimate-total').textContent = money(partsTotal + labour);
+    const totals = computeBilling(currentEstimateLines(new Date().toISOString()));
+    el('estimate-total').textContent = money(totals.total);
+    if (el('estimate-tax-note')) el('estimate-tax-note').textContent = `Subtotal ${money(totals.subtotal)} · GST ${money(totals.tax)}`;
   }
   function renderSummary() {
     const c = typedCustomerPayload();
     const complaintText = state.complaints.concat(cleanText(el('complaint-free')?.value) ? [cleanText(el('complaint-free')?.value)] : []).filter(Boolean).join(' / ');
+    const totals = computeBilling(currentEstimateLines(new Date().toISOString()));
     el('summary-box').innerHTML = `
       <div class="desk-mini"><div class="desk-mini-label">Customer</div><div class="desk-mini-value">${c.name ? esc(c.name) + (c.phone ? ' · ' + esc(c.phone) : '') + (c.place ? ' · ' + esc(c.place) : '') : 'Not entered yet'}</div></div>
       <div class="desk-mini"><div class="desk-mini-label">Machine</div><div class="desk-mini-value">${esc(modelValue() || 'Not entered yet')}${el('machine-serial')?.value ? ' · ' + esc(el('machine-serial').value) : ''}</div></div>
       <div class="desk-mini"><div class="desk-mini-label">Complaint</div><div class="desk-mini-value">${esc(complaintText || 'Not entered yet')}</div></div>
-      <div class="desk-mini"><div class="desk-mini-label">Estimate</div><div class="desk-mini-value">${state.estimate.length} parts · Labour ${money(el('labour')?.value || 0)} · Total <b>${el('estimate-total')?.textContent || '₹0'}</b></div></div>`;
+      <div class="desk-mini"><div class="desk-mini-label">Estimate</div><div class="desk-mini-value">${state.estimate.length} parts · Labour ${money(el('labour')?.value || 0)} · Total <b>${money(totals.total)}</b></div></div>
+      <div class="desk-money-trail">
+        <div class="desk-money-row"><span>Subtotal</span><b>${money(totals.subtotal)}</b></div>
+        <div class="desk-money-row"><span>GST</span><b>${money(totals.tax)}</b></div>
+        <div class="desk-money-row"><span>Invoice material</span><b>${totals.totalPaise ? 'Ready after save' : 'No billing lines yet'}</b></div>
+        <div class="desk-money-row"><span>Busy write</span><b>Pending verification</b></div>
+      </div>`;
   }
 
   window.searchDeskCustomers = function () {
@@ -428,7 +475,7 @@
     state.estimate.splice(i, 1);
     renderLists();
   };
-  window.createOrUpdateDeskJob = async function (targetStatus) {
+  window.createOrUpdateDeskJob = async function (targetStatus, targetAction) {
     const c = typedCustomerPayload();
     if (!c.name) return toast('Customer name is needed');
     const model = modelValue();
@@ -436,6 +483,9 @@
     const freeComplaint = cleanText(el('complaint-free').value);
     const complaintList = state.complaints.concat(freeComplaint ? [freeComplaint] : []);
     if (!complaintList.length) return toast('Complaint is needed');
+    if (targetAction === 'invoice-material' && !state.estimate.length && !Number(el('labour').value || 0)) {
+      return toast('Add part or labour before bill-ready');
+    }
 
     const customersList = customers();
     let stored = customersList.find(x => String(x.id) === String(c.id));
@@ -450,22 +500,8 @@
 
     const now = new Date().toISOString();
     const labour = Number(el('labour').value || 0);
-    const lines = estimateLines(now);
-    if (labour) {
-      lines.push({
-        type: 'labour',
-        id: 'lab' + Date.now(),
-        name: cleanText(el('bill-note').value).split('\n').filter(Boolean).slice(-1)[0] || 'Labour / service charge',
-        qty: 1,
-        standardRate: labour,
-        amount: labour,
-        gst: 18,
-        hsn: '',
-        addedBy: state.session?.name || 'Staff',
-        addedAt: now
-      });
-    }
-    const total = estimateSubtotal();
+    const lines = currentEstimateLines(now);
+    const billing = computeBilling(lines);
     const job = state.selectedJob || {
       id: 'j' + Date.now(),
       workOrder: wo(state.branch),
@@ -483,13 +519,50 @@
     job.observation = cleanText(el('observation').value);
     job.workDone = cleanText(el('work-done').value);
     job.accessories = state.accessories;
-    job.estimate = { lines, source: 'service-desk', subtotal: total, savedAt: now };
+    job.estimate = {
+      lines,
+      source: 'service-desk',
+      subtotal: billing.subtotal,
+      subtotalPaise: billing.subtotalPaise,
+      tax: billing.tax,
+      taxPaise: billing.taxPaise,
+      total: billing.total,
+      totalPaise: billing.totalPaise,
+      currency: billing.currency,
+      savedAt: now
+    };
     job.parts = state.estimate;
     job.labour = labour;
     job.billingNote = cleanText(el('bill-note').value);
-    job.total = total;
+    job.billing = {
+      stage: targetAction === 'invoice-material' ? 'invoice_material_ready' : (lines.length ? 'estimate_ready' : 'not_started'),
+      currency: billing.currency,
+      subtotalPaise: billing.subtotalPaise,
+      taxPaise: billing.taxPaise,
+      totalPaise: billing.totalPaise,
+      preparedBy: state.session?.name || 'Staff',
+      preparedAt: now,
+      source: 'service-desk',
+      busyWriteStatus: 'pending_verification',
+      note: 'Service App prepares invoice material only. BUSY write is confirmed only by Busy Bridge post-write reread.'
+    };
+    job.invoiceMaterial = {
+      ready: targetAction === 'invoice-material',
+      readyAt: targetAction === 'invoice-material' ? now : null,
+      sourceEstimateSavedAt: now,
+      evidence: {
+        workOrder: job.workOrder,
+        customerId: stored.id,
+        machineModel: model,
+        lineCount: lines.length,
+        totalPaise: billing.totalPaise
+      }
+    };
+    job.total = billing.total;
+    job.totalPaise = billing.totalPaise;
     job.status = targetStatus || job.status || 'Received';
     addTimeline(job, 'service_desk', `Service Desk saved as ${job.status}`);
+    if (targetAction === 'invoice-material') addTimeline(job, 'billing', `Invoice material prepared — ${money(billing.total)} incl. GST; Busy write pending verification`);
     toast('Saving job…');
     await touchJob(job);
     state.selectedJob = job;

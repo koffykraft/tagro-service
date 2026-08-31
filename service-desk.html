@@ -107,7 +107,11 @@
         </div>
         <div class="desk-field"><label>Labour / service charge</label><input id="labour" type="number" min="0" placeholder="Optional"></div>
         <div class="desk-field"><label>Billing note</label><textarea id="bill-note" placeholder="Optional billing or accounts note"></textarea></div>
-        <div class="desk-total"><span>Estimate total</span><b id="estimate-total">₹0</b></div>
+        <div class="desk-total">
+          <span>Estimate total incl. GST</span>
+          <b id="estimate-total">₹0</b>
+          <small id="estimate-tax-note">Subtotal ₹0 · GST ₹0</small>
+        </div>
       </div>
     </div>
 
@@ -119,6 +123,7 @@
         <button type="button" class="btn primary" onclick="createOrUpdateDeskJob('Received')">Receive job</button>
         <button type="button" class="btn green" onclick="createOrUpdateDeskJob('Waiting Approval')">Estimate ready</button>
         <button type="button" class="btn" onclick="createOrUpdateDeskJob('Repairing')">Save work</button>
+        <button type="button" class="btn" onclick="createOrUpdateDeskJob(null, 'invoice-material')">Bill-ready record</button>
         <button type="button" class="btn" onclick="openOldReceive()">Old receive page</button>
       </div>
       <button type="button" class="btn red block" style="margin-top:8px" onclick="clearDeskDraft()">Clear screen</button>
