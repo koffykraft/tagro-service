@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Service Desk — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="service-desk.css">
+</head>
+<body class="service-desk-body">
+<main class="desk-wrap">
+  <section class="desk-hero">
+    <div class="desk-kicker">TAGRO Service App</div>
+    <h1 class="desk-title">Receive, inspect, estimate, bill-ready.</h1>
+    <div class="desk-sub">One guided desk for the workshop. Fill only what you know now. The job can still move forward, and missing details stay visible instead of becoming confusion later.</div>
+    <div class="desk-status">
+      <div class="desk-stat"><b id="stat-total">0</b><span>Open jobs</span></div>
+      <div class="desk-stat"><b id="stat-estimate">0</b><span>Estimate/approval</span></div>
+      <div class="desk-stat"><b id="stat-ready">0</b><span>Ready</span></div>
+      <div class="desk-stat"><b id="stat-waiting">0</b><span>Waiting</span></div>
+    </div>
+  </section>
+
+  <section class="desk-flow">
+    <div>
+      <div class="desk-card">
+        <h2>1. Customer</h2>
+        <p>Search first. If not found, type the new customer details below.</p>
+        <div class="desk-field">
+          <label>Search customer</label>
+          <input id="customer-search" placeholder="Phone, name, alias, or place" autocomplete="off" oninput="searchDeskCustomers()">
+          <div class="desk-suggest" id="customer-results"></div>
+        </div>
+        <div class="desk-row">
+          <div class="desk-field"><label>Name</label><input id="new-name" placeholder="Customer name"></div>
+          <div class="desk-field"><label>Phone</label><input id="new-phone" type="tel" inputmode="tel" placeholder="Mobile number"></div>
+        </div>
+        <div class="desk-field"><label>Place</label><input id="new-place" placeholder="Village / town"></div>
+        <div id="chosen-customer"></div>
+      </div>
+
+      <div class="desk-card">
+        <h2>2. Machine and complaint</h2>
+        <p>Use a known model or type freely. Serial can be blank at intake.</p>
+        <div class="desk-row">
+          <div class="desk-field"><label>Known model</label><select id="machine-model"></select></div>
+          <div class="desk-field"><label>Or type model</label><input id="machine-model-free" autocapitalize="characters" placeholder="e.g. MS 250"></div>
+        </div>
+        <div class="desk-field"><label>Serial number</label><input id="machine-serial" placeholder="Optional"></div>
+        <div class="desk-field">
+          <label>Common complaints</label>
+          <div class="desk-chip-row" id="complaint-chips"></div>
+          <textarea id="complaint-free" placeholder="Other complaint, if needed"></textarea>
+        </div>
+        <div class="desk-field">
+          <label>Items received with machine</label>
+          <div class="desk-chip-row" id="accessory-chips"></div>
+        </div>
+      </div>
+
+      <div class="desk-card">
+        <h2>3. Inspection and work</h2>
+        <p>These can be filled later. Save the job now if the counter is busy.</p>
+        <div class="desk-field"><label>Observation</label><textarea id="observation" placeholder="What staff/mechanic noticed"></textarea></div>
+        <div class="desk-field"><label>Work done</label><textarea id="work-done" placeholder="Repair/service work done"></textarea></div>
+      </div>
+
+      <div class="desk-card">
+        <h2>4. Parts and billing preparation</h2>
+        <p>Read-only parts lookup. Prices can be overridden for the estimate without changing the master.</p>
+        <div class="desk-field">
+          <label>Find part</label>
+          <input id="part-search" placeholder="cl 46, clutch ms 460, part number..." oninput="searchDeskParts()" autocomplete="off">
+          <div class="desk-suggest" id="part-results"></div>
+        </div>
+        <div class="desk-row">
+          <div class="desk-field"><label>Qty</label><input id="part-qty" type="number" min="1" value="1"></div>
+          <div class="desk-field"><label>Price for this job</label><input id="part-price" type="number" min="0" placeholder="Optional"></div>
+        </div>
+        <button type="button" class="btn block" onclick="addDeskPart()">Add part to estimate</button>
+        <div id="estimate-lines" style="margin-top:12px"></div>
+        <div class="desk-field"><label>Labour / service charge</label><input id="labour" type="number" min="0" placeholder="Optional"></div>
+        <div class="desk-field"><label>Billing note</label><textarea id="bill-note" placeholder="Optional billing or accounts note"></textarea></div>
+        <div class="desk-total"><span>Estimate total</span><b id="estimate-total">₹0</b></div>
+      </div>
+    </div>
+
+    <aside class="desk-card desk-summary">
+      <h2>Job preview</h2>
+      <p>This is what will be saved to the service record.</p>
+      <div id="summary-box"></div>
+      <div class="desk-actions">
+        <button type="button" class="btn primary" onclick="createOrUpdateDeskJob('Received')">Receive job</button>
+        <button type="button" class="btn green" onclick="createOrUpdateDeskJob('Waiting Approval')">Estimate ready</button>
+      </div>
+      <div class="desk-actions">
+        <button type="button" class="btn" onclick="createOrUpdateDeskJob('Repairing')">Save work</button>
+        <button type="button" class="btn" onclick="openOldReceive()">Old receive page</button>
+      </div>
+    </aside>
+  </section>
+</main>
+<script src="app.js"></script>
+<script src="parts-search.js"></script>
+<script src="service-desk.js"></script>
+</body>
+</html>

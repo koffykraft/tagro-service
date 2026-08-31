@@ -49,7 +49,10 @@ function searchParts(query, limit) {
     var p = all[i];
     if (p.active === 'N') continue;
 
-    var raw = [p.name, p.alias, p.no, p.stihlName, p.stihlNo, p.modelGroup].join(' ');
+    var raw = [
+      p.name, p.tagroName, p.alias, p.no, p.id, p.stihlName, p.stihlNo,
+      p.modelGroup, p.group, p.hsn
+    ].join(' ');
 
     // Strategy A: Normalized full-string match (perfect for exact code/number lookup)
     var normRaw = norm(raw, false);
@@ -57,7 +60,11 @@ function searchParts(query, limit) {
 
     // Strategy B: Multi-word query (every input word appears somewhere in metadata)
     var rawLow = raw.toLowerCase();
-    var matchB = words.every(function(w){ return rawLow.includes(w); });
+    var rawNoSpace = rawLow.replace(/[^a-z0-9]/g, '');
+    var matchB = words.every(function(w){
+      var nw = norm(w, true);
+      return rawLow.includes(w) || (nw && rawNoSpace.includes(nw));
+    });
 
     if (!matchA && !matchB) continue;
 
@@ -69,7 +76,8 @@ function searchParts(query, limit) {
     else if (normNo.startsWith(nq))         score = 10;
     else if (normNo.includes(nq))           score = 8;
     else if (matchA)                        score = 6;
-    else if (rawLow.startsWith(words[0]))   score = 4;
+    else if (String(p.name || p.tagroName || '').toLowerCase().startsWith(words[0])) score = 5;
+    else if (String(p.stihlName || '').toLowerCase().startsWith(words[0])) score = 4;
     else                                    score = 2;
 
     results.push(Object.assign({}, p, { _score: score }));

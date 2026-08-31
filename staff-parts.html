@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Parts Search — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="service-desk.css">
+</head>
+<body class="service-desk-body">
+<main class="desk-wrap">
+  <section class="desk-hero">
+    <div class="desk-kicker">Read-only master lookup</div>
+    <h1 class="desk-title">Find parts without opening a job.</h1>
+    <div class="desk-sub">Search by TAGRO shop name, STIHL official name, model words, or part number. This page does not edit prices or master data.</div>
+  </section>
+  <section class="desk-card">
+    <div class="desk-field">
+      <label>Search parts</label>
+      <input id="staff-part-search" placeholder="cl 46, clutch assembly ms 460, 1128..." autocomplete="off" oninput="renderStaffParts()">
+    </div>
+    <div id="parts-status" class="desk-alert">Loading available parts cache…</div>
+    <div id="staff-part-results" style="margin-top:12px"></div>
+  </section>
+</main>
+<script src="app.js"></script>
+<script src="parts-search.js"></script>
+<script>
+const s = requireLogin();
+initShell('parts');
+let loaded = false;
+async function initPartsPage() {
+  const data = await ensurePartsData().catch(() => []);
+  loaded = true;
+  document.getElementById('parts-status').textContent = data.length
+    ? `${data.length.toLocaleString('en-IN')} parts available from cache/cloud.`
+    : 'No parts cache available yet. Canonical import/API connection is still needed.';
+}
+function renderStaffParts() {
+  const q = document.getElementById('staff-part-search').value.trim();
+  const box = document.getElementById('staff-part-results');
+  if (q.length < 2) {
+    box.innerHTML = '<p class="sub">Type at least two characters.</p>';
+    return;
+  }
+  const arr = typeof searchParts === 'function' ? searchParts(q, 25) : [];
+  box.innerHTML = arr.length ? arr.map(p => `
+    <div class="desk-part">
+      <strong>${esc(p.name || p.tagroName || p.stihlName || p.no)}</strong>
+      <small>Part No: ${esc(p.no || p.stihlNo || p.id || '')}</small>
+      ${p.stihlName ? `<small>STIHL: ${esc(p.stihlName)}</small>` : ''}
+      <small>HSN ${esc(p.hsn || '—')} · GST ${esc(p.gst || '—')}% · Price ₹${Number(p.price || 0).toLocaleString('en-IN')} · MRP ₹${Number(p.mrp || 0).toLocaleString('en-IN')}</small>
+      ${p.reviewRequired ? '<small style="color:#9a6b10;font-weight:900">Needs review</small>' : ''}
+    </div>`).join('') : '<div class="desk-alert">No matching part found in the loaded data. Try fewer words, part number, or model number.</div>';
+}
+initPartsPage().then(renderStaffParts);
+</script>
+</body>
+</html>

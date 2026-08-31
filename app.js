@@ -40,9 +40,27 @@ const TAGRO = {
 };
 
 // ── LOCAL STORAGE HELPERS ─────────────────────────────────
+// Phones can fail when large catalog payloads are pushed into localStorage.
+// Keep the app usable by falling back to an in-memory cache for large/blocked writes.
+const TAGRO_MEMORY = window.TAGRO_MEMORY || (window.TAGRO_MEMORY = {});
 
-function jget(k, d) { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)) } catch { return d } }
-function jset(k, v) { localStorage.setItem(k, JSON.stringify(v)) }
+function jget(k, d) {
+  try {
+    const raw = localStorage.getItem(k);
+    if (raw != null) return JSON.parse(raw);
+  } catch {}
+  if (Object.prototype.hasOwnProperty.call(TAGRO_MEMORY, k)) return TAGRO_MEMORY[k];
+  return d;
+}
+function jset(k, v) {
+  TAGRO_MEMORY[k] = v;
+  try {
+    localStorage.setItem(k, JSON.stringify(v));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // ── XSS SANITIZER ─────────────────────────────────────────
 function esc(s) {
@@ -393,6 +411,13 @@ function kvStaff()  { return jget(CACHE_KEYS.staff, null); }
 function kvModels() { return jget(CACHE_KEYS.models, null); }
 function kvParts()  { return jget(CACHE_KEYS.parts, null); }
 
+async function ensurePartsData() {
+  const existing = kvParts();
+  if (Array.isArray(existing) && existing.length) return existing;
+  await loadKVConfig().catch(() => {});
+  return kvParts() || [];
+}
+
 function getBranchStaff(branch) {
   const kv = kvStaff();
   if (kv) return kv.filter(s => s.branch === branch && s.active !== false);
@@ -624,9 +649,9 @@ function initShell(active) {
   nav.className = 'nav';
   let tabs = [
     ['home.html','Home','home'],
-    ['receive.html','Receive','quick'],
+    ['service-desk.html','Service Desk','quick'],
     ['tracker.html','Jobs','jobs'],
-    ['tech.html','Tech','tech'],
+    ['staff-parts.html','Parts','parts'],
     ['reference.html','Reference','reference'],
     ['purchase.html','PO','po'],
     ['links.html','Links','links']
