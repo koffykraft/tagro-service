@@ -1,12 +1,8 @@
 (function () {
   const statusFlow = ['Received', 'Inspection', 'Estimate Ready', 'Approved', 'Working', 'Waiting Parts', 'Ready', 'Delivered'];
-  const defaultTiles = {
-    complaints: ['Start akunnilla / Not starting', 'Start ayi nilkum / Starts then stops', 'Power kuravu / Low power', 'Chain move illa / Chain not moving', 'Oil varunnilla / Chain oil not coming', 'Heavy vibration', 'Fuel leaking', 'Smoke', 'Overheating', 'Service venam / Customer wants service'],
-    observations: ['Plug checked', 'Air filter dirty', 'Fuel line cracked', 'Carburetor dirty', 'Clutch worn', 'Sprocket worn', 'Piston doubt', 'Oil pump issue', 'Starter rope weak', 'Compression low'],
-    works: ['General service done', 'Carburetor cleaned', 'Spark plug replaced', 'Air filter cleaned', 'Chain sharpened', 'Fuel line replaced', 'Clutch checked', 'Oil pump cleaned', 'Test run OK', 'Customer called'],
-    models: ['MS 170', 'MS 180', 'MS 230', 'MS 250', 'MS 382', 'MS 460', 'BG 56', 'BG 86', 'FS 230', 'HTP'],
-    accessories: ['Bar', 'Chain', 'Blade', 'Belt', 'Cover', 'Battery', 'Charger', 'Pipe', 'Gun', 'Nozzle']
-  };
+  const complaints = ['Not starting', 'Starts then stops', 'Low power', 'Chain not moving', 'Chain oil not coming', 'Heavy vibration', 'Fuel leaking', 'Smoke', 'Overheating', 'Customer wants service'];
+  const observations = ['Spark plug checked', 'Air filter dirty', 'Fuel line cracked', 'Carburetor needs cleaning', 'Clutch worn', 'Sprocket worn', 'Piston score suspected', 'Oil pump issue', 'Starter rope weak', 'Compression low'];
+  const works = ['General service done', 'Carburetor cleaned', 'Spark plug replaced', 'Air filter cleaned', 'Chain sharpened', 'Fuel line replaced', 'Clutch checked', 'Oil pump cleaned', 'Test run completed', 'Customer called'];
   const labour = [
     ['Full Service', 300], ['Carburetor Service', 300], ['Carburetor Repairs', 500],
     ['Clutch Assembly Replacement', 250], ['Piston Replaced', 500], ['Chain Sharpening', 100]
@@ -67,13 +63,12 @@
       <div class="os-shell">
         <div class="topbar"><div class="topbar-inner">
           <a class="brand" href="home.html"><div class="logo-mark">T</div><div><div class="brand-kicker">TAGRO service</div><div class="brand-title">${escx(r[0])}</div></div></a>
-          <div class="top-actions"><span class="chip hide-mobile">${escx(u.branchName || u.branch || branch())}</span><span class="chip good">${escx(u.name || 'Staff')}</span>${appsMenu()}<button class="btn small ghost" id="logoutBtn">Logout</button></div>
+          <div class="top-actions"><span class="chip hide-mobile">${escx(u.branchName || u.branch || branch())}</span><span class="chip good">${escx(u.name || 'Staff')}</span><button class="btn small ghost" id="logoutBtn">Logout</button></div>
         </div></div>
         <main class="os-frame" id="view"></main>
         ${dock(r[1])}
       </div>`;
     document.getElementById('logoutBtn').onclick = () => logout?.();
-    document.getElementById('appsButton').onclick = () => document.getElementById('appsMenu').classList.toggle('open');
     r[2](page, r);
   }
 
@@ -120,27 +115,22 @@
   function home(_, r) {
     const list = visibleJobs();
     view().innerHTML = hero('One clear place for service work.', r[3], '<a class="btn primary" href="service-desk.html">Accept machine</a><a class="btn" href="tracker.html">See jobs</a><a class="btn soft" href="reference.html">Search parts</a>') +
-      `<section class="workbench-actions"><a href="service-desk.html"><strong>＋</strong><span>Accept</span></a><a href="tracker.html"><strong>⌕</strong><span>Search jobs</span></a><a href="ready.html"><strong>₹</strong><span>Bill / deliver</span></a></section>
-      <section class="pulse-strip"><div class="row"><div class="row-line"><b>Waiting</b><span class="chip warn">${list.filter(x => !['Ready', 'Delivered'].includes(x.status)).length}</span></div></div><div class="row"><div class="row-line"><b>Ready</b><span class="chip good">${list.filter(x => x.status === 'Ready').length}</span></div></div><div class="row"><div class="row-line"><b>Bill pending</b><span class="chip">${list.filter(x => x.billingState).length}</span></div></div></section>
-      <section class="grid two" style="margin-top:12px"><div class="panel"><p class="section-kicker">Needs attention</p>${jobList(list.filter(needsAttention).slice(0, 6), 'No risky jobs right now.')}</div><div class="panel"><p class="section-kicker">Recently touched</p>${jobList(list.sort(byUpdated).slice(0, 6), 'No jobs yet. Accept the first machine.')}</div></section>`;
+      `<section class="grid app-grid">${tile('Receive', 'Customer, machine, complaint and first estimate', 'service-desk.html', 'IN')}${tile('Workshop', 'Queue, status and work cards', 'tracker.html', 'WK')}${tile('Parts', 'TAGRO aliases, STIHL numbers, price and tax', 'reference.html', 'PT')}${tile('Purchase', 'Parts to buy or transfer', 'purchase.html', 'PO')}${tile('Reports', 'Ready, pending and bill-ready material', 'reports.html', 'RP')}${tile('Settings', 'Branch, staff, data health and all pages', 'more.html', 'ST')}</section>
+      <section class="grid two" style="margin-top:16px"><div class="panel"><p class="section-kicker">Needs attention</p>${jobList(list.filter(needsAttention).slice(0, 6), 'No risky jobs right now.')}</div><div class="panel"><p class="section-kicker">Recently touched</p>${jobList(list.sort(byUpdated).slice(0, 6), 'No jobs yet. Accept the first machine.')}</div></section>`;
   }
 
   function receive(_, r) {
-    view().innerHTML = hero('Accept machine.', r[3]) + `<section class="panel compact-section"><form id="receiveForm" class="form-grid">
-      ${field('phone', 'Phone', 'Customer phone', 'tel')}${field('customerName', 'Customer name', 'Name')}${field('place', 'Place', 'Place or route')}
-      <label class="field"><span>Machine model</span><select class="input" name="machineModel"><option value="">Choose model</option>${tileSet('models').map(x => `<option value="${escx(x)}">${escx(x)}</option>`).join('')}</select></label>
-      ${field('serial', 'Serial number', 'Optional')}
-      <div class="field full"><label>Fast machine model</label><div class="quick-bank" data-fill="machineModel">${tileSet('models').map(x => `<button type="button" class="quick-chip" data-value="${escx(x)}">${escx(x)}</button>`).join('')}</div></div>
-      <div class="field full"><label>Accessories received</label><div class="quick-bank" data-target="accessories">${tileSet('accessories').map(x => `<button type="button" class="quick-chip" data-text="${escx(x)}">${escx(x)}</button>`).join('')}</div><input class="input" name="accessories" placeholder="Tap tiles or type accessory"></div>
-      ${tileTextArea('complaint', 'Common complaints', tileSet('complaints'), 'Tap tiles or type complaint')}
-      <details class="field full quick-fold"><summary>Inspection and work notes</summary><div style="margin-top:10px">${tileTextArea('observation', 'Inspection observations', tileSet('observations'), 'Can be filled later')}${tileTextArea('workDone', 'Work done or planned', tileSet('works'), 'Can be filled later')}</div></details>
+    view().innerHTML = hero('Accept the machine without paperwork stress.', r[3]) + `<section class="split"><aside class="panel side-list"><p class="section-kicker">Flow</p><div class="list">${['Customer', 'Machine', 'Complaint', 'Inspection', 'Parts', 'Save'].map((x, i) => `<div class="row"><div class="row-line"><b>${i + 1}. ${x}</b><span class="chip">${i < 3 ? 'Required' : 'Optional'}</span></div></div>`).join('')}</div></aside>
+    <section class="panel"><form id="receiveForm" class="form-grid">
+      ${field('phone', 'Phone', 'Customer phone', 'tel')}${field('customerName', 'Customer name', 'Name')}${field('place', 'Place', 'Place or route')}${field('machineModel', 'Machine model', 'MS 250, BG 86, HTP etc')}${field('serial', 'Serial number', 'Optional')}${field('accessories', 'Accessories received', 'Bar, chain, blade, belt')}
+      ${tileTextArea('complaint', 'Common complaints', complaints, 'Tap tiles or type complaint')}${tileTextArea('observation', 'Inspection observations', observations, 'Can be filled later')}${tileTextArea('workDone', 'Work done or planned', works, 'Can be filled later')}
       <div class="field full"><label>Parts lookup</label><div class="row"><input id="partQ" class="input" placeholder="Search: clutch ms 460, 46 cl, part number"><div id="partResults" class="list" style="margin-top:10px"></div></div><div id="selectedLines" class="list" style="margin-top:10px"></div></div>
       <div class="field full"><label>Labour tiles</label><div class="quick-bank">${labour.map((x, i) => `<button type="button" class="quick-chip" data-labour="${i}">${escx(x[0])} · ${money(x[1])}</button>`).join('')}</div></div>
       ${field('advance', 'Advance paid', '0', 'decimal')}<label class="field"><span>Status</span><select class="input" name="status">${statusFlow.map(x => `<option>${x}</option>`).join('')}</select></label>
       <div class="field full"><div class="action-row"><button class="btn primary" type="submit">Save service record</button><button class="btn soft" type="button" id="saveEstimate">Save as estimate ready</button><a class="btn" href="tracker.html">Open jobs</a></div></div>
-    </form></section>`;
+    </form></section></section>`;
     const state = { parts: [], labour: [] };
-    bindTextChips(); bindFillChips(); bindParts(state); bindLabour(state); selectedLines(state);
+    bindTextChips(); bindParts(state); bindLabour(state); selectedLines(state);
     document.getElementById('saveEstimate').onclick = () => saveReceive(state, 'Estimate Ready');
     document.getElementById('receiveForm').onsubmit = e => { e.preventDefault(); saveReceive(state); };
   }
@@ -200,14 +190,7 @@
   function settingsPage(_, r) {
     const br = branch(), staff = getBranchStaff?.(br) || [];
     view().innerHTML = hero(r[0], r[3], '<a class="btn" href="more.html">All pages</a>') +
-      `<section class="grid two"><div class="panel"><p class="section-kicker">Device</p>${kv('Branch', br + ' · ' + (TAGRO.branches[br] || 'All branches'))}${kv('Logged in as', (safeSession()?.name || '') + ' · ' + (safeSession()?.role || ''))}${kv('Cached parts', (partsData?.() || []).length)}${kv('Pending cloud sync', (get('tagro_pending_sync', []) || []).length)}</div><div class="panel"><p class="section-kicker">Staff on this branch</p><div class="list">${staff.length ? staff.map(x => kv(x.role || 'Staff', x.name)).join('') : '<div class="empty">No staff list cached yet.</div>'}</div></div></section>
-      <section class="panel compact-section"><p class="section-kicker">Tile settings</p><p class="fine">One tile per line. Malayalam, English or mixed shop language is allowed. These stay on this device until Infrastructure gives a shared tile API.</p><div class="tile-editor">${Object.keys(defaultTiles).map(name => `<label class="tile-box"><span>${escx(name)}</span><textarea class="input" data-tile-edit="${name}">${escx(tileSet(name).join('\n'))}</textarea></label>`).join('')}</div><div class="action-row"><button class="btn primary" id="saveTiles">Save tiles</button><button class="btn" id="resetTiles">Reset starter tiles</button></div></section>`;
-    document.getElementById('saveTiles').onclick = () => {
-      const next = {};
-      document.querySelectorAll('[data-tile-edit]').forEach(t => next[t.dataset.tileEdit] = t.value.split(/\n+/).map(x => x.trim()).filter(Boolean));
-      set('tagro_service_tiles', next); ping('Tiles saved');
-    };
-    document.getElementById('resetTiles').onclick = () => { set('tagro_service_tiles', {}); ping('Starter tiles restored'); setTimeout(() => location.reload(), 350); };
+      `<section class="grid two"><div class="panel"><p class="section-kicker">Device</p>${kv('Branch', br + ' · ' + (TAGRO.branches[br] || 'All branches'))}${kv('Logged in as', (safeSession()?.name || '') + ' · ' + (safeSession()?.role || ''))}${kv('Cached parts', (partsData?.() || []).length)}${kv('Pending cloud sync', (get('tagro_pending_sync', []) || []).length)}</div><div class="panel"><p class="section-kicker">Staff on this branch</p><div class="list">${staff.length ? staff.map(x => kv(x.role || 'Staff', x.name)).join('') : '<div class="empty">No staff list cached yet.</div>'}</div></div></section>`;
   }
 
   function morePage(_, r) {
@@ -238,36 +221,16 @@
   function money(n) { return '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 }); }
   function todayText() { return new Date().toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }); }
   function dock(g) { return `<nav class="dock no-print">${[['home', 'Home', 'home.html'], ['receive', 'Receive', 'service-desk.html'], ['jobs', 'Jobs', 'tracker.html'], ['parts', 'Parts', 'reference.html'], ['purchase', 'PO', 'purchase.html'], ['reports', 'Reports', 'reports.html']].map(i => `<a class="${g === i[0] ? 'active' : ''}" href="${i[2]}">${i[1]}</a>`).join('')}</nav>`; }
-  function appsMenu() { return `<div class="apps-menu" id="appsMenu"><button class="btn small soft" id="appsButton" type="button">Apps</button><div class="apps-popover">${[['Receive', 'service-desk.html'], ['Jobs', 'tracker.html'], ['Parts', 'reference.html'], ['PO', 'purchase.html'], ['Reports', 'reports.html'], ['Settings', 'config.html']].map(x => `<a href="${x[1]}"><span>${x[0]}</span><small>open</small></a>`).join('')}</div></div>`; }
   function hero(t, sub, actions = '') { return `<section class="hero"><div class="panel hero-card"><div class="decor-line"></div><p class="page-kicker">${todayText()}</p><h1 class="page-title">${escx(t)}</h1><p class="page-subtitle">${escx(sub)}</p>${actions ? `<div class="action-row">${actions}</div>` : ''}</div><div class="panel"><p class="section-kicker">Live pulse</p>${pulse()}</div></section>`; }
   function pulse() { const j = visibleJobs(), ready = j.filter(x => x.status === 'Ready').length, active = j.filter(x => !['Ready', 'Delivered'].includes(x.status)).length, hold = j.filter(x => x.status === 'Waiting Parts').length; return `<div class="grid"><div class="row"><div class="row-line"><b>Open workshop</b><span class="chip warn">${active}</span></div><div class="progress"><i style="width:${Math.min(100, active * 12)}%"></i></div></div><div class="row"><div class="row-line"><b>Ready for pickup</b><span class="chip good">${ready}</span></div></div><div class="row"><div class="row-line"><b>Waiting parts</b><span class="chip ${hold ? 'warn' : ''}">${hold}</span></div></div></div>`; }
   function tile(t, d, href, ic) { return `<a class="tile app-tile" href="${href}"><div class="icon">${ic}</div><div><strong>${escx(t)}</strong><span>${escx(d)}</span></div></a>`; }
   function field(name, label, ph, mode) { return `<label class="field"><span>${label}</span><input class="input" name="${name}" ${mode ? `inputmode="${mode}"` : ''} placeholder="${ph}"></label>`; }
   function tileTextArea(name, label, list, ph) { return `<div class="field full"><label>${label}</label><div class="quick-bank" data-target="${name}">${list.map(x => `<button type="button" class="quick-chip" data-text="${escx(x)}">${escx(x)}</button>`).join('')}</div><textarea name="${name}" placeholder="${ph}"></textarea></div>`; }
-  function tileSet(name) { const saved = get('tagro_service_tiles', {}); return Array.isArray(saved[name]) && saved[name].length ? saved[name] : defaultTiles[name]; }
   function append(oldText, text) { oldText = oldText || ''; return !text || oldText.includes(text) ? oldText : (oldText ? oldText + '; ' : '') + text; }
   function bindTextChips() { document.querySelectorAll('.quick-bank[data-target]').forEach(bank => bank.onclick = e => { const b = e.target.closest('[data-text]'); if (!b) return; const ta = document.querySelector(`[name="${bank.dataset.target}"]`); ta.value = append(ta.value, b.dataset.text); b.classList.add('selected'); }); }
-  function bindFillChips() { document.querySelectorAll('.quick-bank[data-fill]').forEach(bank => bank.onclick = e => { const b = e.target.closest('[data-value]'); if (!b) return; const target = document.querySelector(`[name="${bank.dataset.fill}"]`); target.value = b.dataset.value; b.classList.add('selected'); }); }
   function bindLabour(state) { document.querySelectorAll('[data-labour]').forEach(b => b.onclick = () => { const x = labour[Number(b.dataset.labour)]; state.labour.push({ type: 'labour', name: x[0], qty: 1, price: x[1], gst: 18, hsn: '9987' }); b.classList.add('selected'); selectedLines(state); }); }
   function bindParts(state) { const q = document.getElementById('partQ'), out = document.getElementById('partResults'); q.oninput = () => { const res = q.value.trim() ? (searchParts?.(q.value, 8) || []) : []; out.innerHTML = res.map((p, i) => `<button type="button" class="row" data-addpart="${i}"><div class="row-line"><b>${escx(p.name || p.tagroName || p.stihlName || 'Part')}</b><span class="money">${money(p.price || 0)}</span></div><div class="row-meta">${escx(p.no || p.stihlNo || p.id || '')} · HSN ${escx(p.hsn || '')} · GST ${escx(p.gst || 18)}%</div></button>`).join('') || (q.value.length > 1 ? '<div class="empty">No matching part found. Try fewer words or part number.</div>' : ''); out.querySelectorAll('[data-addpart]').forEach(btn => btn.onclick = () => { const p = res[Number(btn.dataset.addpart)]; state.parts.push({ type: 'part', name: p.name || p.tagroName || p.stihlName, no: p.no || p.stihlNo || p.id, qty: 1, price: Number(p.price || 0), gst: Number(p.gst || 18), hsn: p.hsn || '', alias: p.alias || '', stihlName: p.stihlName || '' }); q.value = ''; out.innerHTML = ''; selectedLines(state); }); }; }
-  function selectedLines(state) {
-    const out = document.getElementById('selectedLines'); if (!out) return;
-    const lines = [...state.parts, ...state.labour], total = lines.reduce((a, l) => a + lineTotal(l).total, 0);
-    out.innerHTML = lines.length ? lines.map((l, i) => `<div class="row line-edit"><div><b>${escx(l.name)}</b><div class="row-meta">${escx(l.no || l.type)} · ${escx(l.hsn || 'HSN blank')}</div></div><input class="input" data-line="${i}" data-key="qty" inputmode="decimal" value="${escx(l.qty || 1)}" aria-label="Qty"><input class="input" data-line="${i}" data-key="gst" inputmode="decimal" value="${escx(l.gst || 18)}" aria-label="GST"><input class="input line-tax" data-line="${i}" data-key="hsn" value="${escx(l.hsn || '')}" placeholder="HSN"><button class="btn small danger" type="button" data-remove="${i}">Remove</button><div class="money">${money(lineTotal(l).total)}</div></div>`).join('') + `<div class="row"><div class="row-line"><b>Estimate total</b><span class="money">${money(total)}</span></div></div>` : '<div class="empty">Selected parts and labour will appear here.</div>';
-    out.querySelectorAll('[data-line]').forEach(input => input.onchange = () => {
-      const all = [...state.parts, ...state.labour], line = all[Number(input.dataset.line)];
-      line[input.dataset.key] = input.dataset.key === 'hsn' ? input.value : Number(input.value || 0);
-      const partCount = state.parts.length;
-      state.parts = all.slice(0, partCount); state.labour = all.slice(partCount);
-      selectedLines(state);
-    });
-    out.querySelectorAll('[data-remove]').forEach(btn => btn.onclick = () => {
-      const all = [...state.parts, ...state.labour]; all.splice(Number(btn.dataset.remove), 1);
-      const partCount = Math.min(state.parts.length, all.length);
-      state.parts = all.filter(x => x.type === 'part'); state.labour = all.filter(x => x.type === 'labour');
-      selectedLines(state);
-    });
-  }
+  function selectedLines(state) { const out = document.getElementById('selectedLines'); if (!out) return; const lines = [...state.parts, ...state.labour], total = lines.reduce((a, l) => a + lineTotal(l).total, 0); out.innerHTML = lines.length ? lines.map(l => `<div class="row"><div class="row-line"><b>${escx(l.name)}</b><span class="money">${money(lineTotal(l).total)}</span></div><div class="row-meta">${escx(l.no || l.type)} · Qty ${escx(l.qty)} · GST ${escx(l.gst || 18)}%</div></div>`).join('') + `<div class="row"><div class="row-line"><b>Estimate total</b><span class="money">${money(total)}</span></div></div>` : '<div class="empty">Selected parts and labour will appear here.</div>'; }
   function lineTotal(l) { const q = Number(l.qty || 1), p = Number(l.price || l.unitPrice || 0), g = Number(l.gst || 18); return { base: q * p, gst: q * p * g / 100, total: q * p * (1 + g / 100) }; }
   function jobTotals(j) { return [...(j.parts || []), ...(j.labour || [])].reduce((a, l) => { const t = lineTotal(l); a.base += t.base; a.gst += t.gst; a.total += t.total; return a; }, { base: 0, gst: 0, total: 0 }); }
   function workNo(br) { return typeof wo === 'function' ? wo(br) : br + '/' + String(Date.now()).slice(-6); }
