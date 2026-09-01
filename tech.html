@@ -1,19 +1,823 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#df6427">
-  <title>TAGRO Service | tech</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="tagro-ui.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TAGRO">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Tech Assistant — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+/* ── Tech Assistant layout ── */
+.tech-wrap { max-width: 640px; margin: 0 auto; padding: 0; padding-bottom: 20px; }
+
+/* Model selector strip */
+.model-strip {
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  padding: 10px 14px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.model-chip {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 800;
+  background: #fff;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.model-chip.active {
+  background: #df6427;
+  border-color: #df6427;
+  color: #fff;
+}
+
+/* Mode tabs */
+.mode-tabs {
+  display: flex;
+  background: #f5f5f5;
+  padding: 4px;
+  border-radius: 12px;
+  margin: 14px 14px 0;
+  gap: 4px;
+}
+.mode-tab {
+  flex: 1;
+  padding: 9px 4px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #888;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mode-tab.active {
+  background: #fff;
+  color: #df6427;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+/* Symptom quick-pick */
+.symptom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 14px;
+  margin-top: 10px;
+}
+.symptom-btn {
+  border: 1.5px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 12px 10px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+  line-height: 1.3;
+  transition: all 0.15s ease;
+}
+.symptom-btn:active { background: #fff8f4; border-color: #df6427; }
+.symptom-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+
+/* Chat area */
+.chat-area {
+  padding: 0 14px;
+  margin-top: 14px;
+  min-height: 200px;
+}
+
+/* Bubbles */
+.bubble-wrap { margin-bottom: 14px; }
+.bubble-wrap.user { text-align: right; }
+.bubble {
+  display: inline-block;
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: left;
+}
+.bubble-wrap.user .bubble {
+  background: #df6427;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.bubble-wrap.ai .bubble {
+  background: #fff;
+  border: 1px solid #eee;
+  color: #121212;
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+}
+.bubble-meta {
+  font-size: 11px;
+  color: #aaa;
+  font-weight: 700;
+  margin-top: 4px;
+  padding: 0 4px;
+  display: flex;
+  justify-content: space-between;
+}
+.bubble-wrap.user .bubble-meta {
+  justify-content: flex-end;
+}
+
+/* AI thinking state */
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+  font-size: 13px;
+  color: #aaa;
+  font-weight: 700;
+}
+.dot-pulse { display: flex; gap: 4px; }
+.dot-pulse span {
+  width: 6px; height: 6px; border-radius: 50%; background: #df6427;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.dot-pulse span:nth-child(2) { animation-delay: .2s; }
+.dot-pulse span:nth-child(3) { animation-delay: .4s; }
+@keyframes pulse { 0%,80%,100%{opacity:.2;transform:scale(.8)} 40%{opacity:1;transform:scale(1)} }
+
+/* Input area — fixed bottom */
+.input-area {
+  position: sticky;
+  bottom: 0;
+  background: #f5f5f5;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e8e8e8;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.input-area textarea {
+  flex: 1;
+  border: 1.5px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 11px 13px;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  min-height: 44px;
+  max-height: 100px;
+  overflow-y: auto;
+  background: #fff;
+  line-height: 1.4;
+}
+.send-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: none;
+  background: #df6427;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.send-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+/* Bench Mic Button */
+.bench-mic-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1.5px solid #e8e8e8;
+  background: #fff;
+  color: #df6427;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.bench-mic-btn.active {
+  background: #287a3e;
+  color: #fff;
+  border-color: #287a3e;
+  animation: pulseMic 1.4s infinite;
+}
+@keyframes pulseMic {
+  0% { box-shadow: 0 0 0 0 rgba(40,122,62, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(40,122,62, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(40,122,62, 0); }
+}
+
+/* Section divider */
+.section-label {
+  font-size: 11px;
+  font-weight: 900;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 14px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Empty state */
+.empty-chat {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-text { font-size: 15px; font-weight: 700; color: #888; }
+.empty-sub { font-size: 13px; margin-top: 6px; line-height: 1.5; }
+
+/* History clear */
+.clear-btn {
+  font-size: 11px;
+  color: #df6427;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Voice readout options */
+.voice-config-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff8f4;
+  border: 1px solid #fed8c2;
+  border-radius: 12px;
+  margin: 10px 14px 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+}
+.voice-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+.voice-switch input { opacity: 0; width: 0; height: 0; }
+.switch-slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #ccc; border-radius: 34px; transition: .3s;
+}
+.switch-slider:before {
+  position: absolute; content: ""; height: 16px; width: 16px; left: 4px; bottom: 4px;
+  background-color: white; border-radius: 50%; transition: .3s;
+}
+input:checked + .switch-slider { background-color: #287a3e; }
+input:checked + .switch-slider:before { transform: translateX(20px); }
+
+/* Formatted AI response */
+.ai-content h4 { margin: 12px 0 6px; font-size: 14px; color: #121212; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px;}
+.ai-content ul { margin: 6px 0 10px; padding-left: 18px; }
+.ai-content li { margin-bottom: 6px; line-height: 1.5; }
+.ai-content p { margin: 8px 0; }
+.ai-content strong { color: #df6427; font-weight: 800; }
+.ai-content code {
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: monospace;
+  color: #333;
+}
+
+/* Job context banner */
+.job-context {
+  background: #fff8f4;
+  border: 1.5px solid #f0d8c8;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 10px 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.job-context-icon { font-size: 20px; }
+.job-context-text { flex: 1; }
+.job-context-label { font-weight: 700; color: #df6427; }
+.job-context-detail { color: #888; font-size: 12px; }
+</style>
 </head>
-<body data-page="tech">
-  <div id="app"></div>
-  <script src="app.js"></script>
-  <script src="parts-search.js"></script>
-  <script src="tagro-os.js"></script>
-  <script>window.TAGRO_OS.boot();</script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });</script>
+<body>
+<div class="tech-wrap">
+
+  <!-- Dynamic Model strip -->
+  <div class="model-strip" id="model-strip">
+    <!-- Populated dynamically by script from local KV cache config -->
+  </div>
+
+  <!-- Job context (shown if launched from work.html) -->
+  <div class="job-context" id="job-context" style="display:none">
+    <div class="job-context-icon">🔧</div>
+    <div class="job-context-text">
+      <div class="job-context-label" id="jc-title">—</div>
+      <div class="job-context-detail" id="jc-detail">—</div>
+    </div>
+    <button onclick="clearJobContext()" style="background:none;border:none;color:#aaa;font-size:18px;cursor:pointer">×</button>
+  </div>
+
+  <!-- Voice assistant controls -->
+  <div class="voice-config-bar">
+    <span>🔊 Speak responses aloud (Hands-free mode)</span>
+    <label class="voice-switch">
+      <input type="checkbox" id="voice-readout-toggle">
+      <span class="switch-slider"></span>
+    </label>
+  </div>
+
+  <!-- Mode tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="setMode('troubleshoot', this)">🔍 Troubleshoot</button>
+    <button class="mode-tab" onclick="setMode('howto', this)">🔧 How To</button>
+    <button class="mode-tab" onclick="setMode('parts', this)">🔩 Parts</button>
+    <button class="mode-tab" onclick="setMode('train', this)">📚 Learn</button>
+  </div>
+
+  <!-- Quick symptoms -->
+  <div id="quick-panel">
+    <div class="section-label">
+      <span>Common Symptoms — tap to ask</span>
+      <button class="clear-btn" id="clear-history-btn" onclick="clearHistory()" style="display:none;">Clear Chat</button>
+    </div>
+    <div class="symptom-grid" id="symptom-grid">
+      <!-- populated by JS based on mode + model -->
+    </div>
+  </div>
+
+  <!-- Chat area -->
+  <div class="chat-area" id="chat-area">
+    <div class="empty-chat" id="empty-state">
+      <div class="empty-icon">🛠️</div>
+      <div class="empty-text">Tech Assistant ready</div>
+      <div class="empty-sub">Select a symptom above or type your question.<br>I know troubleshooting, repair steps, parts, and carburetor settings.</div>
+    </div>
+  </div>
+
+  <!-- Input Area with Bench Mic -->
+  <div class="input-area">
+    <button class="bench-mic-btn" id="bench-mic-btn" title="Speak question" onclick="toggleBenchSpeech()">
+      <svg width="20" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+    </button>
+    <textarea id="q-input" placeholder="Describe the problem or ask anything…"
+      rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendQuestion()">↑</button>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script src="parts-search.js"></script>
+<script>
+const s = requireLogin();
+initShell('tech');
+
+// ── State ─────────────────────────────────────────────────
+let currentModel = 'MS 462';
+let currentMode  = 'troubleshoot';
+let chatHistory  = []; // {role, content} for API
+let jobContext   = null;
+let speechRecognizer = null;
+
+// ── Render Dynamic Model Strip from local KV Cache ─────────
+function renderModelStrip() {
+  const strip = document.getElementById('model-strip');
+  const activeBranch = s?.branch || 'KVR';
+  const models = getBranchModels(activeBranch);
+
+  if (models && models.length > 0) {
+    strip.innerHTML = models.map((m) => {
+      const activeClass = m.id === currentModel ? 'active' : '';
+      return `<button class="model-chip ${activeClass}" onclick="selectModel('${m.id}', this)">${m.name}</button>`;
+    }).join('');
+  } else {
+    // Fallback static list
+    const fallbackModels = ['MS 462', 'MS 250', 'MS 180', 'FS 120', 'FS 250', 'BR 600', 'SR 450'];
+    strip.innerHTML = fallbackModels.map((m) => {
+      const activeClass = m === currentModel ? 'active' : '';
+      return `<button class="model-chip ${activeClass}" onclick="selectModel('${m}', this)">${m}</button>`;
+    }).join('');
+  }
+}
+
+// ── Job context from work.html ─────────────────────────────
+(function loadJobContext() {
+  renderModelStrip();
+  const params = new URLSearchParams(location.search);
+  const jobId  = params.get('job');
+  const model  = params.get('model');
+  const complaint = params.get('complaint');
+
+  if (model) {
+    selectModelByName(model);
+  }
+
+  if (jobId || complaint) {
+    jobContext = { jobId, model: model || currentModel, complaint };
+    const ctx = document.getElementById('job-context');
+    ctx.style.display = 'flex';
+    document.getElementById('jc-title').textContent =
+      (model || currentModel) + (jobId ? ' · WO: ' + jobId : '');
+    document.getElementById('jc-detail').textContent =
+      complaint ? 'Complaint: ' + complaint : 'Tap a symptom or type your question';
+
+    if (complaint) {
+      setTimeout(() => {
+        document.getElementById('q-input').value = complaint;
+        sendQuestion();
+      }, 400);
+    }
+  }
+})();
+
+function clearJobContext() {
+  jobContext = null;
+  document.getElementById('job-context').style.display = 'none';
+}
+
+// ── Model selection ────────────────────────────────────────
+function selectModel(name, btn) {
+  currentModel = name;
+  localStorage.setItem('tagro_active_voice_model', name); // sync with floating helper
+  document.querySelectorAll('.model-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderSymptoms();
+  clearHistory(true);
+}
+
+function selectModelByName(name) {
+  currentModel = name;
+  localStorage.setItem('tagro_active_voice_model', name);
+  document.querySelectorAll('.model-chip').forEach(c => {
+    if (c.textContent.trim() === name) {
+      c.classList.add('active');
+    } else {
+      c.classList.remove('active');
+    }
+  });
+}
+
+// ── Mode selection ─────────────────────────────────────────
+function setMode(mode, btn) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  renderSymptoms();
+
+  const qp = document.getElementById('quick-panel');
+  const ph = document.getElementById('q-input');
+
+  if (mode === 'troubleshoot') {
+    qp.style.display = '';
+    ph.placeholder = 'Describe the problem — e.g. chain stops under load…';
+  } else if (mode === 'howto') {
+    qp.style.display = '';
+    ph.placeholder = 'What do you need to do? e.g. replace clutch springs…';
+  } else if (mode === 'parts') {
+    qp.style.display = '';
+    ph.placeholder = 'Part name or number — e.g. oil seal, carburetor kit…';
+  } else if (mode === 'train') {
+    qp.style.display = '';
+    ph.placeholder = 'What do you want to learn? e.g. how does the chain brake work…';
+  }
+}
+
+// ── Symptom quick buttons ──────────────────────────────────
+const SYMPTOMS = {
+  troubleshoot: [
+    { icon: '⛓️', text: 'Chain stops under load' },
+    { icon: '🔄', text: 'Chain runs at idle' },
+    { icon: '📢', text: 'Loud unusual noise' },
+    { icon: '🚫', text: 'Engine won\'t start' },
+    { icon: '💨', text: 'Engine runs rough / misfires' },
+    { icon: '⛽', text: 'Engine won\'t idle' },
+    { icon: '⚡', text: 'No ignition spark' },
+    { icon: '🛑', text: 'Engine stops suddenly' },
+    { icon: '🔋', text: 'No full power' },
+    { icon: '🧴', text: 'Oil not lubricating chain' },
+    { icon: '🔁', text: 'Starter cord won\'t rewind' },
+    { icon: '⛔', text: 'Chain brake won\'t stop chain' },
+  ],
+  howto: [
+    { icon: '🔧', text: 'Replace clutch' },
+    { icon: '🔩', text: 'Remove flywheel' },
+    { icon: '⚙️', text: 'Adjust carburetor' },
+    { icon: '🪝', text: 'Replace rewind starter rope' },
+    { icon: '🛢️', text: 'Replace oil pump' },
+    { icon: '🔬', text: 'Check ignition module' },
+    { icon: '💧', text: 'Replace oil seals' },
+    { icon: '🔑', text: 'Torque specs for assembly' },
+  ],
+  parts: [
+    { icon: '⛓️', text: 'Clutch parts' },
+    { icon: '🔩', text: 'Crankcase parts' },
+    { icon: '⚙️', text: 'Carburetor parts' },
+    { icon: '🔋', text: 'Ignition parts' },
+    { icon: '🪝', text: 'Starter parts' },
+    { icon: '🛢️', text: 'Oil pump parts' },
+    { icon: '⛔', text: 'Chain brake parts' },
+    { icon: '🔑', text: 'Screws and seals kit' },
+  ],
+  train: [
+    { icon: '🏫', text: 'How does the clutch work?' },
+    { icon: '⛽', text: 'How to tune the carburetor' },
+    { icon: '🔁', text: 'How the chain brake works' },
+    { icon: '⚡', text: 'How ignition system works' },
+    { icon: '🛢️', text: 'Oil pump and lubrication' },
+    { icon: '🔬', text: 'Inspection checklist' },
+    { icon: '🧰', text: 'Required service tools' },
+    { icon: '📋', text: 'Annual service procedure' },
+  ]
+};
+
+function renderSymptoms() {
+  const grid = document.getElementById('symptom-grid');
+  const list = SYMPTOMS[currentMode] || SYMPTOMS.troubleshoot;
+  grid.innerHTML = list.map(s => `
+    <button class="symptom-btn" onclick="askSymptom('${esc(s.text)}')">
+      <span class="symptom-icon">${s.icon}</span>
+      ${esc(s.text)}
+    </button>`
+  ).join('');
+}
+
+function askSymptom(text) {
+  document.getElementById('q-input').value = text;
+  sendQuestion();
+}
+
+// ── Chat ───────────────────────────────────────────────────
+function renderWelcome() {
+  const area = document.getElementById('chat-area');
+  area.innerHTML = `
+    <div class="empty-chat" id="empty-state">
+      <div class="empty-icon">🛠️</div>
+      <div class="empty-text">Ready for ${esc(currentModel)}</div>
+      <div class="empty-sub">Tap a symptom or type your question.</div>
+    </div>`;
+}
+
+function clearHistory(silent = false) {
+  chatHistory = [];
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (!silent) {
+    renderWelcome();
+    document.getElementById('clear-history-btn').style.display = 'none';
+    toast('Chat history cleared');
+  }
+}
+
+async function sendQuestion() {
+  const input = document.getElementById('q-input');
+  const q = input.value.trim();
+  if (!q) return;
+
+  input.value = '';
+  autoResize(input);
+
+  const empty = document.getElementById('empty-state');
+  if (empty) empty.remove();
+
+  appendBubble('user', q);
+  document.getElementById('clear-history-btn').style.display = 'inline-block';
+
+  const thinkId = 'think-' + Date.now();
+  appendThinking(thinkId);
+
+  document.getElementById('send-btn').disabled = true;
+
+  let userMsg = q;
+  if (jobContext && chatHistory.length === 0) {
+    userMsg = `[Job context: ${jobContext.model || currentModel}` +
+      (jobContext.complaint ? `, complaint: "${jobContext.complaint}"` : '') +
+      (jobContext.jobId ? `, WO: ${jobContext.jobId}` : '') + `]\n\n${q}`;
+  }
+
+  chatHistory.push({ role: 'user', content: userMsg });
+
+  try {
+    const resp = await fetch('https://tagro-api.icy-fire-d2ac.workers.dev/ai/tech-assist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model:      currentModel,
+        mode:       currentMode,
+        question:   userMsg,
+        history:    chatHistory.slice(-10),
+        jobContext: jobContext || null
+      })
+    });
+
+    const data = await resp.json();
+    const answer = data.ok ? data.answer : ('Error: ' + (data.error || 'Unknown error'));
+
+    chatHistory.push({ role: 'assistant', content: answer });
+
+    document.getElementById(thinkId)?.remove();
+    appendBubble('ai', answer);
+
+    if (data.ok && document.getElementById('voice-readout-toggle').checked) {
+      speakAloudResponse(data.answer);
+    }
+
+  } catch (err) {
+    document.getElementById(thinkId)?.remove();
+    appendBubble('ai', '⚠️ Connection error. Check your internet and try again.');
+    chatHistory.pop();
+  }
+
+  document.getElementById('send-btn').disabled = false;
+  input.focus();
+}
+
+// ── DOM helpers ────────────────────────────────────────────
+function appendBubble(role, text) {
+  const area = document.getElementById('chat-area');
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ' + role;
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+
+  if (role === 'ai') {
+    const content = document.createElement('div');
+    content.className = 'ai-content';
+    content.innerHTML = formatAIText(text);
+    bubble.appendChild(content);
+  } else {
+    bubble.textContent = text;
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  meta.textContent = role === 'user'
+    ? (s?.name || 'You') + ' · ' + timeNow()
+    : 'TAGRO Tech AI · ' + timeNow();
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(meta);
+  area.appendChild(wrap);
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function appendThinking(id) {
+  const area = document.getElementById('chat-area');
+  const wrap = document.createElement('div');
+  wrap.className = 'bubble-wrap ai';
+  wrap.id = id;
+  wrap.innerHTML = `
+    <div class="thinking">
+      <div class="dot-pulse">
+        <span></span><span></span><span></span>
+      </div>
+      Consulting grounded parts catalogs…
+    </div>`;
+  area.appendChild(wrap);
+  wrap.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+function formatAIText(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/^(\d+\.\s)/gm, '<br>$1')
+    .replace(/^[-•]\s(.+)/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)+/gs, m => '<ul>' + m + '</ul>')
+    .replace(/\n{2,}/g, '</p><p>')
+    .replace(/\n/g, '<br>')
+    .replace(/^/, '<p>').replace(/$/, '</p>');
+}
+
+function timeNow() {
+  return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ── Web Speech API Integration ──────────────────────────────
+function toggleBenchSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    toast('Speech recognition not supported on this browser.');
+    return;
+  }
+
+  const micBtn = document.getElementById('bench-mic-btn');
+  const inputArea = document.getElementById('q-input');
+
+  if (speechRecognizer) {
+    speechRecognizer.stop();
+    return;
+  }
+
+  speechRecognizer = new SpeechRecognition();
+  speechRecognizer.continuous = false;
+  speechRecognizer.interimResults = false;
+  speechRecognizer.lang = 'en-IN';
+
+  speechRecognizer.onstart = () => {
+    micBtn.classList.add('active');
+    inputArea.placeholder = "Listening... Speak now";
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  };
+
+  speechRecognizer.onerror = (e) => {
+    toast(`Speech error: ${e.error || 'Blocked'}`);
+    cleanupSpeech();
+  };
+
+  speechRecognizer.onend = () => {
+    cleanupSpeech();
+  };
+
+  speechRecognizer.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    inputArea.value = transcript;
+    sendQuestion();
+  };
+
+  speechRecognizer.start();
+}
+
+function cleanupSpeech() {
+  const micBtn = document.getElementById('bench-mic-btn');
+  const inputArea = document.getElementById('q-input');
+  micBtn.classList.remove('active');
+  inputArea.placeholder = "Describe the problem or ask anything…";
+  speechRecognizer = null;
+}
+
+function speakAloudResponse(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const clean = text
+    .replace(/\*\*/g, '')
+    .replace(/`/g, '')
+    .replace(/PROBLEM:/gi, 'Problem statement:')
+    .replace(/CAUSE:/gi, 'Likely cause:')
+    .replace(/CHECK:/gi, 'Check procedure:')
+    .replace(/FIX:/gi, 'Repair action:');
+
+  const utterance = new SpeechSynthesisUtterance(clean);
+  utterance.lang = 'en-IN';
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  window.speechSynthesis.speak(utterance);
+}
+
+// ── Input handling ─────────────────────────────────────────
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendQuestion();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+// ── Init ───────────────────────────────────────────────────
+renderSymptoms();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

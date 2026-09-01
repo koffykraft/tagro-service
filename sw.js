@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v10-new-os-shell';
+const CACHE_NAME = 'tagro-v9-billing-trace';
 const ASSETS = [
   '/',
   '/index.html',
@@ -8,8 +8,9 @@ const ASSETS = [
   '/tracker.html',
   '/reference.html',
   '/app.js',
-  '/tagro-ui.css',
-  '/tagro-os.js',
+  '/app.css',
+  '/service-desk.css',
+  '/service-desk.js',
   '/parts-search.js',
   '/manifest.json'
 ];

@@ -1,19 +1,127 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#df6427">
-  <title>TAGRO Service | catalog</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="tagro-ui.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#df6427">
+    <title>Parts Catalog — TAGRO</title>
+    <link rel="stylesheet" href="app.css">
+    <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}</script>
+    <style>
+        .table-container { background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 5px 18px rgba(0,0,0,.05); margin:0 14px 14px; }
+        table { width:100%; border-collapse:collapse; }
+        th { background:#f9f9f9; text-align:left; padding:14px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:#777; border-bottom:1px solid var(--line); }
+        td { padding:14px 12px; border-bottom:1px solid #eee; font-size:14px; }
+        tr.part-row { cursor:pointer; }
+        tr.part-row:hover, tr.part-row:active { background:#fdf6f2; }
+        .search-wrap { padding:14px; }
+    </style>
 </head>
-<body data-page="catalog">
-  <div id="app"></div>
-  <script src="app.js"></script>
-  <script src="parts-search.js"></script>
-  <script src="tagro-os.js"></script>
-  <script>window.TAGRO_OS.boot();</script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });</script>
+<body>
+<div class="wrap" style="padding:0;max-width:900px">
+
+  <div class="card" style="margin:14px">
+    <div class="head">Parts Catalog</div>
+    <div class="body search-wrap">
+      <input type="text" id="search" placeholder="Search by part number, name, or machine..." onkeyup="filterParts()" style="font-size:16px">
+      <p class="small" style="margin-top:8px" id="job-context-note"></p>
+    </div>
+  </div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Part Number</th>
+          <th>Description</th>
+          <th>MRP (₹)</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="catalog-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('catalog');
+
+// If opened from a job's estimate (work.html "Open Catalog"), remember which job
+// so a tapped part can be sent straight back into that job's estimate.
+const params = new URLSearchParams(location.search);
+const returnJobId = params.get('job') || params.get('id');
+if (returnJobId) {
+  document.getElementById('job-context-note').textContent =
+    'Tap a part to add it to job ' + returnJobId + '.';
+} else {
+  document.getElementById('job-context-note').textContent =
+    'Browsing only. Open a job from Jobs, then use "Open Catalog" from its Estimate tab to add parts directly.';
+}
+
+function renderCatalog() {
+  const rawData = localStorage.getItem('tagro_parts_data');
+  if (!rawData) {
+    document.getElementById('catalog-body').innerHTML =
+      '<tr><td colspan="4" class="small" style="text-align:center;padding:24px">No parts loaded yet.</td></tr>';
+    return;
+  }
+
+  const data = JSON.parse(rawData);
+  const body = document.getElementById('catalog-body');
+
+  body.innerHTML = data.map(p => {
+    const displayName = p.name && p.name.trim() !== '' ? p.name : (p.stihlName || 'Unknown Part');
+    const price = p.price || p.mrp || 0;
+
+    return `
+      <tr class="part-row" onclick="selectPart('${esc(p.no || '')}', '${esc(displayName)}', ${price})">
+        <td style="font-family:monospace;font-weight:600">${esc(p.no || '-')}</td>
+        <td>
+          <div style="font-weight:700">${esc(displayName)}</div>
+          <div class="small">${esc(p.group || 'General')}</div>
+        </td>
+        <td style="font-weight:700">${price ? '₹' + price : '-'}</td>
+        <td>${returnJobId ? '<span class="badge">+ Add</span>' : ''}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function selectPart(no, name, price) {
+  if (!returnJobId) { toast('Open this from a job to add parts directly'); return; }
+
+  const all = jobs();
+  const job = all.find(j => j.id === returnJobId || j.workOrder === returnJobId);
+  if (!job) { toast('Job not found — it may have been removed'); return; }
+
+  if (!job.estimate) job.estimate = { lines: [] };
+  job.estimate.lines.push({
+    type: 'part', id: no || ('p' + Date.now()), no, name,
+    qty: 1, standardRate: price, amount: price, gst: 18,
+    poStatus: 'Need Purchase', addedBy: s.name, addedAt: new Date().toISOString()
+  });
+  saveJobs(all, job.id);
+
+  toast(name + ' added to ' + (job.workOrder || job.id));
+  setTimeout(() => { location.href = 'work.html?id=' + encodeURIComponent(job.id); }, 600);
+}
+
+function filterParts() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const keywords = query.split(' ').filter(word => word.length > 0);
+  const rows = document.querySelectorAll('#catalog-body tr');
+
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const matchesAll = keywords.every(word => text.includes(word));
+    row.style.display = matchesAll ? '' : 'none';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', renderCatalog);
+</script>
 </body>
 </html>

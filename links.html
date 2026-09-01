@@ -1,19 +1,75 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#df6427">
-  <title>TAGRO Service | links</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="tagro-ui.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TAGRO">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Links — TAGRO</title>
+<link rel="stylesheet" href="app.css">
 </head>
-<body data-page="links">
-  <div id="app"></div>
-  <script src="app.js"></script>
-  <script src="parts-search.js"></script>
-  <script src="tagro-os.js"></script>
-  <script>window.TAGRO_OS.boot();</script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });</script>
+<body>
+<div class="wrap" style="max-width:600px">
+
+  <div class="card">
+    <div class="head">Important Sites</div>
+    <div class="body">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <a class="btn block" href="https://tagro.in" target="_blank">🌐 TAGRO Website</a>
+        <a class="btn block" href="https://www.stihl.in" target="_blank">🔧 STIHL India</a>
+        <a class="btn block" href="https://www.jains.com" target="_blank">💧 Jain Irrigation</a>
+        <a class="btn block" href="https://www.gst.gov.in" target="_blank">📋 GST Portal</a>
+        <a class="btn block" href="https://keralaagriculture.gov.in" target="_blank">🌱 Kerala Agriculture</a>
+        <a class="btn block" href="https://service.tagro.in/parts.html">🔩 Parts Master</a>
+        <a class="btn block" href="config.html">⚙️ Settings</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="head">Branch Contacts</div>
+    <div class="body" id="contacts"></div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('links');
+
+const phones = {
+  KVR: '9656324446', PKM: '9349401991', NDD: '9387689763',
+  MDM: '9487878508', SKT: '8190015130', OYR: '8921773286', SDM: '8921773285'
+};
+
+document.getElementById('contacts').innerHTML = Object.entries(TAGRO.branches).map(([code, name]) => {
+  const data = TAGRO.people[code] || { manager: 'Manager', staff: [] };
+  const phone = phones[code] || '';
+  return `
+    <div style="padding:10px 0;border-bottom:1px solid #f0f0f0">
+      <div style="font-weight:900;font-size:14px;color:#df6427">${code} — ${name}</div>
+      <div style="font-size:13px;color:#777;margin-top:3px">Manager: ${data.manager}</div>
+      ${data.staff.length ? `<div style="font-size:13px;color:#777">Staff: ${data.staff.join(', ')}</div>` : ''}
+      ${phone ? `<a href="tel:${phone}" style="font-size:13px;color:#df6427;font-weight:800">📞 ${phone}</a>` : ''}
+    </div>`;
+}).join('') + `
+  <div style="padding:10px 0">
+    <div style="font-weight:900;font-size:14px;color:#df6427">Owner</div>
+    <div style="font-size:13px;color:#777">T M Thomas</div>
+    <a href="tel:9656361846" style="font-size:13px;color:#df6427;font-weight:800">📞 9656361846</a>
+  </div>`;
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
 </body>
 </html>

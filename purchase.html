@@ -1,19 +1,143 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#df6427">
-  <title>TAGRO Service | purchase</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="tagro-ui.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#df6427">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TAGRO">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>Parts Needed — TAGRO</title>
+<link rel="stylesheet" href="app.css">
+<style>
+.po-item { background:#fff; border-radius:14px; padding:14px; margin-bottom:10px; border-left:3px solid #e8e8e8; }
+.po-item.open     { border-left-color:#d97706; }
+.po-item.ordered  { border-left-color:#2f7deb; }
+.po-item.done     { border-left-color:#2f7d3d; opacity:.6; }
+.po-name   { font-weight:900; font-size:15px; }
+.po-detail { font-size:13px; color:#777; margin-top:4px; line-height:1.4; }
+.po-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.status-cycle { font-size:12px; font-weight:800; padding:5px 12px; border-radius:99px; border:1.5px solid #e8e8e8; cursor:pointer; background:#fff; }
+.status-cycle.open    { background:#fff5d6; border-color:#d97706; color:#9a6b10; }
+.status-cycle.ordered { background:#e8f0fe; border-color:#2f7deb; color:#2f7deb; }
+.status-cycle.done    { background:#e9f6ec; border-color:#2f7d3d; color:#2f7d3d; }
+.empty-po { text-align:center; padding:40px 20px; }
+.empty-po .icon { font-size:44px; margin-bottom:10px; }
+</style>
 </head>
-<body data-page="purchase">
-  <div id="app"></div>
-  <script src="app.js"></script>
-  <script src="parts-search.js"></script>
-  <script src="tagro-os.js"></script>
-  <script>window.TAGRO_OS.boot();</script>
-  <script>if ('serviceWorker' in navigator) window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });</script>
+<body>
+<div class="wrap" style="max-width:640px">
+
+  <div class="card">
+    <div class="head">Parts Needed</div>
+    <div class="body">
+      <p class="small">Staff raise requests from job cards. Manager decides buy, transfer, or defer.</p>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn" onclick="filterPO('all')"   id="f-all">All</button>
+        <button class="btn" onclick="filterPO('Open')"  id="f-Open">Open</button>
+        <button class="btn" onclick="filterPO('Ordered')" id="f-Ordered">Ordered</button>
+        <button class="btn" onclick="filterPO('Done')"  id="f-Done">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="po-list"></div>
+
+</div>
+
+<script src="app.js"></script>
+<script>
+const s = requireLogin();
+initShell('po');
+
+let currentFilter = 'all';
+
+function filterPO(f) {
+  currentFilter = f;
+  document.querySelectorAll('[id^="f-"]').forEach(b => b.classList.remove('primary'));
+  document.getElementById('f-' + f)?.classList.add('primary');
+  render();
+}
+
+function render() {
+  let items = po().filter(p => s.role === 'Owner' || p.branch === s.branch);
+  if (currentFilter !== 'all') items = items.filter(p => p.status === currentFilter);
+
+  const el = document.getElementById('po-list');
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-po"><div class="icon">🛒</div><p class="small">No purchase requests${currentFilter !== 'all' ? ' with status "' + currentFilter + '"' : ''}.</p></div>`;
+    return;
+  }
+
+  el.innerHTML = items.map((p, i) => {
+    const st = (p.status || 'Open').toLowerCase();
+    return `
+    <div class="po-item ${st}">
+      <div class="po-name">${p.name || p.tagroName || p.stihlName || '—'}</div>
+      <div class="po-detail">
+        ${p.branch ? `<b>${p.branch}</b> · ` : ''}
+        ${p.workOrder || ''} · ${p.customer || ''}
+        ${p.machine ? ' · ' + p.machine : ''}
+        ${p.stihlNo ? `<br><span style="font-family:monospace;font-size:11px">${p.stihlNo}</span>` : ''}
+        ${p.qty ? ` · Qty ${p.qty}` : ''}
+      </div>
+      <div class="po-actions">
+        <button class="status-cycle ${st}" onclick="cycleStatus(${i})">
+          ${p.status || 'Open'}
+        </button>
+        ${p.workOrder ? `<a class="btn" href="work.html?id=${getJobId(p.workOrder)}" style="font-size:13px;padding:6px 12px">Open Job</a>` : ''}
+        <button class="btn red" style="font-size:13px;padding:6px 10px" onclick="removePO(${i})">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cycleStatus(idx) {
+  const statuses = ['Open', 'Ordered', 'Done'];
+  const items = po();
+  const branchItems = items.filter(p => s.role === 'Owner' || p.branch === s.branch);
+  const item = branchItems[idx];
+  if (!item) return;
+
+  const cur = statuses.indexOf(item.status || 'Open');
+  item.status = statuses[(cur + 1) % statuses.length];
+
+  const allIdx = items.findIndex(p => p.id === item.id);
+  if (allIdx >= 0) items[allIdx] = item;
+  savePo(items);
+  render();
+}
+
+function removePO(idx) {
+  const items = po();
+  const branchItems = items.filter(p => s.role === 'Owner' || p.branch === s.branch);
+  const item = branchItems[idx];
+  if (!item) return;
+  if (!confirm('Remove this purchase request?')) return;
+  const updated = items.filter(p => p.id !== item.id);
+  savePo(updated);
+  render();
+}
+
+function getJobId(workOrder) {
+  const all = jobs();
+  const j = all.find(j => j.workOrder === workOrder);
+  return j ? j.id : '';
+}
+
+// Init filter
+document.getElementById('f-all').classList.add('primary');
+render();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
 </body>
 </html>
