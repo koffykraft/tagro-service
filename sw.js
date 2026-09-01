@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v11-compact-tiles';
+const CACHE_NAME = 'tagro-v12-parts-purpose-basket';
 const ASSETS = [
   '/',
   '/index.html',
