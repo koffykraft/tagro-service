@@ -12,33 +12,33 @@
     ['Clutch Assembly Replacement', 250], ['Piston Replaced', 500], ['Chain Sharpening', 100]
   ];
   const routes = {
-    home: ['Today Desk', 'home', home, 'Today work.'],
-    'service-desk': ['Receive Machine', 'receive', receive, 'New service entry.'],
-    receive: ['Receive Machine', 'receive', receive, 'New service entry.'],
-    quick: ['Receive Machine', 'receive', receive, 'New service entry.'],
-    scan: ['Receive Machine', 'receive', receive, 'New service entry.'],
-    tracker: ['Job Tracker', 'jobs', jobsPage, 'All jobs.', 'all'],
-    queue: ['Workshop Queue', 'jobs', jobsPage, 'Active jobs.', 'active'],
-    ready: ['Ready Machines', 'jobs', jobsPage, 'Ready jobs.', 'ready'],
-    hold: ['Waiting Parts', 'jobs', jobsPage, 'Parts hold.', 'hold'],
-    approval: ['Approval Desk', 'jobs', jobsPage, 'Approval pending.', 'approval'],
-    review: ['Review Desk', 'jobs', jobsPage, 'Check jobs.', 'review'],
-    exceptions: ['Exceptions', 'jobs', jobsPage, 'Missing data.', 'exceptions'],
-    tech: ['Technician View', 'jobs', jobsPage, 'Active jobs.', 'active'],
-    work: ['Work Card', 'jobs', workCard, 'Job details.'],
-    job: ['Work Card', 'jobs', workCard, 'Job details.'],
-    estimate: ['Estimate Builder', 'jobs', workCard, 'Estimate lines.'],
-    reference: ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    'staff-parts': ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    parts: ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    catalog: ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    catalogue: ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    interactive_catalog_viewer: ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    bench: ['Parts Search', 'parts', partsPage, 'Find and select parts.'],
-    purchase: ['PO', 'purchase', purchasePage, 'Purchase needs.'],
-    reports: ['Reports', 'reports', reportsPage, 'Service summary.'],
-    daily: ['Daily View', 'reports', reportsPage, 'Today summary.'],
-    config: ['Settings', 'more', settingsPage, 'Device and tiles.'],
+    home: ['Today Desk', 'home', home, 'Start here and finish work without hunting for pages.'],
+    'service-desk': ['Accept Machine', 'receive', receive, 'Customer, machine, complaint, parts and bill-ready notes in one calm flow.'],
+    receive: ['Accept Machine', 'receive', receive, 'Fast intake for the front counter.'],
+    quick: ['Quick Entry', 'receive', receive, 'Same intake, opened for fast walk-in jobs.'],
+    scan: ['Scan Form', 'receive', receive, 'Form scanning can attach here when the backend confirms it.'],
+    tracker: ['Job Tracker', 'jobs', jobsPage, 'Every machine and where it stands.', 'all'],
+    queue: ['Workshop Queue', 'jobs', jobsPage, 'Machines waiting or being worked on.', 'active'],
+    ready: ['Ready Machines', 'jobs', jobsPage, 'Finished jobs that need pickup or billing.', 'ready'],
+    hold: ['Waiting Parts', 'jobs', jobsPage, 'Jobs blocked by parts or outside action.', 'hold'],
+    approval: ['Approval Desk', 'jobs', jobsPage, 'Estimates waiting for customer approval.', 'approval'],
+    review: ['Review Desk', 'jobs', jobsPage, 'Jobs with missing fields or risk flags.', 'review'],
+    exceptions: ['Exceptions', 'jobs', jobsPage, 'Places where the system needs human attention.', 'exceptions'],
+    tech: ['Technician View', 'jobs', jobsPage, 'Technician queue without admin clutter.', 'active'],
+    work: ['Work Card', 'jobs', workCard, 'One machine, one story, one next action.'],
+    job: ['Work Card', 'jobs', workCard, 'Opened from an older job link.'],
+    estimate: ['Estimate Builder', 'jobs', workCard, 'Estimate material for the selected work order.'],
+    reference: ['Parts Search', 'parts', partsPage, 'Busy-style search with TAGRO aliases and STIHL numbers.'],
+    'staff-parts': ['Staff Parts Search', 'parts', partsPage, 'Simple search for counter staff.'],
+    parts: ['Parts Search', 'parts', partsPage, 'Find parts, prices, HSN and GST quickly.'],
+    catalog: ['Catalog', 'parts', partsPage, 'Catalog data where available.'],
+    catalogue: ['Catalog', 'parts', partsPage, 'Catalog data where available.'],
+    interactive_catalog_viewer: ['Catalog Viewer', 'parts', partsPage, 'Search first, diagrams later when Data Import supplies them.'],
+    bench: ['Bench Reference', 'parts', partsPage, 'Workshop reference and parts lookup.'],
+    purchase: ['Purchase Requests', 'purchase', purchasePage, 'What parts must be bought or transferred.'],
+    reports: ['Reports', 'reports', reportsPage, 'Simple operational view from current service records.'],
+    daily: ['Daily View', 'reports', reportsPage, 'Today, pending, ready and billing material.'],
+    config: ['Settings', 'more', settingsPage, 'Branch, staff, data health and device settings.'],
     setup: ['Setup', 'more', settingsPage, 'Safe setup view for this device.'],
     'staff-admin': ['Staff Admin', 'more', settingsPage, 'Staff login and branch access, kept simple.'],
     more: ['More', 'more', morePage, 'All pages, utilities and the mind map.'],
@@ -172,29 +172,16 @@
   }
 
   function partsPage(_, r) {
-    view().innerHTML = compactHead(r[0], r[3]) + `<section class="panel parts-workbench"><div class="form-grid">
-      <label class="field third"><span>Purpose</span><select id="partsPurpose" class="input"><option>Estimate</option><option>Job</option><option>PO</option><option>Urgent need</option><option>Reorder</option><option>Reference</option></select></label>
-      <label class="field third"><span>Machine / job</span><select id="partsJob" class="input"><option value="">No job selected</option>${visibleJobs().map(j => `<option value="${escx(j.id || j.workOrder)}">${escx((j.workOrder || '') + ' ' + (j.machineModel || '') + ' ' + (j.customerName || ''))}</option>`).join('')}</select></label>
-      <label class="field third"><span>Urgency</span><select id="partsUrgency" class="input"><option>Normal</option><option>Urgent</option><option>Customer waiting</option><option>Reorder stock</option></select></label>
-      <label class="field full"><span>Search</span><input id="partsQ" class="input" autofocus placeholder="cl 46, clutch ms 460, 1122 160 2002"></label>
-    </div><div class="grid two compact-section"><div><p class="section-kicker">Tap item to select</p><div id="partsOut" class="list"></div></div><div><p class="section-kicker">Selection basket</p><div id="partsBasket" class="list"></div><div class="action-row"><button class="btn primary" id="commitBasket">Save selection</button><a class="btn" href="purchase.html">PO</a></div></div></div></section>`;
+    view().innerHTML = hero(r[0], r[3], '<a class="btn" href="service-desk.html">Use in new job</a><a class="btn soft" href="purchase.html">Open PO</a>') +
+      `<section class="panel"><div class="form-grid"><label class="field full"><span>Search any way</span><input id="partsQ" class="input" autofocus placeholder="cl 46, clutch assembly ms 460, 1122 160 2002"></label></div><div id="partsOut" class="list" style="margin-top:16px"></div><p class="fine">This page consumes accepted canonical parts and price data. Diagrams and images need Data Import and Infrastructure to supply evidence files.</p></section>`;
     const q = document.getElementById('partsQ'), out = document.getElementById('partsOut');
-    const basket = get('tagro_parts_basket', []);
-    renderBasket(basket);
     const run = async () => {
       await ensurePartsData?.();
       const res = q.value.trim() ? (searchParts?.(q.value, 24) || []) : [];
-      out.innerHTML = res.length ? res.map((p, i) => `<button type="button" class="row part-hit" data-pick="${i}"><div class="row-line"><div><div class="row-title">${escx(p.name || p.tagroName || p.stihlName)}</div><div class="row-meta">${escx(p.no || p.stihlNo || p.id)} · HSN ${escx(p.hsn || '')} · GST ${escx(p.gst || 18)}%</div></div><span class="money">${money(p.price || 0)}</span></div><div class="row-meta">${escx(p.alias || p.stihlName || '')}</div><div class="qty-strip" data-stop><button class="btn small" type="button" data-qty-minus="${i}">−</button><input class="input" data-result-qty="${i}" inputmode="decimal" value="1" aria-label="Qty"><button class="btn small" type="button" data-qty-plus="${i}">+</button><span class="fine">tap card to add</span></div></button>`).join('') : (q.value ? '<div class="empty">No match.</div>' : '<div class="empty">Search part number, alias or model.</div>');
-      out.querySelectorAll('[data-pick]').forEach(card => card.onclick = e => {
-        if (e.target.closest('[data-stop]')) return;
-        const p = res[Number(card.dataset.pick)], qty = Number(out.querySelector(`[data-result-qty="${card.dataset.pick}"]`)?.value || 1);
-        addBasket(basket, p, qty);
-      });
-      out.querySelectorAll('[data-qty-minus]').forEach(b => b.onclick = () => adjustResultQty(b.dataset.qtyMinus, -1));
-      out.querySelectorAll('[data-qty-plus]').forEach(b => b.onclick = () => adjustResultQty(b.dataset.qtyPlus, 1));
+      out.innerHTML = res.length ? res.map(p => `<div class="row"><div class="row-line"><div><div class="row-title">${escx(p.name || p.tagroName || p.stihlName)}</div><div class="row-meta">TAGRO alias: ${escx(p.alias || '')} · STIHL: ${escx(p.stihlName || '')}</div></div><span class="money">${money(p.price || 0)}</span></div><div class="row-line"><span class="row-meta">${escx(p.no || p.stihlNo || p.id)} · HSN ${escx(p.hsn || '')} · GST ${escx(p.gst || 18)}%</span><button class="btn small" data-po="${escx(p.no || p.id)}">Add PO request</button></div></div>`).join('') : (q.value ? '<div class="empty">No match. Try fewer words or number only.</div>' : '<div class="empty">Start typing to search by alias, model, STIHL name or part number.</div>');
+      out.querySelectorAll('[data-po]').forEach(b => b.onclick = () => addPo(res.find(p => (p.no || p.id) === b.dataset.po)));
     };
     q.oninput = run; run();
-    document.getElementById('commitBasket').onclick = () => commitBasket(basket);
   }
 
   function purchasePage(_, r) {
@@ -253,7 +240,6 @@
   function dock(g) { return `<nav class="dock no-print">${[['home', 'Home', 'home.html'], ['receive', 'Receive', 'service-desk.html'], ['jobs', 'Jobs', 'tracker.html'], ['parts', 'Parts', 'reference.html'], ['purchase', 'PO', 'purchase.html'], ['reports', 'Reports', 'reports.html']].map(i => `<a class="${g === i[0] ? 'active' : ''}" href="${i[2]}">${i[1]}</a>`).join('')}</nav>`; }
   function appsMenu() { return `<div class="apps-menu" id="appsMenu"><button class="btn small soft" id="appsButton" type="button">Apps</button><div class="apps-popover">${[['Receive', 'service-desk.html'], ['Jobs', 'tracker.html'], ['Parts', 'reference.html'], ['PO', 'purchase.html'], ['Reports', 'reports.html'], ['Settings', 'config.html']].map(x => `<a href="${x[1]}"><span>${x[0]}</span><small>open</small></a>`).join('')}</div></div>`; }
   function hero(t, sub, actions = '') { return `<section class="hero"><div class="panel hero-card"><div class="decor-line"></div><p class="page-kicker">${todayText()}</p><h1 class="page-title">${escx(t)}</h1><p class="page-subtitle">${escx(sub)}</p>${actions ? `<div class="action-row">${actions}</div>` : ''}</div><div class="panel"><p class="section-kicker">Live pulse</p>${pulse()}</div></section>`; }
-  function compactHead(t, sub) { return `<section class="panel compact-title"><div><p class="page-kicker">${todayText()}</p><h1 class="page-title">${escx(t)}</h1><p class="page-subtitle">${escx(sub)}</p></div></section>`; }
   function pulse() { const j = visibleJobs(), ready = j.filter(x => x.status === 'Ready').length, active = j.filter(x => !['Ready', 'Delivered'].includes(x.status)).length, hold = j.filter(x => x.status === 'Waiting Parts').length; return `<div class="grid"><div class="row"><div class="row-line"><b>Open workshop</b><span class="chip warn">${active}</span></div><div class="progress"><i style="width:${Math.min(100, active * 12)}%"></i></div></div><div class="row"><div class="row-line"><b>Ready for pickup</b><span class="chip good">${ready}</span></div></div><div class="row"><div class="row-line"><b>Waiting parts</b><span class="chip ${hold ? 'warn' : ''}">${hold}</span></div></div></div>`; }
   function tile(t, d, href, ic) { return `<a class="tile app-tile" href="${href}"><div class="icon">${ic}</div><div><strong>${escx(t)}</strong><span>${escx(d)}</span></div></a>`; }
   function field(name, label, ph, mode) { return `<label class="field"><span>${label}</span><input class="input" name="${name}" ${mode ? `inputmode="${mode}"` : ''} placeholder="${ph}"></label>`; }
@@ -294,63 +280,5 @@
   function lines(j) { const ls = [...(j.parts || []), ...(j.labour || [])]; return ls.length ? ls.map(l => `<div class="row"><div class="row-line"><b>${escx(l.name)}</b><span class="money">${money(lineTotal(l).total)}</span></div><div class="row-meta">${escx(l.no || l.type || 'line')} · Qty ${escx(l.qty || 1)} · HSN ${escx(l.hsn || '')} · GST ${escx(l.gst || 18)}%</div></div>`).join('') : '<div class="empty">No parts or labour added yet.</div>'; }
   function updateJob(job, patch) { const list = allJobs(), i = list.findIndex(x => (x.id || x.workOrder) === (job.id || job.workOrder)); list[i] = { ...job, ...patch, updatedAt: new Date().toISOString() }; saveJobList(list, list[i].id); ping('Updated'); setTimeout(() => location.reload(), 450); }
   function addPo(p) { if (!p) return; const list = allPo(); list.unshift({ id: 'po' + Date.now(), branch: branch(), stihlNo: p.no || p.stihlNo || p.id || '', tagroName: p.name || p.tagroName || p.stihlName || 'Part', stihlName: p.stihlName || '', qty: p.qty || 1, unitPrice: p.price || 0, gst: p.gst || 18, hsn: p.hsn || '', status: 'Open', raisedAt: new Date().toISOString() }); savePoList(list); ping('PO request added'); }
-  function adjustResultQty(i, by) {
-    const input = document.querySelector(`[data-result-qty="${i}"]`);
-    if (!input) return;
-    input.value = Math.max(1, Number(input.value || 1) + by);
-  }
-  function addBasket(basket, p, qty) {
-    if (!p) return;
-    const key = String(p.no || p.stihlNo || p.id || p.name || '');
-    const existing = basket.find(x => String(x.no || x.stihlNo || x.id || x.name) === key);
-    if (existing) existing.qty = Number(existing.qty || 1) + Number(qty || 1);
-    else basket.push({ type: 'part', name: p.name || p.tagroName || p.stihlName || 'Part', no: p.no || p.stihlNo || p.id || '', stihlName: p.stihlName || '', alias: p.alias || '', qty: Number(qty || 1), price: Number(p.price || 0), gst: Number(p.gst || 18), hsn: p.hsn || '' });
-    set('tagro_parts_basket', basket);
-    renderBasket(basket);
-    ping('Selected');
-  }
-  function renderBasket(basket) {
-    const out = document.getElementById('partsBasket');
-    if (!out) return;
-    const total = basket.reduce((a, l) => a + lineTotal(l).total, 0);
-    out.innerHTML = basket.length ? basket.map((l, i) => `<div class="row line-edit"><div><b>${escx(l.name)}</b><div class="row-meta">${escx(l.no || 'No part number')} · HSN ${escx(l.hsn || '')} · GST ${escx(l.gst || 18)}%</div></div><input class="input" data-basket="${i}" data-key="qty" inputmode="decimal" value="${escx(l.qty || 1)}"><input class="input" data-basket="${i}" data-key="gst" inputmode="decimal" value="${escx(l.gst || 18)}"><input class="input line-tax" data-basket="${i}" data-key="hsn" value="${escx(l.hsn || '')}" placeholder="HSN"><button class="btn small danger" data-basket-remove="${i}">Remove</button><div class="money">${money(lineTotal(l).total)}</div></div>`).join('') + `<div class="row"><div class="row-line"><b>Total</b><span class="money">${money(total)}</span></div></div>` : '<div class="empty">Tap a part to add it here.</div>';
-    out.querySelectorAll('[data-basket]').forEach(input => input.onchange = () => {
-      const item = basket[Number(input.dataset.basket)];
-      item[input.dataset.key] = input.dataset.key === 'hsn' ? input.value : Number(input.value || 0);
-      set('tagro_parts_basket', basket); renderBasket(basket);
-    });
-    out.querySelectorAll('[data-basket-remove]').forEach(btn => btn.onclick = () => {
-      basket.splice(Number(btn.dataset.basketRemove), 1);
-      set('tagro_parts_basket', basket); renderBasket(basket);
-    });
-  }
-  function commitBasket(basket) {
-    if (!basket.length) return ping('Select parts first');
-    const purpose = document.getElementById('partsPurpose')?.value || 'Reference';
-    const jobId = document.getElementById('partsJob')?.value || '';
-    const urgency = document.getElementById('partsUrgency')?.value || 'Normal';
-    if (['PO', 'Urgent need', 'Reorder'].includes(purpose)) {
-      const list = allPo();
-      basket.forEach(item => list.unshift({ id: 'po' + Date.now() + Math.random().toString(36).slice(2, 5), branch: branch(), purpose, urgency, jobId, stihlNo: item.no, tagroName: item.name, stihlName: item.stihlName, qty: item.qty, unitPrice: item.price, gst: item.gst, hsn: item.hsn, status: 'Open', raisedAt: new Date().toISOString() }));
-      savePoList(list);
-      set('tagro_parts_basket', []);
-      renderBasket([]);
-      return ping('Saved to PO');
-    }
-    if (jobId && ['Estimate', 'Job'].includes(purpose)) {
-      const list = allJobs(), idx = list.findIndex(j => String(j.id) === String(jobId) || String(j.workOrder) === String(jobId));
-      if (idx >= 0) {
-        list[idx].parts = [...(list[idx].parts || []), ...basket];
-        list[idx].updatedAt = new Date().toISOString();
-        list[idx].billingState = 'Estimate material';
-        saveJobList(list, list[idx].id);
-        set('tagro_parts_basket', []);
-        renderBasket([]);
-        return ping('Added to job');
-      }
-    }
-    set('tagro_parts_selection', { purpose, jobId, urgency, items: basket, savedAt: new Date().toISOString() });
-    ping('Selection saved');
-  }
   function poList(list, empty) { return list.length ? list.map(p => `<div class="row"><div class="row-line"><div><div class="row-title">${escx(p.tagroName || p.stihlName || p.name)}</div><div class="row-meta">${escx(p.stihlNo || p.no || 'No part number')} · Qty ${escx(p.qty || 1)} · ${escx(p.branch || branch())} · ${escx(p.workOrder || 'No job link')}</div></div><button class="btn small" data-po-status="${escx(p.id || '')}">${escx(p.status || 'Open')}</button></div></div>`).join('') : `<div class="empty">${empty}</div>`; }
 })();
