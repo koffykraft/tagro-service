@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagro-v10-new-os-shell';
+const CACHE_NAME = 'tagro-v11-compact-tiles';
 const ASSETS = [
   '/',
   '/index.html',
