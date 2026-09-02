@@ -136,18 +136,31 @@
   </div>
 </div>
 
+<script src="app.js"></script>
 <script>
+const _session = requireLogin();
+if (!_session || (_session.role !== 'Owner' && _session.role !== 'Manager')) {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#ba3327;font-weight:900;font-size:18px">Owner/Manager access only</div>';
+  throw new Error('Not authorised');
+}
+
 const WORKER = 'https://tagro-service-ingest.icy-fire-d2ac.workers.dev';
-const TOKEN = localStorage.getItem('ownerToken') || 'tagro-owner-VE1UaG9tYXM5NjU2MzYxODQ2';
+// Not hardcoded on purpose — a public page's source can be read by anyone without logging in.
+// The owner types it in once per device; it's then remembered on that device only.
+const TOKEN = getOwnerTokenOnDevice();
+if (!TOKEN) {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#ba3327;font-weight:900;font-size:18px">Owner token needed to use Review Queue.<br><br><span style="font-size:13px;font-weight:400;color:#888">Reload this page to be asked for it again.</span></div>';
+  throw new Error('No owner token set on this device');
+}
 
 let allRecords = [];
 let currentBranch = 'ALL';
-const today = new Date();
+const nowDate = new Date(); // named to avoid colliding with app.js's today() helper
 
 function daysSince(dateStr) {
   if (!dateStr) return null;
   const d = new Date(dateStr);
-  return Math.floor((today - d) / 86400000);
+  return Math.floor((nowDate - d) / 86400000);
 }
 
 function parseIssues(raw) {
