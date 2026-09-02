@@ -422,12 +422,9 @@ function renderModelStrip() {
       return `<button class="model-chip ${activeClass}" onclick="selectModel('${m.id}', this)">${m.name}</button>`;
     }).join('');
   } else {
-    // Fallback static list
-    const fallbackModels = ['MS 462', 'MS 250', 'MS 180', 'FS 120', 'FS 250', 'BR 600', 'SR 450'];
-    strip.innerHTML = fallbackModels.map((m) => {
-      const activeClass = m === currentModel ? 'active' : '';
-      return `<button class="model-chip ${activeClass}" onclick="selectModel('${m}', this)">${m}</button>`;
-    }).join('');
+    // No quick-access models set for this branch yet — show an honest empty state
+    // instead of a made-up list. Models are added via Staff Admin / branch setup.
+    strip.innerHTML = '<span class="model-chip-empty" style="font-size:12px;color:#999;padding:6px 4px">No quick models set for this branch yet</span>';
   }
 }
 
@@ -708,16 +705,44 @@ function appendThinking(id) {
 }
 
 function formatAIText(text) {
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^(\d+\.\s)/gm, '<br>$1')
-    .replace(/^[-•]\s(.+)/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>)+/gs, m => '<ul>' + m + '</ul>')
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, '<br>')
-    .replace(/^/, '<p>').replace(/$/, '</p>');
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = (s) => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  const lines = String(text || '').split('\n');
+  let html = '';
+  let para = [];
+  let listOpen = false;
+
+  const flushPara = () => {
+    if (para.length) { html += '<p>' + para.join('<br>') + '</p>'; para = []; }
+  };
+  const closeList = () => { if (listOpen) { html += '</ul>'; listOpen = false; } };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) { flushPara(); closeList(); continue; }
+
+    const bullet = line.match(/^[-•]\s+(.+)/);
+    const numbered = line.match(/^(\d+)\.\s+(.+)/);
+
+    if (bullet) {
+      flushPara();
+      if (!listOpen) { html += '<ul>'; listOpen = true; }
+      html += '<li>' + inline(bullet[1]) + '</li>';
+    } else if (numbered) {
+      flushPara();
+      if (!listOpen) { html += '<ul>'; listOpen = true; }
+      html += '<li>' + inline(numbered[2]) + '</li>';
+    } else {
+      closeList();
+      para.push(inline(line));
+    }
+  }
+  flushPara();
+  closeList();
+  return html || '<p></p>';
 }
 
 function timeNow() {
