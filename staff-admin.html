@@ -265,9 +265,6 @@
         <label>Bound Device</label>
         <div class="device-info" id="device-info">No device bound</div>
       </div>
-      <button class="btn red block" style="font-size:13px;margin-bottom:10px" onclick="clearDevice()">
-        ⚠️ Deactivate Current Device
-      </button>
     </div>
 
     <button class="btn primary block" onclick="saveStaff()" style="margin-top:8px">
@@ -300,7 +297,13 @@ if (!_session || _session.role !== 'Owner') {
 initShell('admin');
 
 // API already defined in app.js — do not redefine
-const OWNER_TOKEN = 'tagro-owner-' + btoa('TMThomas9656361846');
+// Not hardcoded on purpose — a public page's source can be read by anyone without logging in.
+// The owner types it in once per device; it's then remembered on that device only.
+const OWNER_TOKEN = getOwnerTokenOnDevice();
+if (!OWNER_TOKEN) {
+  document.body.innerHTML = '<div style="padding:40px;text-align:center;color:#ba3327;font-weight:900;font-size:18px">Owner token needed to use Staff Admin.<br><br><span style="font-size:13px;font-weight:400;color:#888">Reload this page to be asked for it again.</span></div>';
+  throw new Error('No owner token set on this device');
+}
 
 const BRANCHES = {
   KVR:'Karavaloor', PKM:'Ponkunnam', NDD:'Nedumangad',
@@ -419,26 +422,14 @@ function renderTile(m, idx) {
       <div class="tile-name">${esc(m.name)}</div>
       <div class="tile-phone">📱 ${esc(m.phone || 'No phone')}</div>
       ${modelChips ? `<div class="tile-models">${modelChips}</div>` : ''}
-      <div class="tile-device unbound" id="device-status-${idx}">Checking...</div>
     </div>`;
 }
 
-// ── Device status check (async, non-blocking) ─────────────
+// ── Device status: there is no backend endpoint yet that lists device
+// bindings for all staff (only /device/verify for one name+branch+deviceId
+// at a time), so we don't fake a per-staff bound/unbound badge here.
 function checkDeviceStatuses() {
-  allStaff.forEach((m, idx) => {
-    const el = document.getElementById(`device-status-${idx}`);
-    if (!el) return;
-    // Check localStorage for cached device binding info
-    const key = `device_bound_${m.name.replace(/\s+/g,'_')}_${m.branch}`;
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      el.textContent = '📱 Device bound';
-      el.className = 'tile-device bound';
-    } else {
-      el.textContent = 'No device';
-      el.className = 'tile-device unbound';
-    }
-  });
+  // Intentionally a no-op until a real /device/status-style endpoint exists.
 }
 
 // ── Open add sheet ─────────────────────────────────────────
@@ -490,16 +481,6 @@ async function loadDeviceInfo(name, branch) {
     document.getElementById('device-info').textContent =
       'Device binding managed via OTP activation flow';
   } catch {}
-}
-
-function clearDevice() {
-  if (!confirm('Deactivate this staff member\'s device? They will need to re-verify via OTP to login again.')) return;
-  // Clear local cache
-  const m = allStaff[editingIdx];
-  const key = `device_bound_${m.name.replace(/\s+/g,'_')}_${m.branch}`;
-  localStorage.removeItem(key);
-  showToast('Device deactivated — staff must re-verify');
-  document.getElementById('device-info').textContent = 'No device bound';
 }
 
 // ── Model picker ───────────────────────────────────────────
