@@ -91,6 +91,21 @@ function requireLogin() {
   return s;
 }
 
+// Owner-only pages (Staff Admin, Review Queue) need the Cloudflare owner token, but it must
+// never sit hardcoded in a page's source (public pages can be read by anyone, logged in or not).
+// Ask for it once on this device and remember it here from then on.
+function getOwnerTokenOnDevice() {
+  let t = localStorage.getItem('ownerToken');
+  if (t) return t;
+  t = prompt('Enter the TAGRO owner token for this device\n(ask the owner if you don\'t have it)');
+  if (t && t.trim()) {
+    t = t.trim();
+    localStorage.setItem('ownerToken', t);
+    return t;
+  }
+  return null;
+}
+
 // ── USERS / AUTH ──────────────────────────────────────────
 
 function users() { return jget('tagro_users', {}) }
